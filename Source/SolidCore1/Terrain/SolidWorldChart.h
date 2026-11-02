@@ -60,24 +60,6 @@ public:
 	static constexpr int32 MapWidth = 128;
 	static constexpr int32 MapHeight = 64;
 
-	/** Marker for the sea. A wave, not the letter S. */
-	static constexpr TCHAR SeaMarker = TEXT('~');
-
-	/** Marker for grassland. A dot, not the letter G. */
-	static constexpr TCHAR GrassMarker = TEXT('.');
-
-	/** Marker for a town cell that is not a named location. A small circle, not the letter T. */
-	static constexpr TCHAR TownMarker = TEXT('o');
-
-	/** Marker for forest. A hatch, not the letter F. */
-	static constexpr TCHAR ForestMarker = TEXT('#');
-
-	/** Marker for a river channel. A star, not the letter R. */
-	static constexpr TCHAR RiverMarker = TEXT('*');
-
-	/** Marker for desert. A peak, not the letter D. */
-	static constexpr TCHAR DesertMarker = TEXT('^');
-
 	/**
 	 * One described cell. "! row,column = Town Name" is a location.
 	 * Stronghold, StrongholdSite, LairEntrance, and LairExit use the same coordinates.

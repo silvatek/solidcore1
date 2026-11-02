@@ -409,12 +409,12 @@ namespace
 	TCHAR WorldMapCanonicalMarker(const TCHAR Raw)
 	{
 		const TCHAR Expected[] = {
-			USolidWorldChart::GrassMarker,
-			USolidWorldChart::TownMarker,
-			USolidWorldChart::ForestMarker,
-			USolidWorldChart::RiverMarker,
-			USolidWorldChart::SeaMarker,
-			USolidWorldChart::DesertMarker,
+			SolidBiome::Of(ESolidBiome::Grassland).Marker(),
+			SolidBiome::Of(ESolidBiome::Town).Marker(),
+			SolidBiome::Of(ESolidBiome::Forest).Marker(),
+			SolidBiome::Of(ESolidBiome::River).Marker(),
+			SolidBiome::Of(ESolidBiome::Sea).Marker(),
+			SolidBiome::Of(ESolidBiome::Desert).Marker(),
 			USolidWorldChart::DeprecatedLocationMarker,
 		};
 		for (const TCHAR Marker : Expected)
@@ -435,38 +435,38 @@ bool USolidWorldChart::IsGridMarker(const TCHAR Marker)
 	{
 		return true;
 	}
-	return WorldMapMarkerMatches(Marker, GrassMarker)
-		|| WorldMapMarkerMatches(Marker, TownMarker)
-		|| WorldMapMarkerMatches(Marker, ForestMarker)
-		|| WorldMapMarkerMatches(Marker, RiverMarker)
-		|| WorldMapMarkerMatches(Marker, SeaMarker)
-		|| WorldMapMarkerMatches(Marker, DesertMarker)
+	return WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Grassland).Marker())
+		|| WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Town).Marker())
+		|| WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Forest).Marker())
+		|| WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::River).Marker())
+		|| WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Sea).Marker())
+		|| WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Desert).Marker())
 		|| WorldMapMarkerMatches(Marker, DeprecatedLocationMarker);
 }
 
 ESolidBiome USolidWorldChart::MarkerToBiome(const TCHAR Marker)
 {
-	if (WorldMapMarkerMatches(Marker, SeaMarker))
+	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Sea).Marker()))
 	{
 		return ESolidBiome::Sea;
 	}
-	if (WorldMapMarkerMatches(Marker, GrassMarker))
+	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Grassland).Marker()))
 	{
 		return ESolidBiome::Grassland;
 	}
-	if (WorldMapMarkerMatches(Marker, ForestMarker))
+	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Forest).Marker()))
 	{
 		return ESolidBiome::Forest;
 	}
-	if (WorldMapMarkerMatches(Marker, TownMarker))
+	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Town).Marker()))
 	{
 		return ESolidBiome::Town;
 	}
-	if (WorldMapMarkerMatches(Marker, RiverMarker))
+	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::River).Marker()))
 	{
 		return ESolidBiome::River;
 	}
-	if (WorldMapMarkerMatches(Marker, DesertMarker))
+	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Desert).Marker()))
 	{
 		return ESolidBiome::Desert;
 	}
@@ -810,7 +810,7 @@ namespace
 	TCHAR MarkerForChartBiome(const ESolidBiome Biome)
 	{
 		const FSolidBiome& Ground = SolidBiome::Of(Biome);
-		return Ground.Paintable() ? Ground.Marker() : USolidWorldChart::GrassMarker;
+		return Ground.Paintable() ? Ground.Marker() : SolidBiome::Of(ESolidBiome::Grassland).Marker();
 	}
 }
 
@@ -1179,7 +1179,7 @@ bool USolidWorldChart::IsMarkedTown(
 	{
 		return GetLocationIdAtCell(CellX, CellY) != INDEX_NONE;
 	}
-	return Marker == TownMarker;
+	return Marker == SolidBiome::Of(ESolidBiome::Town).Marker();
 }
 
 namespace
@@ -1300,7 +1300,7 @@ ESolidBiome USolidWorldChart::SampleCellPlay(const int32 TerrainX, const int32 T
 	const int32 CellY = Cell.Y;
 
 	TCHAR Marker = 0;
-	if (!WorldMapMarkerInCell(*this, CellX, CellY, Marker) || Marker != RiverMarker)
+	if (!WorldMapMarkerInCell(*this, CellX, CellY, Marker) || Marker != SolidBiome::Of(ESolidBiome::River).Marker())
 	{
 		return GetBiomeAtCell(CellX, CellY);
 	}

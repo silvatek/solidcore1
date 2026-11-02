@@ -155,7 +155,7 @@ int32 SolidForage::GuaranteeForestCells(
 		{
 			continue;
 		}
-		if (WorldMap->GetMarkerAtCell(Cell.X, Cell.Y) != USolidWorldChart::ForestMarker)
+		if (WorldMap->GetMarkerAtCell(Cell.X, Cell.Y) != SolidBiome::Of(ESolidBiome::Forest).Marker())
 		{
 			continue;
 		}
@@ -198,7 +198,7 @@ int32 SolidForage::GuaranteeForestCells(
 	{
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			if (WorldMap->GetMarkerAtCell(Col, Row) != USolidWorldChart::ForestMarker)
+			if (WorldMap->GetMarkerAtCell(Col, Row) != SolidBiome::Of(ESolidBiome::Forest).Marker())
 			{
 				continue;
 			}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidBiome.h"
 #include "SolidWorldChart.h"
 
 /**
@@ -43,8 +44,8 @@ namespace SolidRiver
 		{
 			return Raw == Expected || FChar::ToUpper(Raw) == Expected;
 		};
-		return Matches(Marker, USolidWorldChart::RiverMarker)
-			|| Matches(Marker, USolidWorldChart::SeaMarker);
+		return Matches(Marker, SolidBiome::Of(ESolidBiome::River).Marker())
+			|| Matches(Marker, SolidBiome::Of(ESolidBiome::Sea).Marker());
 	}
 
 	inline float RadiusCm()

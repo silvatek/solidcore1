@@ -230,7 +230,7 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 	{
 		FString Grid = MountainGrid();
 		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::DeprecatedLocationMarker);
-		SetStrongholdCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
+		SetStrongholdCell(Grid, 9, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("west grass loads"), Map->LoadFromString(Grid));
@@ -280,8 +280,8 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 	{
 		FString Grid = MountainGrid();
 		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::DeprecatedLocationMarker);
-		SetStrongholdCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
-		SetStrongholdCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
+		SetStrongholdCell(Grid, 10, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
+		SetStrongholdCell(Grid, 9, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));

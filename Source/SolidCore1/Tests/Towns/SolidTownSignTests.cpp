@@ -131,7 +131,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldChart::GrassMarker);
+				Line.AppendChar(SolidBiome::Of(ESolidBiome::Grassland).Marker());
 			}
 		}
 		Text += Line;
@@ -274,7 +274,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldChart::DeprecatedLocationMarker : USolidWorldChart::GrassMarker);
+			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldChart::DeprecatedLocationMarker : SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		}
 		Text += Line;
 		Text += TEXT("\n");

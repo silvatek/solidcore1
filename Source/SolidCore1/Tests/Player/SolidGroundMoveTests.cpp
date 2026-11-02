@@ -18,7 +18,7 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = USolidWorldChart::GrassMarker;
+		TCHAR Marker = SolidBiome::Of(ESolidBiome::Grassland).Marker();
 	};
 
 	FString GroundMoveGrid(std::initializer_list<FGroundMoveMark> Marks, const FString& Extra = FString())
@@ -29,7 +29,7 @@ namespace
 		{
 			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldChart::GrassMarker;
+				TCHAR Marker = SolidBiome::Of(ESolidBiome::Grassland).Marker();
 				for (const FGroundMoveMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -76,13 +76,13 @@ bool FSolidGroundMoveFootingTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	const FString Grid = GroundMoveGrid({
-		{ 10, 9, USolidWorldChart::RiverMarker },
-		{ 10, 10, USolidWorldChart::RiverMarker },
-		{ 10, 11, USolidWorldChart::RiverMarker },
-		{ 12, 10, USolidWorldChart::RiverMarker },
-		{ 20, 10, USolidWorldChart::SeaMarker },
+		{ 10, 9, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 10, 10, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 10, 11, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 12, 10, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 20, 10, SolidBiome::Of(ESolidBiome::Sea).Marker() },
 		{ 22, 10, TEXT('M') },
-		{ 24, 10, USolidWorldChart::ForestMarker },
+		{ 24, 10, SolidBiome::Of(ESolidBiome::Forest).Marker() },
 		{ 26, 10, USolidWorldChart::DeprecatedLocationMarker },
 	}, TEXT("! 11,27 = Stronghold (MeagreDungeon)\n"));
 	if (!TestTrue(TEXT("grid loads"), Map->LoadFromString(Grid)))
@@ -212,9 +212,9 @@ bool FSolidGroundMoveBrokenTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	const FString Grid = GroundMoveGrid({
-		{ 10, 9, USolidWorldChart::RiverMarker },
-		{ 10, 10, USolidWorldChart::RiverMarker },
-		{ 10, 11, USolidWorldChart::RiverMarker },
+		{ 10, 9, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 10, 10, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 10, 11, SolidBiome::Of(ESolidBiome::River).Marker() },
 	});
 	if (!TestTrue(TEXT("grid loads"), Map->LoadFromString(Grid)))
 	{

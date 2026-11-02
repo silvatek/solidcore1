@@ -378,7 +378,7 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldChart::GrassMarker);
+				Line.AppendChar(SolidBiome::Of(ESolidBiome::Grassland).Marker());
 			}
 		}
 		Text += Line;

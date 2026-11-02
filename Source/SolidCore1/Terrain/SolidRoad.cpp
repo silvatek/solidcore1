@@ -111,7 +111,7 @@ namespace SolidRoad
 					{
 						continue;
 					}
-					if (Map.GetMarkerAtCell(NextCellX, NextCellY) == USolidWorldChart::RiverMarker)
+					if (Map.GetMarkerAtCell(NextCellX, NextCellY) == SolidBiome::Of(ESolidBiome::River).Marker())
 					{
 						return true;
 					}
@@ -143,7 +143,7 @@ namespace SolidRoad
 			TArray<int32> Rivers;
 			for (int32 Index = 0; Index < Cells.Num(); ++Index)
 			{
-				if (Map.GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldChart::RiverMarker)
+				if (Map.GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == SolidBiome::Of(ESolidBiome::River).Marker())
 				{
 					Rivers.Add(Index);
 				}
@@ -194,7 +194,7 @@ namespace SolidRoad
 					{
 						continue;
 					}
-					if (Map.GetMarkerAtCell(SideCell.X, SideCell.Y) == USolidWorldChart::RiverMarker)
+					if (Map.GetMarkerAtCell(SideCell.X, SideCell.Y) == SolidBiome::Of(ESolidBiome::River).Marker())
 					{
 						continue;
 					}

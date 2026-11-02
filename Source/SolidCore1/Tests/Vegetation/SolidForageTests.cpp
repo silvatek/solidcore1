@@ -408,7 +408,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 	{
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			if (WorldMap->GetMarkerAtCell(Col, Row) != USolidWorldChart::ForestMarker)
+			if (WorldMap->GetMarkerAtCell(Col, Row) != SolidBiome::Of(ESolidBiome::Forest).Marker())
 			{
 				continue;
 			}
@@ -456,7 +456,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 			WorldMap->CellAtWorld(Point.WorldX, Point.WorldY, WorldMin, WorldMax, Cell));
 		TestEqual(TEXT("the cell is forest on the world map"),
 			FString::Chr(WorldMap->GetMarkerAtCell(Cell.X, Cell.Y)),
-			FString::Chr(USolidWorldChart::ForestMarker));
+			FString::Chr(SolidBiome::Of(ESolidBiome::Forest).Marker()));
 		FVector2D Center = FVector2D::ZeroVector;
 		TestTrue(TEXT("the cell has a center"),
 			WorldMap->CellToWorldXY(Cell, WorldMin, WorldMax, Center));

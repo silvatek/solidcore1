@@ -17,7 +17,7 @@ namespace
 		FString Text;
 		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			Text += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
+			Text += FString::ChrN(USolidWorldChart::MapWidth, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 			Text += TEXT("\n");
 		}
 		return Text;
@@ -84,7 +84,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 {
 	FString Pond = GrassGrid();
-	SetTerrainCell(Pond, 10, 10, USolidWorldChart::RiverMarker);
+	SetTerrainCell(Pond, 10, 10, SolidBiome::Of(ESolidBiome::River).Marker());
 	SetTerrainCell(Pond, 9, 10, TEXT('M'));
 	USolidWorldChart* River = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("pond chart"), River) || !TestTrue(TEXT("pond loads"), River->LoadFromString(Pond)))

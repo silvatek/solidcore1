@@ -105,18 +105,18 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 			}
 			else if (Row == 10 && Col == 10)
 			{
-				Line.AppendChar(USolidWorldChart::DesertMarker);
+				Line.AppendChar(SolidBiome::Of(ESolidBiome::Desert).Marker());
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldChart::GrassMarker);
+				Line.AppendChar(SolidBiome::Of(ESolidBiome::Grassland).Marker());
 			}
 		}
 		Text += Line;
 		Text += TEXT("\n");
 	}
 	Text += TEXT("\nG = Grassland (light green)\n");
-	Text.AppendChar(USolidWorldChart::DesertMarker);
+	Text.AppendChar(SolidBiome::Of(ESolidBiome::Desert).Marker());
 	Text += TEXT(" = Desert (yellow)\n");
 	Text += TEXT("Z = Starting town (brown)\n");
 	Text += FString::Printf(TEXT("! 1,%d = Town Iglin\n"), USolidWorldChart::MapWidth / 2 + 1);
@@ -399,7 +399,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldChart::GrassMarker);
+				Line.AppendChar(SolidBiome::Of(ESolidBiome::Grassland).Marker());
 			}
 		}
 		Text += Line;
@@ -526,7 +526,7 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			Line.AppendChar(USolidWorldChart::GrassMarker);
+			Line.AppendChar(SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		}
 		Rows[Row] = Line;
 	}
@@ -614,8 +614,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("the sea marker is a wave"), USolidWorldChart::SeaMarker, TEXT('~'));
-	TestTrue(TEXT("a wave joins the sea"), SolidRiver::Joins(USolidWorldChart::SeaMarker));
+	TestEqual(TEXT("the sea marker is a wave"), SolidBiome::Of(ESolidBiome::Sea).Marker(), TEXT('~'));
+	TestTrue(TEXT("a wave joins the sea"), SolidRiver::Joins(SolidBiome::Of(ESolidBiome::Sea).Marker()));
 	TestFalse(TEXT("the letter S does not join the sea"), SolidRiver::Joins(TEXT('S')));
 	TestFalse(TEXT("a lower-case s does not join the sea"), SolidRiver::Joins(TEXT('s')));
 
@@ -628,7 +628,7 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 		{
 			if (Row == 0 && Col == 1)
 			{
-				Line.AppendChar(USolidWorldChart::SeaMarker);
+				Line.AppendChar(SolidBiome::Of(ESolidBiome::Sea).Marker());
 			}
 			else if (Row == 0 && Col == 2)
 			{
@@ -636,7 +636,7 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldChart::GrassMarker);
+				Line.AppendChar(SolidBiome::Of(ESolidBiome::Grassland).Marker());
 			}
 		}
 		Text += Line;
@@ -646,7 +646,7 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("wave map loads"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("a wave is sea"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldChart::SeaMarker);
+	TestEqual(TEXT("a wave is sea"), Synthetic->GetMarkerAtCell(1, 0), SolidBiome::Of(ESolidBiome::Sea).Marker());
 	TestEqual(
 		TEXT("a wave cell is the sea biome"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
@@ -678,7 +678,7 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 			if (Shipped->GetBiomeAtCell(Col, Row) == ESolidBiome::Sea)
 			{
 				bSawSea = true;
-				if (Marker != USolidWorldChart::SeaMarker)
+				if (Marker != SolidBiome::Of(ESolidBiome::Sea).Marker())
 				{
 					++SeaNotWave;
 				}
@@ -698,14 +698,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("grass is a dot"), USolidWorldChart::GrassMarker, TEXT('.'));
-	TestEqual(TEXT("a town cell is a small circle"), USolidWorldChart::TownMarker, TEXT('o'));
-	TestEqual(TEXT("forest is a hatch"), USolidWorldChart::ForestMarker, TEXT('#'));
-	TestEqual(TEXT("a river is a star"), USolidWorldChart::RiverMarker, TEXT('*'));
-	TestTrue(TEXT("a star joins a river"), SolidRiver::Joins(USolidWorldChart::RiverMarker));
+	TestEqual(TEXT("grass is a dot"), SolidBiome::Of(ESolidBiome::Grassland).Marker(), TEXT('.'));
+	TestEqual(TEXT("a town cell is a small circle"), SolidBiome::Of(ESolidBiome::Town).Marker(), TEXT('o'));
+	TestEqual(TEXT("forest is a hatch"), SolidBiome::Of(ESolidBiome::Forest).Marker(), TEXT('#'));
+	TestEqual(TEXT("a river is a star"), SolidBiome::Of(ESolidBiome::River).Marker(), TEXT('*'));
+	TestTrue(TEXT("a star joins a river"), SolidRiver::Joins(SolidBiome::Of(ESolidBiome::River).Marker()));
 	TestFalse(TEXT("the letter R does not join a river"), SolidRiver::Joins(TEXT('R')));
 	TestFalse(TEXT("a lower-case r does not join a river"), SolidRiver::Joins(TEXT('r')));
-	TestFalse(TEXT("grass does not join a river"), SolidRiver::Joins(USolidWorldChart::GrassMarker));
+	TestFalse(TEXT("grass does not join a river"), SolidRiver::Joins(SolidBiome::Of(ESolidBiome::Grassland).Marker()));
 
 	FString Text;
 	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
@@ -714,15 +714,15 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			TCHAR Marker = USolidWorldChart::GrassMarker;
+			TCHAR Marker = SolidBiome::Of(ESolidBiome::Grassland).Marker();
 			if (Row == 0)
 			{
 				if (Col == 1) Marker = TEXT('G');
-				else if (Col == 2) Marker = USolidWorldChart::TownMarker;
+				else if (Col == 2) Marker = SolidBiome::Of(ESolidBiome::Town).Marker();
 				else if (Col == 3) Marker = TEXT('T');
-				else if (Col == 4) Marker = USolidWorldChart::ForestMarker;
+				else if (Col == 4) Marker = SolidBiome::Of(ESolidBiome::Forest).Marker();
 				else if (Col == 5) Marker = TEXT('F');
-				else if (Col == 6) Marker = USolidWorldChart::RiverMarker;
+				else if (Col == 6) Marker = SolidBiome::Of(ESolidBiome::River).Marker();
 				else if (Col == 7) Marker = TEXT('R');
 			}
 			Line.AppendChar(Marker);
@@ -734,7 +734,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("symbol map loads"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("a dot stays a dot"), Synthetic->GetMarkerAtCell(0, 0), USolidWorldChart::GrassMarker);
+	TestEqual(TEXT("a dot stays a dot"), Synthetic->GetMarkerAtCell(0, 0), SolidBiome::Of(ESolidBiome::Grassland).Marker());
 	TestEqual(
 		TEXT("a dot is grassland"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(0, 0)),
@@ -744,7 +744,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		TEXT("the letter G is still grassland"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("a circle is the town marker"), Synthetic->GetMarkerAtCell(2, 0), USolidWorldChart::TownMarker);
+	TestEqual(TEXT("a circle is the town marker"), Synthetic->GetMarkerAtCell(2, 0), SolidBiome::Of(ESolidBiome::Town).Marker());
 	TestEqual(
 		TEXT("a circle is town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
@@ -754,7 +754,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		TEXT("the letter T is not town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(3, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("a hatch is the forest marker"), Synthetic->GetMarkerAtCell(4, 0), USolidWorldChart::ForestMarker);
+	TestEqual(TEXT("a hatch is the forest marker"), Synthetic->GetMarkerAtCell(4, 0), SolidBiome::Of(ESolidBiome::Forest).Marker());
 	TestEqual(
 		TEXT("a hatch is forest"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(4, 0)),
@@ -764,7 +764,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		TEXT("the letter F is not forest"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(5, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("a star is the river marker"), Synthetic->GetMarkerAtCell(6, 0), USolidWorldChart::RiverMarker);
+	TestEqual(TEXT("a star is the river marker"), Synthetic->GetMarkerAtCell(6, 0), SolidBiome::Of(ESolidBiome::River).Marker());
 	TestEqual(
 		TEXT("a star is river"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 0)),
@@ -810,7 +810,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			{
 				++OldLetters;
 			}
-			if (Marker == USolidWorldChart::TownMarker)
+			if (Marker == SolidBiome::Of(ESolidBiome::Town).Marker())
 			{
 				++TownCircles;
 			}
@@ -819,7 +819,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			{
 				bSawGrass = true;
 				// A stronghold on the grass shelf is grassland, and its cell is !.
-				if (Marker != USolidWorldChart::GrassMarker && Marker != USolidWorldChart::DeprecatedLocationMarker)
+				if (Marker != SolidBiome::Of(ESolidBiome::Grassland).Marker() && Marker != USolidWorldChart::DeprecatedLocationMarker)
 				{
 					++GrassNotDot;
 				}
@@ -827,7 +827,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			else if (Biome == ESolidBiome::Forest)
 			{
 				bSawForest = true;
-				if (Marker != USolidWorldChart::ForestMarker)
+				if (Marker != SolidBiome::Of(ESolidBiome::Forest).Marker())
 				{
 					++ForestNotHatch;
 				}
@@ -835,7 +835,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			else if (Biome == ESolidBiome::River)
 			{
 				bSawRiver = true;
-				if (Marker != USolidWorldChart::RiverMarker)
+				if (Marker != SolidBiome::Of(ESolidBiome::River).Marker())
 				{
 					++RiverNotStar;
 				}
@@ -860,7 +860,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("desert is a peak"), USolidWorldChart::DesertMarker, TEXT('^'));
+	TestEqual(TEXT("desert is a peak"), SolidBiome::Of(ESolidBiome::Desert).Marker(), TEXT('^'));
 
 	FString Text;
 	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
@@ -869,10 +869,10 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			TCHAR Marker = USolidWorldChart::GrassMarker;
+			TCHAR Marker = SolidBiome::Of(ESolidBiome::Grassland).Marker();
 			if (Row == 0 && Col == 1)
 			{
-				Marker = USolidWorldChart::DesertMarker;
+				Marker = SolidBiome::Of(ESolidBiome::Desert).Marker();
 			}
 			else if (Row == 0 && Col == 2)
 			{
@@ -883,12 +883,12 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 		Text += Line;
 		Text += TEXT("\n");
 	}
-	Text.AppendChar(USolidWorldChart::DesertMarker);
+	Text.AppendChar(SolidBiome::Of(ESolidBiome::Desert).Marker());
 	Text += TEXT(" = Desert (blue)\n");
 
 	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("peak map loads"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("a peak stays a peak"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldChart::DesertMarker);
+	TestEqual(TEXT("a peak stays a peak"), Synthetic->GetMarkerAtCell(1, 0), SolidBiome::Of(ESolidBiome::Desert).Marker());
 	TestEqual(
 		TEXT("a peak is desert"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
@@ -932,7 +932,7 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 			if (Shipped->GetBiomeAtCell(Col, Row) == ESolidBiome::Desert)
 			{
 				bSawDesert = true;
-				if (Marker != USolidWorldChart::DesertMarker)
+				if (Marker != SolidBiome::Of(ESolidBiome::Desert).Marker())
 				{
 					++DesertNotPeak;
 				}
@@ -964,7 +964,7 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			Line.AppendChar(Row == MarkerRow && Col == DigitCol ? TEXT('5') : USolidWorldChart::GrassMarker);
+			Line.AppendChar(Row == MarkerRow && Col == DigitCol ? TEXT('5') : SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		}
 		Text += Line;
 		Text += TEXT("\n");
@@ -994,7 +994,7 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			Line.AppendChar(Row == MarkerRow && Col == MountainCol ? TEXT('M') : USolidWorldChart::GrassMarker);
+			Line.AppendChar(Row == MarkerRow && Col == MountainCol ? TEXT('M') : SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		}
 		Text += Line;
 		Text += TEXT("\n");
@@ -1071,7 +1071,7 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			TCHAR Marker = USolidWorldChart::GrassMarker;
+			TCHAR Marker = SolidBiome::Of(ESolidBiome::Grassland).Marker();
 			if (Row == IglinRow && Col == IglinCol)
 			{
 				Marker = USolidWorldChart::DeprecatedLocationMarker;
@@ -1164,7 +1164,7 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a numeric ! line is ignored"), Map->GetLocationIdAtCell(SplitCol + 1, SplitRow), INDEX_NONE);
 	TestEqual(TEXT("a digit after ! is not a location"), Map->GetLocationIdAtCell(SplitCol + 2, SplitRow), INDEX_NONE);
 
-	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), USolidWorldChart::GrassMarker);
+	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), SolidBiome::Of(ESolidBiome::Grassland).Marker());
 	TestEqual(TEXT("a line on grass is not a location"), Map->GetLocationIdAtCell(1, 0), INDEX_NONE);
 
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
@@ -1229,7 +1229,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 				|| (Row == RelionRow && (Col == RelionCol || Col == UnknownTownCol || Col == UnknownTypeCol))
 				|| (Row == CaveRow && (Col == CaveCol || Col == TowerCol || Col == ImperiousCol || Col == BadHoldCol))
 				|| (Col == EnterCol && (Row == EnterRow || Row == ExitRow || Row == MissingLairRow));
-			Line.AppendChar(bBang ? USolidWorldChart::DeprecatedLocationMarker : USolidWorldChart::GrassMarker);
+			Line.AppendChar(bBang ? USolidWorldChart::DeprecatedLocationMarker : SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		}
 		Text += Line;
 		Text += TEXT("\n");
@@ -1374,7 +1374,7 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 				|| (Row == VastRow && Col == VastCol)
 				|| (Row == JoinedRow && Col == JoinedCol)
 				|| (Row == CaveRow && Col == CaveCol);
-			Line.AppendChar(bBang ? USolidWorldChart::DeprecatedLocationMarker : USolidWorldChart::GrassMarker);
+			Line.AppendChar(bBang ? USolidWorldChart::DeprecatedLocationMarker : SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		}
 		Text += Line;
 		Text += TEXT("\n");

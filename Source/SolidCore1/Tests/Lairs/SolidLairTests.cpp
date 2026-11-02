@@ -239,11 +239,11 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	{
 		FString Grid = SolidLairTestPrivate::MountainGrid();
 		SolidLairTestPrivate::SetCell(Grid, 10, 10, SolidLair::Entrance);
-		SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 10, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		SolidLairTestPrivate::SetCell(Grid, 12, 10, SolidLair::Exit);
-		SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldChart::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 11, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		SolidLairTestPrivate::SetCell(Grid, 14, 10, USolidWorldChart::DeprecatedLocationMarker);
-		SolidLairTestPrivate::SetCell(Grid, 14, 9, USolidWorldChart::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 14, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 		Grid += TEXT("! 11,15 = Stronghold (MeagreDungeon)\n");
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("mouths load"), Map->LoadFromString(Grid));
@@ -345,9 +345,9 @@ bool FSolidLairBangMouthTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMax(6400.f, 6400.f);
 	FString Grid = SolidLairTestPrivate::MountainGrid();
 	SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldChart::DeprecatedLocationMarker);
-	SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
+	SolidLairTestPrivate::SetCell(Grid, 10, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 	SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldChart::DeprecatedLocationMarker);
-	SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldChart::GrassMarker);
+	SolidLairTestPrivate::SetCell(Grid, 11, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 	SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldChart::DeprecatedLocationMarker);
 	Grid += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
 	Grid += TEXT("! 11,13 = LairExit (Iglin tunnels)\n");

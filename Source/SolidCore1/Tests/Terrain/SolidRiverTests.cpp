@@ -16,7 +16,7 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = USolidWorldChart::GrassMarker;
+		TCHAR Marker = SolidBiome::Of(ESolidBiome::Grassland).Marker();
 	};
 
 	FString RiverTestGrid(std::initializer_list<FRiverTestMark> Marks)
@@ -27,7 +27,7 @@ namespace
 		{
 			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldChart::GrassMarker;
+				TCHAR Marker = SolidBiome::Of(ESolidBiome::Grassland).Marker();
 				for (const FRiverTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -72,9 +72,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRiverChannelTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("river joins"), SolidRiver::Joins(USolidWorldChart::RiverMarker));
-	TestTrue(TEXT("sea joins"), SolidRiver::Joins(USolidWorldChart::SeaMarker));
-	TestFalse(TEXT("grass does not join"), SolidRiver::Joins(USolidWorldChart::GrassMarker));
+	TestTrue(TEXT("river joins"), SolidRiver::Joins(SolidBiome::Of(ESolidBiome::River).Marker()));
+	TestTrue(TEXT("sea joins"), SolidRiver::Joins(SolidBiome::Of(ESolidBiome::Sea).Marker()));
+	TestFalse(TEXT("grass does not join"), SolidRiver::Joins(SolidBiome::Of(ESolidBiome::Grassland).Marker()));
 	TestTrue(TEXT("width is 4 m"), FMath::IsNearlyEqual(SolidRiver::WidthCm, 400.f));
 
 	const float Cell = 1600.f;
@@ -142,40 +142,40 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("map"), Map);
 	const bool bLoaded = Map->LoadFromString(RiverTestGrid({
 		// Isolated pond. West is mountain, east grass, north forest, south desert.
-		{ 10, 10, USolidWorldChart::RiverMarker },
+		{ 10, 10, SolidBiome::Of(ESolidBiome::River).Marker() },
 		{ 9, 10, TEXT('M') },
-		{ 11, 10, USolidWorldChart::GrassMarker },
-		{ 10, 9, USolidWorldChart::ForestMarker },
-		{ 10, 11, USolidWorldChart::DesertMarker },
+		{ 11, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker() },
+		{ 10, 9, SolidBiome::Of(ESolidBiome::Forest).Marker() },
+		{ 10, 11, SolidBiome::Of(ESolidBiome::Desert).Marker() },
 		// North-south channel. Forest to the west, desert to the east.
-		{ 20, 18, USolidWorldChart::RiverMarker },
-		{ 20, 19, USolidWorldChart::RiverMarker },
-		{ 20, 20, USolidWorldChart::RiverMarker },
-		{ 19, 18, USolidWorldChart::ForestMarker },
-		{ 19, 19, USolidWorldChart::ForestMarker },
-		{ 19, 20, USolidWorldChart::ForestMarker },
-		{ 21, 18, USolidWorldChart::DesertMarker },
-		{ 21, 19, USolidWorldChart::DesertMarker },
-		{ 21, 20, USolidWorldChart::DesertMarker },
+		{ 20, 18, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 20, 19, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 20, 20, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 19, 18, SolidBiome::Of(ESolidBiome::Forest).Marker() },
+		{ 19, 19, SolidBiome::Of(ESolidBiome::Forest).Marker() },
+		{ 19, 20, SolidBiome::Of(ESolidBiome::Forest).Marker() },
+		{ 21, 18, SolidBiome::Of(ESolidBiome::Desert).Marker() },
+		{ 21, 19, SolidBiome::Of(ESolidBiome::Desert).Marker() },
+		{ 21, 20, SolidBiome::Of(ESolidBiome::Desert).Marker() },
 		// West into the sea. Grass north, desert south, grass east.
-		{ 5, 30, USolidWorldChart::RiverMarker },
-		{ 4, 30, USolidWorldChart::SeaMarker },
-		{ 5, 31, USolidWorldChart::DesertMarker },
+		{ 5, 30, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 4, 30, SolidBiome::Of(ESolidBiome::Sea).Marker() },
+		{ 5, 31, SolidBiome::Of(ESolidBiome::Desert).Marker() },
 		// Sea along the north bank of an east-west channel. Desert to the south.
-		{ 9, 40, USolidWorldChart::RiverMarker },
-		{ 10, 40, USolidWorldChart::RiverMarker },
-		{ 11, 40, USolidWorldChart::RiverMarker },
-		{ 10, 39, USolidWorldChart::SeaMarker },
-		{ 10, 41, USolidWorldChart::DesertMarker },
+		{ 9, 40, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 10, 40, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 11, 40, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 10, 39, SolidBiome::Of(ESolidBiome::Sea).Marker() },
+		{ 10, 41, SolidBiome::Of(ESolidBiome::Desert).Marker() },
 		// Bend. The dry corner must not become more river.
-		{ 20, 50, USolidWorldChart::RiverMarker },
-		{ 19, 50, USolidWorldChart::RiverMarker },
-		{ 20, 51, USolidWorldChart::RiverMarker },
-		{ 20, 49, USolidWorldChart::ForestMarker },
-		{ 21, 50, USolidWorldChart::DesertMarker },
+		{ 20, 50, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 19, 50, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 20, 51, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 20, 49, SolidBiome::Of(ESolidBiome::Forest).Marker() },
+		{ 21, 50, SolidBiome::Of(ESolidBiome::Desert).Marker() },
 		// Diagonal neighbor does not join.
-		{ 50, 50, USolidWorldChart::RiverMarker },
-		{ 49, 49, USolidWorldChart::RiverMarker },
+		{ 50, 50, SolidBiome::Of(ESolidBiome::River).Marker() },
+		{ 49, 49, SolidBiome::Of(ESolidBiome::River).Marker() },
 	}));
 	TestTrue(TEXT("synthetic map loads"), bLoaded);
 	if (!bLoaded)
@@ -256,7 +256,7 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 	{
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			if (Map->GetMarkerAtCell(Col, Row) != USolidWorldChart::RiverMarker)
+			if (Map->GetMarkerAtCell(Col, Row) != SolidBiome::Of(ESolidBiome::River).Marker())
 			{
 				continue;
 			}

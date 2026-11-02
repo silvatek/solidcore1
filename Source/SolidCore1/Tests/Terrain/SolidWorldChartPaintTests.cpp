@@ -14,7 +14,7 @@ namespace
 		FString Text;
 		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			Text += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
+			Text += FString::ChrN(USolidWorldChart::MapWidth, SolidBiome::Of(ESolidBiome::Grassland).Marker());
 			Text += TEXT("\n");
 		}
 		return Text;

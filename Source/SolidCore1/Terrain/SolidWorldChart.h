@@ -60,9 +60,6 @@ public:
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/** Biome of the terrain point under this cell, the point at the cell centre. */
-	ESolidBiome GetPointBiomeAtCell(int32 CellX, int32 CellY) const;
-
 	/** Each road keeps the terrain points of its route. */
 	const TArray<SolidRoad::FSolidRoad>& GetRoutedRoads() const { return RoutedRoads; }
 
@@ -72,7 +69,7 @@ public:
 	/** Tint for this biome. */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;
 
-	/** Cell of this town's marker. False when the chart has no such town. */
+	/** Deprecated. Cell of this town's marker. False when the chart has no such town. */
 	bool TownCell(int32 TownId, FIntPoint& OutCell) const;
 
 	/** This town's mark. False when the chart has no such town. */
@@ -87,28 +84,22 @@ public:
 	/** The stronghold site of this size. False when the chart has none. */
 	bool FindStrongholdSiteMarker(ESolidStrongholdSize Size, FSolidWorldChartMark& OutMark) const;
 
-	/** True when the mark on this cell is a stronghold. A site is not one. */
-	bool StrongholdAtCell(int32 CellX, int32 CellY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
-
 	/** True when the mark on this terrain point is a stronghold. A site is not one. */
 	bool StrongholdAtTerrain(int32 TerrainX, int32 TerrainY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
 
-	/** True when a stronghold site mark is on this cell. OutSize is that size. */
-	bool StrongholdSiteAtCell(int32 CellX, int32 CellY, ESolidStrongholdSize& OutSize) const;
-
-	/** World XY of this town's cell. Same world rectangle as SampleBiome. */
+	/** Deprecated. World XY of this town's cell. Same world rectangle as SampleBiome. */
 	bool GetLocationWorldXY(int32 Id, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
-	/** World XY of one map cell center. Same rectangle as SampleBiome. */
+	/** Deprecated. World XY of one map cell center. Same rectangle as SampleBiome. */
 	bool CellToWorldXY(FIntPoint Cell, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
-	/** Map cell under a world XY. Column 0 is west, row 0 is north. */
+	/** Deprecated. Map cell under a world XY. Column 0 is west, row 0 is north. */
 	bool CellAtWorld(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutCell) const;
 
-	/** Terrain point at a cell centre. Column 0 is west, row 0 is north. */
+	/** Deprecated. Terrain point at a cell centre. Column 0 is west, row 0 is north. */
 	static void PointUnderCell(int32 CellX, int32 CellY, int32& OutTerrainX, int32& OutTerrainY);
 
-	/** Cell that contains a terrain point. Column 0 is west, row 0 is north. */
+	/** Deprecated. Cell that contains a terrain point. Column 0 is west, row 0 is north. */
 	static bool CellAtTerrainPoint(FIntPoint TerrainPoint, FIntPoint& OutCell);
 
 	/** The biome's colour. The same answer as GetBiomeColor. */
@@ -192,7 +183,7 @@ public:
 	/** Remove the mark on this terrain point. */
 	bool DeleteMarkAt(FIntPoint TerrainPoint, FString& OutError);
 
-	/** Index of the mark on this cell, or INDEX_NONE. */
+	/** Deprecated. Index of the mark on this cell, or INDEX_NONE. */
 	int32 MarkAtCell(FIntPoint Cell) const;
 
 	/** Put back the chart from before the last paint or mark. */
@@ -255,6 +246,7 @@ private:
 	mutable TArray<SolidRoad::FSolidRoad> RoutedRoads;
 
 protected:
+	/** Deprecated. Map cell under a world XY. Column 0 is west, row 0 is north. */
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutCellX, int32& OutCellY) const;
 	/** Clear the solved roads. */
 	void ResetRoads() const;
@@ -262,6 +254,7 @@ protected:
 	void BuildRoad(SolidRoad::FSolidRoad* Road) const;
 	/** Build each listed road and solve it. */
 	void BuildListedRoads() const;
+	/** Deprecated. Mean world centre of these cells. Same rectangle as SampleBiome. */
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
 };

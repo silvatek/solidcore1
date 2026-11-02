@@ -123,30 +123,33 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 
 	TArray<FIntPoint> CaveCells;
 	ESolidBiome CaveShelf = ESolidBiome::Grassland;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	for (const FSolidWorldChartMark& Mark : Map->Marks)
 	{
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+		if (Mark.Kind != ESolidWorldChartMarkKind::Stronghold)
 		{
-			ESolidStrongholdType NamedType = ESolidStrongholdType::Fortress;
-			ESolidStrongholdSize NamedSize = ESolidStrongholdSize::Imperious;
-			if (!Map->StrongholdAtCell(Col, Row, NamedType, NamedSize))
-			{
-				continue;
-			}
-			const FSolidStronghold Named(NamedType, NamedSize);
+			continue;
+		}
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		if (!USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
+		{
+			continue;
+		}
+		ESolidStrongholdType NamedType = Mark.StrongholdType;
+		ESolidStrongholdSize NamedSize = Mark.StrongholdSize;
+		SolidStronghold::FromToken(Mark.Name, NamedType, NamedSize);
+		const FSolidStronghold Named(NamedType, NamedSize);
 			if (Named.Type != ESolidStrongholdType::Dungeon || Named.Size != ESolidStrongholdSize::Meagre)
 			{
 				ESolidBiome Expected = ESolidBiome::Grassland;
 				TestTrue(TEXT("a shipped stronghold names its shelf"), SolidStronghold::BiomeFor(Named, Expected));
 				continue;
 			}
-			CaveCells.Add(FIntPoint(Col, Row));
+			CaveCells.Add(Cell);
 			TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Named, CaveShelf));
-			const int32 CaveMark = Map->MarkAtCell(FIntPoint(Col, Row));
+			const int32 CaveMark = Map->MarkAtCell(Cell);
 			TestTrue(TEXT("cave is not a town"),
 				Map->Marks.IsValidIndex(CaveMark)
 				&& Map->Marks[CaveMark].Kind != ESolidWorldChartMarkKind::Town);
-		}
 	}
 	TestTrue(TEXT("the shipped map has a cave"), CaveCells.Num() > 0);
 
@@ -313,8 +316,9 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 				static_cast<uint8>(Cave.StrongholdType),
 				static_cast<uint8>(ESolidStrongholdType::Dungeon));
 		}
-		ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Humble;
-		TestFalse(TEXT("the starting cell is not a site"), Map->StrongholdSiteAtCell(Cell.X, Cell.Y, SiteSize));
+		TestFalse(
+			TEXT("the starting cell is not a site"),
+			CaveMark != INDEX_NONE && Map->Marks[CaveMark].Kind == ESolidWorldChartMarkKind::StrongholdSite);
 	}
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();

@@ -254,7 +254,7 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(
 		TEXT("the north face is grass"),
-		static_cast<uint8>(Map->GetPointBiomeAtCell(GrassCell.X, GrassCell.Y)),
+		static_cast<uint8>(Map->GetPointBiome(GrassPoint)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	if (!TestTrue(TEXT("the chart loads"), Map->LoadFromChart(Map)))
 	{
@@ -315,7 +315,7 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(
 			TEXT("the mouth point stays grassland"),
-			static_cast<uint8>(Shipped->GetPointBiomeAtCell(Entrance.Cell.X, Entrance.Cell.Y)),
+			static_cast<uint8>(Shipped->GetPointBiome(SolidLairTestPrivate::CellPoint(Entrance.Cell))),
 			static_cast<uint8>(ESolidBiome::Grassland));
 		FVector2D World = FVector2D::ZeroVector;
 		TestTrue(TEXT("mouth cell projects"), Shipped->CellToWorldXY(Entrance.Cell, ShippedMin, ShippedMax, World));

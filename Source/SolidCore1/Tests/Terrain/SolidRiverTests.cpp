@@ -16,14 +16,11 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("default map loads"), Map->LoadDefault());
 
 	int32 RiverPoints = 0;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	for (const ESolidBiome Point : Map->Points)
 	{
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+		if (Point == ESolidBiome::River)
 		{
-			if (Map->GetPointBiomeAtCell(Col, Row) == ESolidBiome::River)
-			{
-				++RiverPoints;
-			}
+			++RiverPoints;
 		}
 	}
 

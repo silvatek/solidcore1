@@ -405,35 +405,6 @@ int32 USolidWorldChart::CollectEncounterMarks(TArray<FSolidWorldChartMark>& OutM
 	return OutMarks.Num();
 }
 
-bool USolidWorldChart::StrongholdAtCell(
-	const int32 CellX,
-	const int32 CellY,
-	ESolidStrongholdType& OutType,
-	ESolidStrongholdSize& OutSize) const
-{
-	if (CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
-	{
-		return false;
-	}
-	for (const FSolidWorldChartMark& Mark : Marks)
-	{
-		FIntPoint Cell;
-		if (!CellAtTerrainPoint(Mark.TerrainPoint, Cell) || Cell.X != CellX || Cell.Y != CellY)
-		{
-			continue;
-		}
-		if (Mark.Kind != ESolidWorldChartMarkKind::Stronghold)
-		{
-			return false;
-		}
-		OutType = Mark.StrongholdType;
-		OutSize = Mark.StrongholdSize;
-		SolidStronghold::FromToken(Mark.Name, OutType, OutSize);
-		return true;
-	}
-	return false;
-}
-
 bool USolidWorldChart::StrongholdAtTerrain(
 	const int32 TerrainX,
 	const int32 TerrainY,
@@ -458,29 +429,6 @@ bool USolidWorldChart::StrongholdAtTerrain(
 		OutType = Mark.StrongholdType;
 		OutSize = Mark.StrongholdSize;
 		SolidStronghold::FromToken(Mark.Name, OutType, OutSize);
-		return true;
-	}
-	return false;
-}
-
-bool USolidWorldChart::StrongholdSiteAtCell(const int32 CellX, const int32 CellY, ESolidStrongholdSize& OutSize) const
-{
-	if (!EnsureQuery() || CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
-	{
-		return false;
-	}
-	for (const FSolidWorldChartMark& Mark : Marks)
-	{
-		if (Mark.Kind != ESolidWorldChartMarkKind::StrongholdSite)
-		{
-			continue;
-		}
-		FIntPoint Cell;
-		if (!CellAtTerrainPoint(Mark.TerrainPoint, Cell) || Cell.X != CellX || Cell.Y != CellY)
-		{
-			continue;
-		}
-		OutSize = Mark.StrongholdSize;
 		return true;
 	}
 	return false;
@@ -916,21 +864,6 @@ bool USolidWorldChart::PaintPointRectangle(
 	TArray<FIntPoint> Covered;
 	PointRectangle(From, To, Covered);
 	return PaintPoints(Covered, Biome, OutError);
-}
-
-ESolidBiome USolidWorldChart::GetPointBiomeAtCell(int32 CellX, int32 CellY) const
-{
-	if (!EnsurePoints())
-	{
-		return ESolidBiome::Grassland;
-	}
-
-	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
-	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
-	int32 TerrainX = 0;
-	int32 TerrainY = 0;
-	PointUnderCell(CellX, CellY, TerrainX, TerrainY);
-	return Points[PointSlot(TerrainX, TerrainY)];
 }
 
 ESolidBiome USolidWorldChart::SampleBiome(

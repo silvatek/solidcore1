@@ -326,16 +326,21 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 	}
 
 	int32 Sites = 0;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	for (const FSolidWorldChartMark& Mark : Map->Marks)
 	{
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+		if (Mark.Kind != ESolidWorldChartMarkKind::StrongholdSite)
 		{
-			ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
-			if (!Map->StrongholdSiteAtCell(Col, Row, SiteSize))
-			{
-				continue;
-			}
-			++Sites;
+			continue;
+		}
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		if (!USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
+		{
+			continue;
+		}
+		const int32 Col = Cell.X;
+		const int32 Row = Cell.Y;
+		const ESolidStrongholdSize SiteSize = Mark.StrongholdSize;
+		++Sites;
 			USolidGameState& Fresh = *NewObject<USolidGameState>();
 			USolidCompany* FreshCompany = NewObject<USolidCompany>();
 			FreshCompany->InitializeStartingStronghold();
@@ -365,7 +370,6 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 					Offered.Num(),
 					Expected);
 			}
-		}
 	}
 	TestTrue(TEXT("the shipped map has a site"), Sites >= 1);
 	return true;

@@ -39,10 +39,12 @@ bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 	FSolidWorldChartMark Iglin;
 	TestTrue(TEXT("Iglin has a mark"), Map->FindTownMarker(SolidTowns::Iglin, Iglin));
 
-	// Row 0 is the north edge. Its centre point is sea.
+	int32 NorthX = 0;
+	int32 NorthY = 0;
+	USolidWorldChart::PointUnderCell(0, 0, NorthX, NorthY);
 	TestEqual(
 		TEXT("north-west point is sea"),
-		static_cast<uint8>(Map->GetPointBiomeAtCell(0, 0)),
+		static_cast<uint8>(Map->GetPointBiome(FIntPoint(NorthX, NorthY))),
 		static_cast<uint8>(ESolidBiome::Sea));
 
 	bool bFoundTown = false;
@@ -116,9 +118,12 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 					ChartGrid->GetWorldMaxXY(),
 					TownCell)))
 		{
+			int32 TownX = 0;
+			int32 TownY = 0;
+			USolidWorldChart::PointUnderCell(TownCell.X, TownCell.Y, TownX, TownY);
 			TestEqual(
 				TEXT("the start town point is Town"),
-				static_cast<uint8>(Chart->GetPointBiomeAtCell(TownCell.X, TownCell.Y)),
+				static_cast<uint8>(Chart->GetPointBiome(FIntPoint(TownX, TownY))),
 				static_cast<uint8>(ESolidBiome::Town));
 			const ESolidBiome AtTown = ChartGrid->SamplePoint(ChartTown.X, ChartTown.Y).Biome;
 			TestTrue(

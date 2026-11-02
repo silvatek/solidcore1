@@ -475,8 +475,11 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	const FVector2D Grass = RoadTestCenter(*Track, 6, 12);
 	const FVector2D Forest = RoadTestCenter(*Track, 8, 12);
 	const float TrackHalf = SolidRoad::WidthCm(SolidRoad::EType::Track) * 0.5f;
+	int32 GrassX = 0;
+	int32 GrassY = 0;
+	USolidWorldChart::PointUnderCell(6, 12, GrassX, GrassY);
 	TestEqual(TEXT("the centre point under the track stays grass"),
-		static_cast<uint8>(Track->GetPointBiomeAtCell(6, 12)),
+		static_cast<uint8>(Track->GetPointBiome(FIntPoint(GrassX, GrassY))),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(TEXT("track centre uses the road texture"),
 		static_cast<uint8>(Track->SampleBiome(Grass.X, Grass.Y, RoadTestMin, RoadTestMax)),
@@ -602,16 +605,14 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	}
 
 	FIntPoint CaveCell = FIntPoint::ZeroValue;
-	FIntPoint StartCell = FIntPoint::ZeroValue;
 	FIntPoint EndCell = FIntPoint::ZeroValue;
 	TestTrue(TEXT("the trail starts at a stronghold"), Roads[0].From.Kind == ESolidWorldChartMarkKind::Stronghold);
 	TestTrue(TEXT("the trail start is a point"), USolidWorldChart::CellAtTerrainPoint(Roads[0].From.TerrainPoint, CaveCell));
 	TestEqual(TEXT("the trail starts at 9,17"), CaveCell, FIntPoint(16, 8));
-	TestTrue(TEXT("the trail's first point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points[0], StartCell));
 	ESolidStrongholdType TrailType = ESolidStrongholdType::Fortress;
 	ESolidStrongholdSize TrailSize = ESolidStrongholdSize::Imperious;
 	TestTrue(TEXT("the trail starts on the cave"),
-		Map->StrongholdAtCell(StartCell.X, StartCell.Y, TrailType, TrailSize));
+		Map->StrongholdAtTerrain(Roads[0].Points[0].X, Roads[0].Points[0].Y, TrailType, TrailSize));
 	TestTrue(TEXT("the trail's last point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points.Last(), EndCell));
 	FIntPoint IglinCell = FIntPoint::ZeroValue;
 	TestTrue(TEXT("Iglin is a cell"), Map->TownCell(SolidTowns::Iglin, IglinCell));

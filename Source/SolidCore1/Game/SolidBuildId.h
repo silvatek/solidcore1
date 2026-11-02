@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0936")
+#define SOLID_BUILD_ID TEXT("SC1-0937")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("LoadFromChart copies marks and points, and tests no longer fill unused cells.")
+#define SOLID_BUILD_NOTE TEXT("The unused cell lookups are gone, and the cell methods that remain are deprecated.")
 #endif

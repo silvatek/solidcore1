@@ -256,6 +256,10 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 		TEXT("the north face is grass"),
 		static_cast<uint8>(Map->GetPointBiomeAtCell(GrassCell.X, GrassCell.Y)),
 		static_cast<uint8>(ESolidBiome::Grassland));
+	if (!TestTrue(TEXT("the chart loads"), Map->LoadFromChart(Map)))
+	{
+		return false;
+	}
 
 	TArray<SolidLair::FEntrance> Entrances;
 	TestEqual(TEXT("no lair mark means no tunnel mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);

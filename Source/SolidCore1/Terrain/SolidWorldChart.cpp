@@ -538,7 +538,7 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 
 bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 {
-	if (!Chart || Chart->Cells.Num() != MapWidth * MapHeight)
+	if (!Chart)
 	{
 		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
 		return false;

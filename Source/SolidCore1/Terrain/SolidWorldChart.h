@@ -50,6 +50,7 @@ public:
 	/**
 	 * Copy that chart's cells, marks, and terrain points onto this one, then solve the routes.
 	 * A chart saved as cells has no points yet. Solving copies the play biomes onto them.
+	 * A chart with no cells still loads when its terrain points cover the grid.
 	 * Copying this chart only solves.
 	 */
 	bool LoadFromChart(const USolidWorldChart* Chart);

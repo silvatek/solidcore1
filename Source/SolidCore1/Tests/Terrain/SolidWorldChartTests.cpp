@@ -54,4 +54,27 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldChartPointsWithoutCellsLoadTest,
+	"SolidCore1.WorldMap.PointsWithoutCellsLoad",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldChartPointsWithoutCellsLoadTest::RunTest(const FString& Parameters)
+{
+	USolidWorldChart* Source = NewObject<USolidWorldChart>();
+	UTEST_NOT_NULL(TEXT("point chart"), Source);
+	Source->Init(ESolidBiome::Forest);
+	Source->Cells.Reset();
+
+	USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
+	UTEST_NOT_NULL(TEXT("loaded chart"), Loaded);
+	TestTrue(TEXT("a chart with points and no cells loads"), Loaded->LoadFromChart(Source));
+	TestTrue(TEXT("the loaded chart is solved"), Loaded->IsLoaded());
+	TestEqual(
+		TEXT("the point biome stays forest"),
+		static_cast<uint8>(Loaded->GetPointBiome(FIntPoint(0, 0))),
+		static_cast<uint8>(ESolidBiome::Forest));
+	return true;
+}
+
 #endif

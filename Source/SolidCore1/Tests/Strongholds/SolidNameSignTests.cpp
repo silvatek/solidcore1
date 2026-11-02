@@ -13,6 +13,7 @@
 #include "Strongholds/SolidNameSign.h"
 #include "Strongholds/SolidNameSigns.h"
 #include "Strongholds/Tower/SolidTower.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Components/StaticMeshComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -58,14 +59,22 @@ bool FSolidNameSignDefaultTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("another Meagre Dungeon is named from its size and type"), OtherCave->Name, FString(TEXT("Meagre Dungeon")));
 	TestEqual(TEXT("that name is its default"), SolidStronghold::DefaultName(*OtherCave), OtherCave->Name);
 
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	FSolidWorldChartMark CaveMark;
+	TestTrue(
+		TEXT("the chart has the cave"),
+		Chart && Chart->LoadDefault() && Chart->FindStrongholdMarker(
+			ESolidStrongholdSize::Meagre,
+			ESolidStrongholdType::Dungeon,
+			CaveMark));
 	TUniquePtr<FSolidStronghold> UnnamedStart = SolidStronghold::Make(
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdSize::Meagre,
-		SolidStronghold::StartingCell(),
-		SolidStronghold::WorldXY(SolidStronghold::StartingCell()));
+		CaveMark.TerrainPoint,
+		SolidStronghold::TerrainPointXY(CaveMark.TerrainPoint));
 	TestEqual(TEXT("Make does not write The Cave"), UnnamedStart->Name, FString(TEXT("Meagre Dungeon")));
 	TestEqual(
-		TEXT("the starting cell's Meagre Dungeon still defaults to The Cave"),
+		TEXT("the cave marker's Meagre Dungeon defaults to The Cave"),
 		SolidStronghold::DefaultName(*UnnamedStart),
 		FString(SolidStronghold::StartingStrongholdName));
 
@@ -209,7 +218,7 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 	TUniquePtr<FSolidStronghold> Cave = SolidStronghold::Make(
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdSize::Meagre,
-		SolidStronghold::StartingCell(),
+		FIntPoint::ZeroValue,
 		FVector2D(1000.f, 2000.f));
 	Cave->Orientation = ESolidStrongholdOrientation::NorthFace;
 	Cave->Name = SolidStronghold::StartingStrongholdName;

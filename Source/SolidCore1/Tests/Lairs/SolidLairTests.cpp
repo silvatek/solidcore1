@@ -165,7 +165,7 @@ bool FSolidLairGateTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, SolidTowns::Iglin);
 	TestTrue(TEXT("Driven from the village opens the tunnels"), SolidLair::TunnelsOpen(State));
 
-	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), false);
+	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(FIntPoint::ZeroValue, false);
 	const SolidLair::FPassageHit TunnelEnter = SolidLair::HitOnMouth(true, SolidLair::Entrance, false);
 	const SolidLair::FPassageHit TunnelLeave = SolidLair::HitOnMouth(true, SolidLair::Exit, true);
 	TestEqual(TEXT("a shut tunnel click is ignored"), static_cast<uint8>(SolidLair::AllowPassage(TunnelEnter, false).Action), static_cast<uint8>(SolidLair::EHit::None));
@@ -189,7 +189,7 @@ bool FSolidLairGateTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("tunnel tip"), FString(SolidLair::PassageTip(TunnelEnter)), FString(SolidLair::EnterLabel));
 	TestEqual(TEXT("leave tip"), FString(SolidLair::PassageTip(TunnelLeave)), FString(SolidLair::LeaveLabel));
 	TestEqual(TEXT("a cave enter logs Enter stronghold"), FString(SolidLair::PassageTip(CaveEnter)), FString(TEXT("Enter stronghold")));
-	const SolidLair::FPassageHit CaveLeave = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), true);
+	const SolidLair::FPassageHit CaveLeave = SolidLair::HitOnStronghold(FIntPoint::ZeroValue, true);
 	TestEqual(TEXT("a cave leave logs Exit stronghold"), FString(SolidLair::PassageTip(CaveLeave)), FString(TEXT("Exit stronghold")));
 	TestTrue(TEXT("a miss has no tip"), FString(SolidLair::PassageTip(SolidLair::FPassageHit())).IsEmpty());
 

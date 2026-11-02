@@ -248,10 +248,7 @@ namespace SolidStronghold
 	/** The subclass for this enum. The same instance on every call. */
 	const FSolidStronghold& TypeOf(ESolidStrongholdType Type);
 
-	/**
-	 * Cell center on the shipped terrain, in world centimetres.
-	 * The terrain is 513 points at 200 cm, centered on the origin, and the map is 128 by 64 cells.
-	 */
+	/** World centimetres of the terrain point at that cell's centre. */
 	FVector2D WorldXY(FIntPoint Cell);
 
 	/** World centimetres of a terrain point. The grid is 513 points at 200 cm, centered on the origin. */
@@ -369,18 +366,8 @@ namespace SolidStronghold
 		return None;
 	}
 
-	/** Chart row of that dungeon, counting from 1 at the top. */
-	inline constexpr int32 StartingRow = 9;
-	/** Chart column of that dungeon, counting from 1 at the left. */
-	inline constexpr int32 StartingColumn = 17;
 	/** The new-game Meagre Dungeon. Later strongholds use "{size} {type}" until renamed. */
 	inline const TCHAR* StartingStrongholdName = TEXT("The Cave");
-
-	/** Map cell of the starting stronghold. X is the column, Y is the row, counting from 0. */
-	inline FIntPoint StartingCell()
-	{
-		return FIntPoint(StartingColumn - 1, StartingRow - 1);
-	}
 
 	/** Enter and leave aims for one stronghold. Missing rows use a level in/out aim. */
 	struct FVisitView
@@ -503,18 +490,9 @@ namespace SolidStronghold
 
 	/**
 	 * The name before the player chooses one.
-	 * "The Cave" for the starting Meagre Dungeon. Every other stronghold uses Label.
+	 * "The Cave" for the Meagre Dungeon on the chart marker. Every other stronghold uses Label.
 	 */
-	inline FString DefaultName(const FSolidStronghold& Stronghold)
-	{
-		if (Stronghold.Type == ESolidStrongholdType::Dungeon
-			&& Stronghold.Size == ESolidStrongholdSize::Meagre
-			&& Stronghold.Cell == StartingCell())
-		{
-			return FString(StartingStrongholdName);
-		}
-		return Label(Stronghold);
-	}
+	FString DefaultName(const FSolidStronghold& Stronghold);
 
 	/** Second line of the entrance hover. */
 	inline const TCHAR* EnterHoverPrompt = TEXT("Click to enter");

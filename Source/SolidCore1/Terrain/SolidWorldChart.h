@@ -23,9 +23,6 @@ class SOLIDCORE1_API USolidWorldChart : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	static constexpr int32 MapWidth = 128;
-	static constexpr int32 MapHeight = 64;
-
 	/** Editor path of the shipped chart. */
 	static const TCHAR* ShippedPath();
 
@@ -76,6 +73,9 @@ public:
 
 	/** This stronghold's mark. The name ignores spaces. False when the chart has no such stronghold. */
 	bool FindStrongholdMarker(const FString& Name, FSolidWorldChartMark& OutMark) const;
+
+	/** The stronghold of this size and type. False when the chart has none. */
+	bool FindStrongholdMarker(ESolidStrongholdSize Size, ESolidStrongholdType Type, FSolidWorldChartMark& OutMark) const;
 
 	/** The stronghold site of this size. False when the chart has none. */
 	bool FindStrongholdSiteMarker(ESolidStrongholdSize Size, FSolidWorldChartMark& OutMark) const;

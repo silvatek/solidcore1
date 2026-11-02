@@ -9,19 +9,6 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
-{
-	bool StrongholdTestCellWorld(
-		const USolidWorldChart& Chart,
-		const FIntPoint Cell,
-		const FVector2D& WorldMin,
-		const FVector2D& WorldMax,
-		FVector2D& OutWorld)
-	{
-		return Chart.TerrainPointToWorld(FIntPoint(510 - 4 * Cell.X, 508 - 8 * Cell.Y), WorldMin, WorldMax, OutWorld);
-	}
-}
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStrongholdCatalogTest,
 	"SolidCore1.Stronghold.Catalog",
@@ -53,8 +40,7 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 
 	const FSolidStronghold MeagreDungeon(
 		ESolidStrongholdType::Dungeon,
-		ESolidStrongholdSize::Meagre,
-		SolidStronghold::StartingCell());
+		ESolidStrongholdSize::Meagre);
 	TestEqual(
 		TEXT("starting type"),
 		static_cast<uint8>(MeagreDungeon.Type),
@@ -258,27 +244,28 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	AverageFortress->Name = TEXT("High Keep");
 	const TUniquePtr<FSolidStronghold> Kept = AverageFortress->Clone();
 	TestEqual(TEXT("a clone keeps a chosen name"), Kept->Name, FString(TEXT("High Keep")));
-	TestEqual(TEXT("a new game uses the starting column"), StartingCave->Cell.X, SolidStronghold::StartingColumn - 1);
-	TestEqual(TEXT("a new game uses the starting row"), StartingCave->Cell.Y, SolidStronghold::StartingRow - 1);
-	const FVector2D StartingXY = SolidStronghold::WorldXY(SolidStronghold::StartingCell());
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
+	FSolidWorldChartMark Cave;
 	TestTrue(
-		TEXT("a new game stands at the starting cell's world position"),
+		TEXT("the chart has the cave"),
+		Map && Map->LoadDefault() && Map->FindStrongholdMarker(
+			ESolidStrongholdSize::Meagre,
+			ESolidStrongholdType::Dungeon,
+			Cave));
+	TestEqual(TEXT("a new game stands on the cave marker"), StartingCave->Cell, Cave.TerrainPoint);
+	const FVector2D StartingXY = SolidStronghold::TerrainPointXY(Cave.TerrainPoint);
+	TestTrue(
+		TEXT("a new game stands at the marker"),
 		StartingCave->Location.Equals(StartingXY, 0.01f));
 	USolidTerrainMap* Terrain = NewObject<USolidTerrainMap>();
 	TestNotNull(TEXT("terrain"), Terrain);
-	if (Terrain)
+	if (Terrain && Map)
 	{
 		Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f);
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		FVector2D Projected = FVector2D::ZeroVector;
 		TestTrue(
-			TEXT("the starting cell projects"),
-			Map && StrongholdTestCellWorld(
-				*Map,
-				SolidStronghold::StartingCell(),
-				Terrain->GetWorldMinXY(),
-				Terrain->GetWorldMaxXY(),
-				Projected));
+			TEXT("the cave marker projects"),
+			Map->TerrainPointToWorld(Cave.TerrainPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Projected));
 		TestTrue(
 			TEXT("that projection is the stronghold location"),
 			StartingCave->Location.Equals(Projected, 0.01f));
@@ -295,45 +282,6 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		TestFalse(
 			*FString::Printf(TEXT("%s starts locked"), SolidStronghold::SizeName(Size)),
 			SolidEvents::IsStrongholdSizeUnlocked(Fresh, Size));
-	}
-
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("world map"), Map);
-	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
-	if (Map)
-	{
-		const FIntPoint Cell = SolidStronghold::StartingCell();
-		const int32 CaveX = 510 - 4 * Cell.X;
-		const int32 CaveY = 508 - 8 * Cell.Y;
-		int32 CaveMark = INDEX_NONE;
-		for (int32 Index = 0; Index < Map->Marks.Num(); ++Index)
-		{
-			if (Map->Marks[Index].TerrainPoint == FIntPoint(CaveX, CaveY))
-			{
-				CaveMark = Index;
-				break;
-			}
-		}
-		TestTrue(TEXT("the starting cell is described"), CaveMark != INDEX_NONE);
-		if (CaveMark != INDEX_NONE)
-		{
-			const FSolidWorldChartMark& Cave = Map->Marks[CaveMark];
-			TestEqual(
-				TEXT("the starting cell is a stronghold"),
-				static_cast<uint8>(Cave.Kind),
-				static_cast<uint8>(ESolidWorldChartMarkKind::Stronghold));
-			TestEqual(
-				TEXT("the starting cell is meagre"),
-				static_cast<uint8>(Cave.StrongholdSize),
-				static_cast<uint8>(ESolidStrongholdSize::Meagre));
-			TestEqual(
-				TEXT("the starting cell is a dungeon"),
-				static_cast<uint8>(Cave.StrongholdType),
-				static_cast<uint8>(ESolidStrongholdType::Dungeon));
-		}
-		TestFalse(
-			TEXT("the starting cell is not a site"),
-			CaveMark != INDEX_NONE && Map->Marks[CaveMark].Kind == ESolidWorldChartMarkKind::StrongholdSite);
 	}
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();

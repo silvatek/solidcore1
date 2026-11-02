@@ -487,7 +487,7 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	if (Terrain)
 	{
 		Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f);
-		const FVector2D CaveXY = SolidStronghold::WorldXY(SolidStronghold::StartingCell());
+		const FVector2D CaveXY = FVector2D::ZeroVector;
 		const float Bias = 3.f;
 		const FVector ActorLocation(CaveXY.X, CaveXY.Y, Terrain->SampleHeight(CaveXY.X, CaveXY.Y) + Bias + 4.f);
 		const SolidTerrainSeat::FFootprint Seat = SolidDungeonExteriorPrivate::RockFootprint(

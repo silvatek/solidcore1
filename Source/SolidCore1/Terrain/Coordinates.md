@@ -93,9 +93,7 @@ Chart coordinates are no longer used. They were similar to World, with different
 
 A mark used to sit on one cell and store that cell's centre as `TerrainPoint`. A mark now stores the terrain point itself. On the shipped sizes that centre is world (50800, 50400) and `terrainX` 510, `terrainY` 508. A column is 4 steps wide. A row is 8 steps tall.
 
-The old map text, and a dump of the grid, count from 1 at the top-left. The top-left is `cellX` 0, `cellY` 0. A line `! 8,21 = Town Iglin` is row 8, column 21 in that count, which is `cellX` 20, `cellY` 7.
-
-`MapWidth` and `MapHeight` on `USolidWorldChart` are still these 128 by 64 counts.
+The old map text counts from 1 at the top-left. The top-left is `cellX` 0, `cellY` 0. A line `! 8,21 = Town Iglin` is row 8, column 21 in that count, which is `cellX` 20, `cellY` 7.
 
 #### Cell transformations
 

@@ -189,7 +189,7 @@ public:
 	void InitializeDefaultCompanions();
 
 	/**
-	 * Seed the Meagre Dungeon on the starting cell, facing north, named The cave.
+	 * Seed the Meagre Dungeon from its chart marker, facing north, named The Cave.
 	 * Idempotent while a stronghold is already held.
 	 */
 	void InitializeStartingStronghold();

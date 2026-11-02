@@ -223,8 +223,8 @@ bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
 
 	const float Extent = static_cast<float>(Defaults->TerrainMapSize - 1) * Defaults->TerrainPointSpacing;
 	TestTrue(TEXT("world side is 1024 m"), FMath::IsNearlyEqual(Extent, 102400.f, 1.f));
-	const float CellEastCm = Extent / static_cast<float>(USolidWorldChart::MapWidth);
-	const float CellNorthCm = Extent / static_cast<float>(USolidWorldChart::MapHeight);
+	const float ColumnStepCm = 4.f * Defaults->TerrainPointSpacing;
+	const float RowStepCm = 8.f * Defaults->TerrainPointSpacing;
 	const FVector2D WorldMin(-Extent * 0.5f, -Extent * 0.5f);
 	const FVector2D WorldMax(Extent * 0.5f, Extent * 0.5f);
 
@@ -237,10 +237,10 @@ bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("first cell projects"), WorldMapCellWorld(*WorldMap, FIntPoint(0, 0), WorldMin, WorldMax, EastCell));
 	TestTrue(TEXT("next column projects"), WorldMapCellWorld(*WorldMap, FIntPoint(1, 0), WorldMin, WorldMax, NextColumn));
 	TestTrue(TEXT("next row projects"), WorldMapCellWorld(*WorldMap, FIntPoint(0, 1), WorldMin, WorldMax, NextRow));
-	TestTrue(TEXT("column step follows the map width"),
-		FMath::IsNearlyEqual(EastCell.X - NextColumn.X, CellEastCm, 1.f));
-	TestTrue(TEXT("row step follows the map height"),
-		FMath::IsNearlyEqual(EastCell.Y - NextRow.Y, CellNorthCm, 1.f));
+	TestTrue(TEXT("a column is four terrain steps"),
+		FMath::IsNearlyEqual(EastCell.X - NextColumn.X, ColumnStepCm, 1.f));
+	TestTrue(TEXT("a row is eight terrain steps"),
+		FMath::IsNearlyEqual(EastCell.Y - NextRow.Y, RowStepCm, 1.f));
 
 	// Previous rectangle was half this size. A sample and its doubled twin must hit the same marker.
 	const FVector2D OldMin(-25600.f, -25600.f);

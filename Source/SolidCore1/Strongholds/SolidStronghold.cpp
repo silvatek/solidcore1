@@ -56,21 +56,17 @@ FSolidNameSignPlace FSolidStronghold::NameSign() const
 	return Place;
 }
 
+namespace
+{
+	/** A column is 4 terrain steps. A row is 8. */
+	FIntPoint StrongholdCellCentrePoint(const int32 X, const int32 Y)
+	{
+		return FIntPoint(510 - 4 * X, 508 - 8 * Y);
+	}
+}
+
 namespace SolidStronghold
 {
-	FVector2D WorldXY(const FIntPoint Cell)
-	{
-		constexpr float PointSpacing = 200.f;
-		constexpr int32 Grid = 513;
-		const float Extent = static_cast<float>(Grid - 1) * PointSpacing;
-		const float Half = Extent * 0.5f;
-		const float CellW = Extent / static_cast<float>(USolidWorldChart::MapWidth);
-		const float CellH = Extent / static_cast<float>(USolidWorldChart::MapHeight);
-		return FVector2D(
-			Half - (static_cast<float>(Cell.X) + 0.5f) * CellW,
-			Half - (static_cast<float>(Cell.Y) + 0.5f) * CellH);
-	}
-
 	FVector2D TerrainPointXY(const FIntPoint TerrainPoint)
 	{
 		constexpr float PointSpacing = 200.f;
@@ -81,13 +77,16 @@ namespace SolidStronghold
 			-Half + static_cast<float>(TerrainPoint.Y) * PointSpacing);
 	}
 
+	FVector2D WorldXY(const FIntPoint Cell)
+	{
+		return TerrainPointXY(StrongholdCellCentrePoint(Cell.X, Cell.Y));
+	}
+
 	float CellExtentAlongExitCm(const ESolidStrongholdOrientation Orientation)
 	{
-		constexpr float PointSpacing = 200.f;
-		constexpr int32 Grid = 513;
-		const float Extent = static_cast<float>(Grid - 1) * PointSpacing;
-		const float EastCm = Extent / static_cast<float>(USolidWorldChart::MapWidth);
-		const float NorthCm = Extent / static_cast<float>(USolidWorldChart::MapHeight);
+		const FVector2D Origin = WorldXY(FIntPoint(0, 0));
+		const float EastCm = FMath::Abs(Origin.X - WorldXY(FIntPoint(1, 0)).X);
+		const float NorthCm = FMath::Abs(Origin.Y - WorldXY(FIntPoint(0, 1)).Y);
 		switch (Orientation)
 		{
 		case ESolidStrongholdOrientation::EastFace:
@@ -98,6 +97,24 @@ namespace SolidStronghold
 		default:
 			return NorthCm;
 		}
+	}
+
+	FString DefaultName(const FSolidStronghold& Stronghold)
+	{
+		if (Stronghold.Type == ESolidStrongholdType::Dungeon
+			&& Stronghold.Size == ESolidStrongholdSize::Meagre)
+		{
+			USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+			FSolidWorldChartMark Mark;
+			if (Chart
+				&& Chart->LoadDefault()
+				&& Chart->FindStrongholdMarker(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Mark)
+				&& Mark.TerrainPoint == Stronghold.Cell)
+			{
+				return FString(StartingStrongholdName);
+			}
+		}
+		return Label(Stronghold);
 	}
 
 	TUniquePtr<FSolidStronghold> Make(
@@ -205,7 +222,10 @@ namespace
 
 	bool InBounds(const int32 X, const int32 Y)
 	{
-		return X >= 0 && X < USolidWorldChart::MapWidth && Y >= 0 && Y < USolidWorldChart::MapHeight;
+		const FIntPoint Point = StrongholdCellCentrePoint(X, Y);
+		return Point.X >= 0 && Point.Y >= 0
+			&& Point.X < USolidWorldChart::PointAxis
+			&& Point.Y < USolidWorldChart::PointAxis;
 	}
 
 	float YawFacingGrass(const FIntPoint& Step)

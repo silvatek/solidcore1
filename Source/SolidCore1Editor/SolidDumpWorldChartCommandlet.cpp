@@ -30,31 +30,6 @@ namespace
 		}
 	}
 
-	/**
-	 * Row and column count from 1 at the top-left, as Content/WorldMap.txt does.
-	 * A mark that is not a cell centre has no row or column.
-	 */
-	bool CellOfTerrainPoint(const FIntPoint TerrainPoint, int32& OutRow, int32& OutColumn)
-	{
-		const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
-		const float ColumnIndex = static_cast<float>(USolidWorldChart::MapWidth)
-			* (1.f - static_cast<float>(TerrainPoint.X) / Span) - 0.5f;
-		const float RowIndex = static_cast<float>(USolidWorldChart::MapHeight)
-			* (1.f - static_cast<float>(TerrainPoint.Y) / Span) - 0.5f;
-		const int32 Column = FMath::RoundToInt(ColumnIndex);
-		const int32 Row = FMath::RoundToInt(RowIndex);
-		if (Column < 0 || Row < 0
-			|| Column >= USolidWorldChart::MapWidth || Row >= USolidWorldChart::MapHeight
-			|| FMath::Abs(ColumnIndex - static_cast<float>(Column)) > 0.01f
-			|| FMath::Abs(RowIndex - static_cast<float>(Row)) > 0.01f)
-		{
-			return false;
-		}
-		OutRow = Row + 1;
-		OutColumn = Column + 1;
-		return true;
-	}
-
 	TSharedRef<FJsonObject> MarkJson(const FSolidWorldChartMark& Mark)
 	{
 		TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
@@ -64,13 +39,6 @@ namespace
 		Object->SetArrayField(TEXT("terrainPoint"), TerrainPoint);
 		Object->SetStringField(TEXT("kind"), MarkKindName(Mark.Kind));
 		Object->SetStringField(TEXT("name"), Mark.Name);
-		int32 Row = 0;
-		int32 Column = 0;
-		if (CellOfTerrainPoint(Mark.TerrainPoint, Row, Column))
-		{
-			Object->SetNumberField(TEXT("row"), Row);
-			Object->SetNumberField(TEXT("column"), Column);
-		}
 		Object->SetStringField(TEXT("strongholdSize"), SolidStronghold::SizeName(Mark.StrongholdSize));
 		Object->SetStringField(TEXT("strongholdType"), SolidStronghold::TypeName(Mark.StrongholdType));
 		Object->SetStringField(TEXT("lairId"), Mark.LairId);
@@ -152,17 +120,12 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
 		Marks.Add(MakeShared<FJsonValueObject>(MarkJson(Mark)));
-		int32 Row = 0;
-		int32 Column = 0;
-		const bool bCell = CellOfTerrainPoint(Mark.TerrainPoint, Row, Column);
 		UE_LOG(LogSolidChartDump, Warning,
-			TEXT("Mark %s \"%s\" terrain (%d, %d) row %s column %s"),
+			TEXT("Mark %s \"%s\" terrain (%d, %d)"),
 			MarkKindName(Mark.Kind),
 			*Mark.Name,
 			Mark.TerrainPoint.X,
-			Mark.TerrainPoint.Y,
-			bCell ? *FString::FromInt(Row) : TEXT("?"),
-			bCell ? *FString::FromInt(Column) : TEXT("?"));
+			Mark.TerrainPoint.Y);
 	}
 	Root->SetArrayField(TEXT("marks"), Marks);
 

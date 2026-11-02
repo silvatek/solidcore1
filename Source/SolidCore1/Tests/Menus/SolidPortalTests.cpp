@@ -91,11 +91,6 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	const float Half = 0.5f * 512.f * 200.f;
 	const FVector2D GameMin(-Half, -Half);
 	const FVector2D GameMax(Half, Half);
-	const float CellEastCm = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
-	const float CellNorthCm = (GameMax.Y - GameMin.Y) / static_cast<float>(USolidWorldChart::MapHeight);
-	TestTrue(TEXT("plaza offset stays inside the cell"),
-		FMath::Abs(Plaza.X) < CellEastCm * 0.5f && FMath::Abs(Plaza.Y) < CellNorthCm * 0.5f);
-
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
 		const int32 TownId = Town.Id;

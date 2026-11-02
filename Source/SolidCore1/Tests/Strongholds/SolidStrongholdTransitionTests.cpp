@@ -382,6 +382,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 
 	USolidCompany* Company = NewObject<USolidCompany>();
 	Company->InitializeStartingStronghold();
+	const FIntPoint CavePoint = Company->GetStronghold() ? Company->GetStronghold()->Cell : FIntPoint::ZeroValue;
 	USolidGameState& State = *NewObject<USolidGameState>();
 	State.bStrongholdSiteRestrictions = true;
 	State.bStrongholdsEnabled = false;
@@ -408,7 +409,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		SolidStrongholdTransition::Move(*Company, State, ImperiousCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("a refused type leaves the stronghold"), static_cast<uint8>(Company->GetStronghold()->Type), static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("a refused type leaves the size"), static_cast<uint8>(Company->GetStronghold()->Size), static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(TEXT("a refused type leaves the cell"), Company->GetStronghold()->Cell, SolidStronghold::StartingCell());
+	TestEqual(TEXT("a refused type leaves the marker"), Company->GetStronghold()->Cell, CavePoint);
 	TestEqual(TEXT("a refused type leaves no history"), State.PreviousStrongholds.Num(), 0);
 	TestTrue(TEXT("a refused type leaves the pieces"), SamePieces(Company->GetStronghold()->Furnishings, Started));
 	const SolidStrongholdFurniture::FPlacedFurnishing* KeptChest = Company->GetStronghold()->StorageAt(0);
@@ -437,20 +438,20 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		TEXT("the previous stronghold is a Dungeon"),
 		static_cast<uint8>(State.PreviousStrongholds[0]->Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("the previous stronghold keeps its cell"), State.PreviousStrongholds[0]->Cell, SolidStronghold::StartingCell());
+	TestEqual(TEXT("the previous stronghold keeps its marker"), State.PreviousStrongholds[0]->Cell, CavePoint);
 	TestFalse(
 		TEXT("the move leaves strongholds shut"),
 		State.bStrongholdsEnabled);
 	TestFalse(
 		TEXT("the previous door is not the passage"),
-		State.PreviousStrongholds[0]->AcceptsEnter(State, Company->GetStronghold(), SolidStronghold::StartingCell()));
+		State.PreviousStrongholds[0]->AcceptsEnter(State, Company->GetStronghold(), CavePoint));
 	TestFalse(
 		TEXT("a shut stronghold refuses the new door"),
 		Company->GetStronghold()->AcceptsEnter(State, Company->GetStronghold(), ImperiousCell));
 	State.bStrongholdsEnabled = true;
 	TestFalse(
 		TEXT("the previous door stays shut"),
-		State.PreviousStrongholds[0]->AcceptsEnter(State, Company->GetStronghold(), SolidStronghold::StartingCell()));
+		State.PreviousStrongholds[0]->AcceptsEnter(State, Company->GetStronghold(), CavePoint));
 	TestTrue(
 		TEXT("the active stronghold accepts enter"),
 		Company->GetStronghold()->AcceptsEnter(State, Company->GetStronghold(), ImperiousCell));

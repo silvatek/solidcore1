@@ -25,13 +25,13 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const FIntPoint Cave = SolidStronghold::StartingCell();
-	const int32 CaveX = 510 - 4 * Cave.X;
-	const int32 CaveY = 508 - 8 * Cave.Y;
 	int32 CaveMark = INDEX_NONE;
 	for (int32 Index = 0; Index < DefaultMap->Marks.Num(); ++Index)
 	{
-		if (DefaultMap->Marks[Index].TerrainPoint == FIntPoint(CaveX, CaveY))
+		const FSolidWorldChartMark& Mark = DefaultMap->Marks[Index];
+		if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold
+			&& Mark.StrongholdSize == ESolidStrongholdSize::Meagre
+			&& Mark.StrongholdType == ESolidStrongholdType::Dungeon)
 		{
 			CaveMark = Index;
 			break;
@@ -54,8 +54,6 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(Mark.StrongholdType),
 			static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	}
-	TestEqual(TEXT("the cave row stays 9"), Cave.Y + 1, SolidStronghold::StartingRow);
-	TestEqual(TEXT("the cave column stays 17"), Cave.X + 1, SolidStronghold::StartingColumn);
 
 	FSolidWorldChartMark Iglin;
 	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->FindTownMarker(0, Iglin));

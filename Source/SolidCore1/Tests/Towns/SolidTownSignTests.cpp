@@ -195,10 +195,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 	const float TowerNorthCm = SolidWallgate::WallThicknessCm * 0.5f
 		+ SolidWallgate::TowerFootprintYCm
 		- SolidWallgate::ConnectCm;
-	const float HalfCellCm = 102400.f / static_cast<float>(USolidWorldChart::MapHeight) * 0.5f;
 	TestTrue(TEXT("the sign clears the towers"), SolidTowns::DragongateSignNorthCm > TowerNorthCm);
-	TestTrue(TEXT("the sign sits on the north edge of the cell"),
-		FMath::IsNearlyEqual(SolidTowns::DragongateSignNorthCm, HalfCellCm, 0.1f));
 
 	int32 WallGateCount = 0;
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)

@@ -116,11 +116,11 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 	const FIntPoint DoorCell(16, 30);
 	const SolidLair::FPassageHit TowerEnter = SolidLair::HitOnStronghold(DoorCell, false);
 	const SolidLair::FPassageHit TowerLeave = SolidLair::HitOnStronghold(DoorCell, true);
-	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), false);
+	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(FIntPoint::ZeroValue, false);
 	TestEqual(TEXT("a tower enter logs Enter stronghold"), FString(SolidLair::PassageTip(TowerEnter)), FString(TEXT("Enter stronghold")));
 	TestEqual(TEXT("a tower leave logs Exit stronghold"), FString(SolidLair::PassageTip(TowerLeave)), FString(TEXT("Exit stronghold")));
 	TestEqual(TEXT("a cave enter logs Enter stronghold"), FString(SolidLair::PassageTip(CaveEnter)), FString(TEXT("Enter stronghold")));
-	const SolidLair::FPassageHit CaveLeaveHit = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), true);
+	const SolidLair::FPassageHit CaveLeaveHit = SolidLair::HitOnStronghold(FIntPoint::ZeroValue, true);
 	TestEqual(TEXT("a cave leave logs Exit stronghold"), FString(SolidLair::PassageTip(CaveLeaveHit)), FString(TEXT("Exit stronghold")));
 	TestEqual(
 		TEXT("a shut cave still lets the tower door through the tunnel gate"),

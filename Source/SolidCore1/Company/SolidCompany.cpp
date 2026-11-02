@@ -2,6 +2,8 @@
 #include "Inventory/SolidItemType.h"
 #include "SolidBodyMesh.h"
 #include "SolidClipLocomotion.h"
+#include "SolidCore1.h"
+#include "Terrain/SolidWorldChart.h"
 #include "UObject/SoftObjectPath.h"
 
 namespace
@@ -188,11 +190,21 @@ void USolidCompany::InitializeStartingStronghold()
 		return;
 	}
 
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>(this);
+	FSolidWorldChartMark Mark;
+	if (!Chart
+		|| !Chart->LoadDefault()
+		|| !Chart->FindStrongholdMarker(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Mark))
+	{
+		UE_LOG(LogSolid, Error, TEXT("Company: the chart has no Meagre Dungeon."));
+		return;
+	}
+
 	ActiveStronghold = SolidStronghold::Make(
-		ESolidStrongholdType::Dungeon,
-		ESolidStrongholdSize::Meagre,
-		SolidStronghold::StartingCell(),
-		SolidStronghold::WorldXY(SolidStronghold::StartingCell()));
+		Mark.StrongholdType,
+		Mark.StrongholdSize,
+		Mark.TerrainPoint,
+		SolidStronghold::TerrainPointXY(Mark.TerrainPoint));
 	if (ActiveStronghold)
 	{
 		ActiveStronghold->Orientation = ESolidStrongholdOrientation::NorthFace;

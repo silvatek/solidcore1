@@ -335,7 +335,7 @@ bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 {
 	if (!Chart)
 	{
-		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
+		UE_LOG(LogSolid, Error, TEXT("WorldChart: there is no chart to load."));
 		return false;
 	}
 	if (Chart != this)
@@ -365,8 +365,8 @@ bool USolidWorldChart::BuildQuery() const
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
-		TEXT("WorldChart loaded: %dx%d roads=%d"),
-		MapWidth, MapHeight, RoutedRoads.Num());
+		TEXT("WorldChart loaded: %d point grid, roads=%d"),
+		PointAxis, RoutedRoads.Num());
 	return true;
 }
 
@@ -916,6 +916,25 @@ bool USolidWorldChart::FindStrongholdMarker(const FString& Name, FSolidWorldChar
 		FString Have = Mark.Name;
 		Have.ReplaceInline(TEXT(" "), TEXT(""));
 		if (!Have.Equals(Want, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		OutMark = Mark;
+		return true;
+	}
+	return false;
+}
+
+bool USolidWorldChart::FindStrongholdMarker(
+	const ESolidStrongholdSize Size,
+	const ESolidStrongholdType Type,
+	FSolidWorldChartMark& OutMark) const
+{
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		if (Mark.Kind != ESolidWorldChartMarkKind::Stronghold
+			|| Mark.StrongholdSize != Size
+			|| Mark.StrongholdType != Type)
 		{
 			continue;
 		}

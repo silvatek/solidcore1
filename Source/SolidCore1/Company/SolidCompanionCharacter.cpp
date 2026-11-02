@@ -51,7 +51,6 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	Move->BrakingDecelerationWalking = 2000.f;
 	Move->BrakingDecelerationFalling = 1500.f;
 	Move->bRunPhysicsWithNoController = true;
-	Move->AddTickPrerequisiteActor(this);
 
 	GetMesh()->SetRelativeLocationAndRotation(
 		FVector(0.f, 0.f, MeshGroundZOffset), FRotator(0.f, -90.f, 0.f));
@@ -252,10 +251,6 @@ void ASolidCompanionCharacter::PostInitializeComponents()
 void ASolidCompanionCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if (UCharacterMovementComponent* Move = GetCharacterMovement())
-	{
-		Move->AddTickPrerequisiteActor(this);
-	}
 	ApplyVisuals();
 	ApplyNameLabel();
 	if (bStagePreview)

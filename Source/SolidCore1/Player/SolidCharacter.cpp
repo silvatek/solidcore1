@@ -94,7 +94,6 @@ ASolidCharacter::ASolidCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
-	GetCharacterMovement()->AddTickPrerequisiteActor(this);
 
 	// Mesh sits in the capsule. Yaw -90 aligns mesh forward with character forward.
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, MeshGroundZOffset), FRotator(0.f, -90.f, 0.f));
@@ -190,10 +189,6 @@ void ASolidCharacter::SetCharacterDisplayName(const FString& NewName)
 void ASolidCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if (UCharacterMovementComponent* Move = GetCharacterMovement())
-	{
-		Move->AddTickPrerequisiteActor(this);
-	}
 	ApplyCharacterVisuals();
 	ApplyNameLabel();
 	CacheLocomotionAnims();

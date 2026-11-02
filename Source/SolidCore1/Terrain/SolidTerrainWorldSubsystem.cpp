@@ -1,5 +1,6 @@
 #include "SolidTerrainWorldSubsystem.h"
 #include "SolidTerrainStreamer.h"
+#include "Game/SolidBuildId.h"
 #include "SolidCore1.h"
 #include "SolidGameInstance.h"
 #include "Engine/World.h"
@@ -73,6 +74,11 @@ void USolidTerrainWorldSubsystem::TryEnsureStreamer(const TCHAR* Reason)
 	if (Streamer)
 	{
 		bStreamerEnsured = true;
+		const FString Bar = FString::ChrN(80, TEXT('='));
+		UE_LOG(LogSolid, Warning, TEXT("%s"), *Bar);
+		UE_LOG(LogSolid, Warning, TEXT("%s"), *Bar);
+		UE_LOG(LogSolid, Warning, TEXT("%s"), *Bar);
+		UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
 		UE_LOG(LogSolid, Warning, TEXT("Terrain streamer ready via %s"), Reason);
 	}
 }

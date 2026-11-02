@@ -604,7 +604,9 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 		Map->GetMarkerAtCell(StartCell.X, StartCell.Y),
 		USolidWorldChart::DeprecatedLocationMarker);
 	TestTrue(TEXT("the trail's last point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points.Last(), EndCell));
-	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(EndCell.X, EndCell.Y), 0);
+	FIntPoint IglinCell = FIntPoint::ZeroValue;
+	TestTrue(TEXT("Iglin is a cell"), Map->TownCell(SolidTowns::Iglin, IglinCell));
+	TestEqual(TEXT("trail ends at Iglin"), EndCell, IglinCell);
 	return true;
 }
 

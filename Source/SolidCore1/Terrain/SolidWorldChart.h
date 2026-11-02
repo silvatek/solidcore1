@@ -77,9 +77,6 @@ public:
 	/** Marker character at a cell, or 0 when the chart is not solved. Digits stay digits. */
 	TCHAR GetMarkerAtCell(int32 CellX, int32 CellY) const;
 
-	/** Location id on this cell, or INDEX_NONE when it is not a named town. */
-	int32 GetLocationIdAtCell(int32 CellX, int32 CellY) const;
-
 	/**
 	 * Town under a world XY, or INDEX_NONE. The town is the painted town ground
 	 * connected to its marker. Town paint that does not meet a marker is not a town.
@@ -107,7 +104,7 @@ public:
 	/** True when the point lies within the routed road's width of its terrain points. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/** True when this cell is the town marker, or a named town. A road strip is not a town. */
+	/** True when this cell holds a town mark, or the town marker. A road strip is not a town. */
 	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** Tint for this biome. */
@@ -315,7 +312,6 @@ private:
 	/** Solved facts. Not saved with the asset. A paint, mark, or undo clears them. */
 	mutable bool bIsLoaded = false;
 	mutable TArray<uint8> Markers;
-	mutable TArray<int32> BangLocationIds;
 	mutable TArray<FSolidWorldEncounterMark> EncounterMarks;
 
 	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
@@ -336,6 +332,4 @@ protected:
 	/** Record a town on this cell and mark the cell. A note, an encounter, and a bridge are skipped. */
 	bool RememberChartMark(const FSolidWorldChartMark& Mark, FIntPoint Cell) const;
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
-	/** Location id of a named town on this cell, or INDEX_NONE. */
-	int32 ResolveLocationId(int32 CellX, int32 CellY) const;
 };

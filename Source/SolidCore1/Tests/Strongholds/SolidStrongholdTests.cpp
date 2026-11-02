@@ -150,7 +150,10 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 				TEXT("cave cell uses its shelf"),
 				static_cast<uint8>(Map->GetBiomeAtCell(Col, Row)),
 				static_cast<uint8>(CaveShelf));
-			TestEqual(TEXT("cave is not a town"), Map->GetLocationIdAtCell(Col, Row), INDEX_NONE);
+			const int32 CaveMark = Map->MarkAtCell(FIntPoint(Col, Row));
+			TestTrue(TEXT("cave is not a town"),
+				Map->Marks.IsValidIndex(CaveMark)
+				&& Map->Marks[CaveMark].Kind != ESolidWorldChartMarkKind::Town);
 		}
 	}
 	TestTrue(TEXT("the shipped map has a cave"), CaveCells.Num() > 0);

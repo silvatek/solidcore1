@@ -475,7 +475,6 @@ void USolidWorldChart::ResetLoad() const
 {
 	Markers.SetNum(MapWidth * MapHeight);
 	RoutedRoads.Reset();
-	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	EncounterMarks.Reset();
 	PointTowns.Reset();
 	bIsLoaded = false;
@@ -512,7 +511,6 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 		{
 			return false;
 		}
-		BangLocationIds[Index] = Town->Id;
 		break;
 	}
 	case ESolidWorldChartMarkKind::Stronghold:
@@ -899,12 +897,12 @@ bool USolidWorldChart::IsMarkedTown(
 		return false;
 	}
 
-	const TCHAR Marker = GetMarkerAtCell(CellX, CellY);
-	if (Marker == DeprecatedLocationMarker)
+	const int32 MarkIndex = MarkAtCell(FIntPoint(CellX, CellY));
+	if (Marks.IsValidIndex(MarkIndex) && Marks[MarkIndex].Kind == ESolidWorldChartMarkKind::Town)
 	{
-		return GetLocationIdAtCell(CellX, CellY) != INDEX_NONE;
+		return true;
 	}
-	return Marker == SolidBiome::Of(ESolidBiome::Town).Marker();
+	return GetMarkerAtCell(CellX, CellY) == SolidBiome::Of(ESolidBiome::Town).Marker();
 }
 
 namespace
@@ -1437,34 +1435,6 @@ ESolidBiome USolidWorldChart::SampleBiome(
 		return ESolidBiome::Road;
 	}
 	return Ground;
-}
-
-int32 USolidWorldChart::GetLocationIdAtCell(int32 CellX, int32 CellY) const
-{
-	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
-	{
-		return INDEX_NONE;
-	}
-
-	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
-	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
-	return ResolveLocationId(CellX, CellY);
-}
-
-int32 USolidWorldChart::ResolveLocationId(const int32 CellX, const int32 CellY) const
-{
-	if (Markers.Num() != MapWidth * MapHeight
-		|| CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
-	{
-		return INDEX_NONE;
-	}
-
-	if (static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]) != DeprecatedLocationMarker)
-	{
-		return INDEX_NONE;
-	}
-	const int32 Index = CellY * MapWidth + CellX;
-	return BangLocationIds.IsValidIndex(Index) ? BangLocationIds[Index] : INDEX_NONE;
 }
 
 int32 USolidWorldChart::SampleLocationId(

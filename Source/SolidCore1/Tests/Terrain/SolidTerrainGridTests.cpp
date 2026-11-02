@@ -222,7 +222,11 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 		TEXT("grass beside the marker is not Iglin"),
 		Chart->SampleLocationId(IglinCentre.X + 400.f, IglinCentre.Y, GridMin, GridMax),
 		INDEX_NONE);
-	TestEqual(TEXT("the cell is still Iglin"), Chart->GetLocationIdAtCell(Iglin.X, Iglin.Y), SolidTowns::Iglin);
+	FSolidWorldChartMark IglinMark;
+	FIntPoint IglinCell = FIntPoint::ZeroValue;
+	TestTrue(TEXT("the Iglin mark remains"), Chart->FindTownMarker(SolidTowns::Iglin, IglinMark));
+	TestTrue(TEXT("the Iglin mark is a cell"), USolidWorldChart::CellAtTerrainPoint(IglinMark.TerrainPoint, IglinCell));
+	TestEqual(TEXT("the mark stays on its cell"), IglinCell, Iglin);
 
 	const FIntPoint Far(20, 20);
 	TestTrue(TEXT("a far cell paints town"), Chart->PaintRun({ Far }, ESolidBiome::Town, Error));
@@ -240,7 +244,9 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 	const FVector2D SecondCentre = CellCentre(*Chart, Second.X, Second.Y);
 	TestEqual(TEXT("the first marker keeps the region"), Chart->SampleLocationId(RelionCentre.X, RelionCentre.Y, GridMin, GridMax), SolidTowns::Relion);
 	TestEqual(TEXT("the second marker stands in that region"), Chart->SampleLocationId(SecondCentre.X, SecondCentre.Y, GridMin, GridMax), SolidTowns::Relion);
-	TestEqual(TEXT("the second cell still names Iglin"), Chart->GetLocationIdAtCell(Second.X, Second.Y), SolidTowns::Iglin);
+	TestTrue(TEXT("the Iglin mark remains"), Chart->FindTownMarker(SolidTowns::Iglin, IglinMark));
+	TestTrue(TEXT("the Iglin mark is a cell"), USolidWorldChart::CellAtTerrainPoint(IglinMark.TerrainPoint, IglinCell));
+	TestEqual(TEXT("the Iglin mark stands on the second cell"), IglinCell, Second);
 
 	const FIntPoint GateEast(10, 12);
 	const FIntPoint GateWest(11, 12);

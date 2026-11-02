@@ -1049,6 +1049,35 @@ bool USolidWorldChart::StrongholdAtCell(
 	return false;
 }
 
+bool USolidWorldChart::StrongholdAtTerrain(
+	const int32 TerrainX,
+	const int32 TerrainY,
+	ESolidStrongholdType& OutType,
+	ESolidStrongholdSize& OutSize) const
+{
+	if (TerrainX < 0 || TerrainY < 0 || TerrainX >= PointAxis || TerrainY >= PointAxis)
+	{
+		return false;
+	}
+	const FIntPoint TerrainPoint(TerrainX, TerrainY);
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		if (Mark.TerrainPoint != TerrainPoint)
+		{
+			continue;
+		}
+		if (Mark.Kind != ESolidWorldChartMarkKind::Stronghold)
+		{
+			return false;
+		}
+		OutType = Mark.StrongholdType;
+		OutSize = Mark.StrongholdSize;
+		SolidStronghold::FromToken(Mark.Name, OutType, OutSize);
+		return true;
+	}
+	return false;
+}
+
 bool USolidWorldChart::StrongholdSiteAtCell(const int32 CellX, const int32 CellY, ESolidStrongholdSize& OutSize) const
 {
 	if (!EnsureQuery() || CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
@@ -1707,20 +1736,13 @@ ESolidBiome USolidWorldChart::SampleBiome(
 	PointAtWorld(WorldX, WorldY, WorldMinXY, WorldMaxXY, TerrainX, TerrainY);
 	const ESolidBiome Ground = Points[PointSlot(TerrainX, TerrainY)];
 
-	int32 CellX = 0;
-	int32 CellY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, CellX, CellY))
-	{
-		return Ground;
-	}
-
 	// The road shares the grassland shelf, so this is a texture change there.
 	// A stronghold keeps the shelf it names. Mountain and sea keep theirs because
 	// those shelves sit at a different height. The channel itself stays water.
 	bool bNamedShelf = false;
 	ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
 	ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
-	if (StrongholdAtCell(CellX, CellY, HoldType, HoldSize))
+	if (StrongholdAtTerrain(TerrainX, TerrainY, HoldType, HoldSize))
 	{
 		ESolidBiome Named = ESolidBiome::Grassland;
 		bNamedShelf = SolidStronghold::BiomeFor(FSolidStronghold(HoldType, HoldSize), Named);

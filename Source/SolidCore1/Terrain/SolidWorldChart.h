@@ -148,6 +148,9 @@ public:
 	/** True when the mark on this cell is a stronghold. A site is not one. */
 	bool StrongholdAtCell(int32 CellX, int32 CellY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
 
+	/** True when the mark on this terrain point is a stronghold. A site is not one. */
+	bool StrongholdAtTerrain(int32 TerrainX, int32 TerrainY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
+
 	/** True when a stronghold site mark is on this cell. OutSize is that size. */
 	bool StrongholdSiteAtCell(int32 CellX, int32 CellY, ESolidStrongholdSize& OutSize) const;
 

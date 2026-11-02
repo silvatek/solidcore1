@@ -50,7 +50,7 @@ using FStep = FSolidAutoPlaythrough::FStep;
 using EWalk = FSolidAutoPlaythrough::EWalk;
 
 const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = {
-	FStep::WalkTo(TEXT("Walk to the monster encounter"), EWalk::MonsterEncounter),
+	FStep::WalkToMarker(TEXT("Walk to Iglin Bridge encounter"), ESolidWorldChartMarkKind::Encounter, TEXT("Iglin Bridge")),
 	FStep::WakeInStronghold(TEXT("Wake in the cave")),
 	FStep::DisableEncounter(TEXT("Disable the Iglin Bridge encounter"), TEXT("Iglin Bridge")),
 	FStep::WalkTo(TEXT("Walk to the stand"), StandCells, UE_ARRAY_COUNT(StandCells)),
@@ -91,7 +91,6 @@ namespace
 	constexpr float TurnDegreesPerSecond = 180.f;
 	constexpr float MaxTurnSliceSeconds = 0.05f;
 	constexpr float SegmentStepCm = 50.f;
-	constexpr TCHAR EncounterName[] = TEXT("Iglin Bridge");
 	/** Inside one tunnel cell. The next center, a full cell away, stays ahead. */
 	constexpr float LairArriveCm = SolidLair::CellCm * 0.45f;
 
@@ -339,10 +338,30 @@ namespace
 		return nullptr;
 	}
 
-	bool IsIglinBridge(const FSolidEncounter& Encounter)
+	bool IsThisEncounter(const FSolidEncounter& Encounter, const TCHAR* Name)
 	{
-		return Encounter.Definition.Name
-			&& FCString::Strcmp(Encounter.Definition.Name, EncounterName) == 0;
+		return Name
+			&& Encounter.Definition.Name
+			&& FCString::Stricmp(Encounter.Definition.Name, Name) == 0;
+	}
+
+	const FSolidWorldChartMark* FindChartMark(
+		const USolidWorldChart& Chart,
+		const ESolidWorldChartMarkKind Kind,
+		const TCHAR* Name)
+	{
+		if (!Name)
+		{
+			return nullptr;
+		}
+		for (const FSolidWorldChartMark& Mark : Chart.Marks)
+		{
+			if (Mark.Kind == Kind && Mark.Name.Equals(Name, ESearchCase::IgnoreCase))
+			{
+				return &Mark;
+			}
+		}
+		return nullptr;
 	}
 
 	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector2D& Point)
@@ -378,11 +397,11 @@ namespace
 	}
 
 	/** True when a placed Iglin Bridge member can see this ground point. */
-	bool IglinBridgeDetects(const ASolidGameMode& Mode, const FVector2D& Here)
+	bool IglinBridgeDetects(const ASolidGameMode& Mode, const TCHAR* Name, const FVector2D& Here)
 	{
 		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
 		{
-			if (!IsIglinBridge(Encounter))
+			if (!IsThisEncounter(Encounter, Name))
 			{
 				continue;
 			}
@@ -402,13 +421,16 @@ namespace
 	}
 
 	/** The placed member closest to Iglin. That is the one the walk from town meets. */
-	const FSolidMonster* ClosestIglinBridgeMonster(const ASolidGameMode& Mode, const FVector2D& IglinXY)
+	const FSolidMonster* ClosestIglinBridgeMonster(
+		const ASolidGameMode& Mode,
+		const TCHAR* Name,
+		const FVector2D& IglinXY)
 	{
 		const FSolidMonster* Found = nullptr;
 		float Best = TNumericLimits<float>::Max();
 		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
 		{
-			if (!IsIglinBridge(Encounter))
+			if (!IsThisEncounter(Encounter, Name))
 			{
 				continue;
 			}
@@ -844,7 +866,10 @@ void FSolidAutoPlaythrough::NoteDistance(const float DeltaSeconds, const float D
 	}
 }
 
-bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation)
+bool FSolidAutoPlaythrough::BuildWalk(
+	const ASolidGameMode& Mode,
+	const FVector& CaptainLocation,
+	const FStep& Step)
 {
 	UWorld* World = Mode.GetWorld();
 	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
@@ -852,6 +877,11 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
 	if (!Chart || !Chart->IsLoaded() || Mode.GetBridges().Num() == 0)
 	{
+		return false;
+	}
+	if (!Step.MarkName || !FindChartMark(*Chart, Step.MarkKind, Step.MarkName))
+	{
+		Stop();
 		return false;
 	}
 
@@ -869,7 +899,7 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 		return false;
 	}
 
-	const FSolidMonster* Monster = ClosestIglinBridgeMonster(Mode, IglinXY);
+	const FSolidMonster* Monster = ClosestIglinBridgeMonster(Mode, Step.MarkName, IglinXY);
 	FVector2D Approach = FVector2D::ZeroVector;
 	if (!Monster || !EncounterApproach(Mode, *Monster, IglinXY, Approach))
 	{
@@ -964,16 +994,23 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 bool FSolidAutoPlaythrough::TickWalk(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
-	ASolidCharacter& Captain)
+	ASolidCharacter& Captain,
+	const FStep& Step)
 {
+	if (!Step.MarkName)
+	{
+		Stop();
+		return false;
+	}
+
 	const FVector Location = Captain.GetActorLocation();
 	const FVector2D Here(Location.X, Location.Y);
-	if (IglinBridgeDetects(Mode, Here))
+	if (Step.MarkKind == ESolidWorldChartMarkKind::Encounter && IglinBridgeDetects(Mode, Step.MarkName, Here))
 	{
 		Advance();
 		return false;
 	}
-	if (!bWalkReady && !BuildWalk(Mode, Location))
+	if (!bWalkReady && !BuildWalk(Mode, Location, Step))
 	{
 		return false;
 	}
@@ -1754,8 +1791,8 @@ bool FSolidAutoPlaythrough::TickWalkTo(
 {
 	switch (Step.Walk)
 	{
-	case EWalk::MonsterEncounter:
-		return TickWalk(DeltaSeconds, Mode, Captain);
+	case EWalk::Marker:
+		return TickWalk(DeltaSeconds, Mode, Captain, Step);
 	case EWalk::Hexes:
 		return TickHexWalk(DeltaSeconds, Mode, Captain, Step);
 	case EWalk::TrailToIglin:

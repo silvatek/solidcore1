@@ -55,7 +55,8 @@ public:
 	/** The route a WalkTo row follows. */
 	enum class EWalk : uint8
 	{
-		MonsterEncounter,
+		/** The row names a chart mark. The chart's copy of that mark is the place. */
+		Marker,
 		Hexes,
 		TrailToIglin,
 		LairEntrance,
@@ -116,6 +117,10 @@ public:
 		const TCHAR* CompanionName = nullptr;
 		/** Story floor. 1 is the ground. Tower walks read this. */
 		int32 Floor = INDEX_NONE;
+		/** Kind of the chart mark this walk goes to. WalkToMarker sets it. */
+		ESolidWorldChartMarkKind MarkKind = ESolidWorldChartMarkKind::Town;
+		/** Name of that mark. The chart's mark of this kind and name supplies the place. */
+		const TCHAR* MarkName = nullptr;
 
 		static constexpr FStep WalkTo(const TCHAR* InName, const EWalk InWalk)
 		{
@@ -123,6 +128,21 @@ public:
 			Step.Type = EStepType::WalkTo;
 			Step.Name = InName;
 			Step.Walk = InWalk;
+			return Step;
+		}
+
+		/** A walk to the chart mark of this kind and name. Summary is the row label. */
+		static constexpr FStep WalkToMarker(
+			const TCHAR* Summary,
+			const ESolidWorldChartMarkKind Kind,
+			const TCHAR* Name)
+		{
+			FStep Step;
+			Step.Type = EStepType::WalkTo;
+			Step.Name = Summary;
+			Step.Walk = EWalk::Marker;
+			Step.MarkKind = Kind;
+			Step.MarkName = Name;
 			return Step;
 		}
 
@@ -452,7 +472,7 @@ private:
 	void Advance();
 	void ResetWalk();
 	void NoteDistance(float DeltaSeconds, float DistanceCm);
-	bool BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
+	bool BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
 	bool BuildHexWalk(const ASolidGameMode& Mode, const SolidStrongholdGrid::FCell* Cells, int32 Count);
 	bool BuildIglinTrail(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	bool BuildLairEntranceWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
@@ -482,7 +502,7 @@ private:
 	bool TickCurrent(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkTo(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	/** True while true sight is dragging the view and holding W. */
-	bool TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
+	bool TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickHexWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkToIglin(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickWalkToLairEntrance(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);

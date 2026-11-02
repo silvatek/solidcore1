@@ -27,7 +27,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 {
 	const TCHAR* Names[] = {
-		TEXT("Walk to the monster encounter"),
+		TEXT("Walk to Iglin Bridge encounter"),
 		TEXT("Wake in the cave"),
 		TEXT("Disable the Iglin Bridge encounter"),
 		TEXT("Walk to the stand"),
@@ -72,6 +72,20 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the script holds those rows"),
 		FSolidAutoPlaythrough::ScriptCount >= static_cast<int32>(UE_ARRAY_COUNT(Names)));
+
+	const FSolidAutoPlaythrough::FStep& EncounterWalk = FSolidAutoPlaythrough::Script[0];
+	TestEqual(
+		TEXT("the opening row walks to a mark"),
+		static_cast<uint8>(EncounterWalk.Walk),
+		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Marker));
+	TestEqual(
+		TEXT("that mark is an encounter"),
+		static_cast<uint8>(EncounterWalk.MarkKind),
+		static_cast<uint8>(ESolidWorldChartMarkKind::Encounter));
+	TestEqual(
+		TEXT("the mark is Iglin Bridge"),
+		FString(EncounterWalk.MarkName),
+		FString(TEXT("Iglin Bridge")));
 
 	int32 Search = 0;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)

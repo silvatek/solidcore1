@@ -1571,16 +1571,12 @@ bool USolidWorldChart::PaintPoints(const TArray<FIntPoint>& Covered, const ESoli
 		OutError = TEXT("Swamp and road are not paint biomes.");
 		return false;
 	}
-	if (Cells.Num() != MapWidth * MapHeight)
-	{
-		OutError = TEXT("The chart does not cover the map.");
-		return false;
-	}
 	if (Covered.Num() == 0)
 	{
 		OutError = TEXT("Paint needs a point.");
 		return false;
 	}
+	int32 HighestSlot = 0;
 	for (const FIntPoint& TerrainPoint : Covered)
 	{
 		if (!OnPoint(TerrainPoint))
@@ -1588,8 +1584,14 @@ bool USolidWorldChart::PaintPoints(const TArray<FIntPoint>& Covered, const ESoli
 			OutError = TEXT("That point is off the map.");
 			return false;
 		}
+		HighestSlot = FMath::Max(HighestSlot, PointSlot(TerrainPoint.X, TerrainPoint.Y));
 	}
-	if (!EnsurePoints())
+	if (Points.Num() <= HighestSlot && !EnsurePoints())
+	{
+		OutError = TEXT("The chart does not cover the map.");
+		return false;
+	}
+	if (Points.Num() <= HighestSlot)
 	{
 		OutError = TEXT("The chart does not cover the map.");
 		return false;
@@ -1649,6 +1651,12 @@ bool USolidWorldChart::SetPointRectangle(const FIntPoint From, const FIntPoint T
 		}
 	}
 	return true;
+}
+
+void USolidWorldChart::Init(const ESolidBiome Biome)
+{
+	Points.Init(Biome, PointAxis * PointAxis);
+	InvalidateQuery();
 }
 
 bool USolidWorldChart::PaintPointRectangle(

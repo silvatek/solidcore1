@@ -88,14 +88,22 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	River->Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
+	River->Init(ESolidBiome::Grassland);
 	int32 PondX = 0;
 	int32 PondY = 0;
 	USolidWorldChart::PointUnderCell(10, 10, PondX, PondY);
-	River->Points[PondY * USolidWorldChart::PointAxis + PondX] = ESolidBiome::River;
+	const FIntPoint PondPoint(PondX, PondY);
 	const FVector2D PondCentre = CellCentre(*River, 10, 10);
 	const FIntPoint Bank = PointAt(*River, PondCentre + FVector2D(400.f, 0.f));
-	River->Points[Bank.Y * USolidWorldChart::PointAxis + Bank.X] = ESolidBiome::Mountain;
+	FString Error;
+	if (!TestTrue(TEXT("the pond point paints river"), River->PaintPointRectangle(PondPoint, PondPoint, ESolidBiome::River, Error)))
+	{
+		return false;
+	}
+	if (!TestTrue(TEXT("the bank point paints mountain"), River->PaintPointRectangle(Bank, Bank, ESolidBiome::Mountain, Error)))
+	{
+		return false;
+	}
 	BiomeIs(*this, TEXT("the pond centre is river"), SampleAt(*River, PondCentre), ESolidBiome::River);
 	BiomeIs(*this, TEXT("the point east of the pond is mountain"), SampleAt(*River, PondCentre + FVector2D(400.f, 0.f)), ESolidBiome::Mountain);
 	BiomeIs(*this, TEXT("the pond cell stays river"), River->GetBiomeAtCell(10, 10), ESolidBiome::River);

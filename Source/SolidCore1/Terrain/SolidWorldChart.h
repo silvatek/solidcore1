@@ -215,6 +215,9 @@ public:
 	 */
 	bool PaintBrush(const TArray<FIntPoint>& Centres, int32 Radius, ESolidBiome Biome, FString& OutError);
 
+	/** Fill every terrain point with this biome. */
+	void Init(ESolidBiome Biome);
+
 	/**
 	 * Fill the inclusive rectangle of terrain points. One call is one undo step.
 	 * The cell array stays. A mark inside the rectangle does not change that paint.

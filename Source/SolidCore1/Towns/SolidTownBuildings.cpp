@@ -92,8 +92,7 @@ int32 SolidTownBuildings::CollectPlacements(
 		{
 			continue;
 		}
-		// Roads share a brown with the town, but the marker on the map is the town.
-		if (bMapLoaded && !WorldMap->IsMarkedTown(Point.WorldX, Point.WorldY, WorldMin, WorldMax))
+		if (bMapLoaded && WorldMap->SampleLocationId(Point.WorldX, Point.WorldY, WorldMin, WorldMax) == INDEX_NONE)
 		{
 			continue;
 		}
@@ -180,7 +179,7 @@ int32 SolidTownBuildings::CollectPlacements(
 			{
 				return false;
 			}
-			if (!WorldMap->IsMarkedTown(At.X, At.Y, WorldMin, WorldMax)
+			if (WorldMap->SampleLocationId(At.X, At.Y, WorldMin, WorldMax) == INDEX_NONE
 				|| WorldMap->IsOnRoad(At.X, At.Y, WorldMin, WorldMax))
 			{
 				return true;

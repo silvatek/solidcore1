@@ -6,8 +6,8 @@ class USolidTerrainMap;
 class USolidWorldChart;
 
 /**
- * Pack random non-overlapping building footprints onto marked town cells.
- * A footprint that would cover a road is slid off that road, still in the town.
+ * Pack random non-overlapping building footprints onto town points.
+ * A footprint that would cover a routed road is slid off that road, still in the town.
  * Pure logic — no actor spawning (safe for automation).
  */
 namespace SolidTownBuildings
@@ -60,8 +60,8 @@ namespace SolidTownBuildings
 		FVector2D* OutOnRoad = nullptr);
 
 	/**
-	 * Fill OutPlacements with non-overlapping buildings on WorldMap town markers.
-	 * The town marker and a ! named as a town count. A road strip does not, even where it is brown.
+	 * Fill OutPlacements with non-overlapping buildings on town points.
+	 * A point counts when AssignTownPoints claimed it. A routed road does not.
 	 * Deterministic for a given map + seed + params.
 	 * ExtraClearCenters use the same radius as the start-town centroid (welcome signs).
 	 * @return Number of placements written.

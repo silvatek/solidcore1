@@ -188,8 +188,8 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 			NearestTownCm <= SolidTownBuildings::RoadSlideCm + 0.5f);
 		if (WorldMap)
 		{
-			TestTrue(TEXT("placement sits on a marked town"),
-				WorldMap->IsMarkedTown(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax));
+			TestTrue(TEXT("placement sits on a town point"),
+				WorldMap->SampleLocationId(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax) != INDEX_NONE);
 			TestFalse(TEXT("placement stays off the road strip"),
 				WorldMap->IsOnRoad(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax));
 			TestFalse(TEXT("the building stays off the road"),

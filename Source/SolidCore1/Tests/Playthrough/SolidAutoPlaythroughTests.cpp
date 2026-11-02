@@ -30,17 +30,17 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("Walk to Iglin Bridge encounter"),
 		TEXT("Wake in the cave"),
 		TEXT("Disable the Iglin Bridge encounter"),
-		TEXT("Walk to the stand"),
+		TEXT("Move to the stand"),
 		TEXT("Craft the torch"),
 		TEXT("Equip the torch"),
 		TEXT("Equip the sword"),
-		TEXT("Walk to the entrance"),
+		TEXT("Move to the entrance"),
 		TEXT("Leave the cave"),
 		TEXT("Walk to Iglin"),
 		TEXT("Close the driven-out message"),
 		TEXT("Walk to the Iglin tunnels"),
 		TEXT("Enter the Iglin tunnels"),
-		TEXT("Walk the Iglin tunnels"),
+		TEXT("Move to the Iglin tunnels exit"),
 		TEXT("Leave the Iglin tunnels"),
 		TEXT("Walk to Relion"),
 		TEXT("Walk to Kanfold"),
@@ -50,17 +50,17 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::WakeInStronghold,
 		FSolidAutoPlaythrough::EStepType::DisableEncounter,
-		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::MoveTo,
 		FSolidAutoPlaythrough::EStepType::CraftItem,
 		FSolidAutoPlaythrough::EStepType::EquipItem,
 		FSolidAutoPlaythrough::EStepType::EquipItem,
-		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::MoveTo,
 		FSolidAutoPlaythrough::EStepType::ExitStronghold,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::CloseMessage,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::EnterLair,
-		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::MoveTo,
 		FSolidAutoPlaythrough::EStepType::ExitLair,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
@@ -88,11 +88,13 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		FString(TEXT("Iglin Bridge")));
 
 	const TCHAR* TownWalks[] = {
+		TEXT("Walk to Iglin"),
 		TEXT("Walk to Relion"),
 		TEXT("Walk to Kanfold"),
 		TEXT("Walk to Dragongate"),
 	};
 	const TCHAR* TownMarks[] = {
+		TEXT("Iglin"),
 		TEXT("Relion"),
 		TEXT("Kanfold"),
 		TEXT("Dragongate"),
@@ -191,7 +193,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		{
 			Enter = &Step;
 		}
-		else if (FCString::Strcmp(Step.Name, TEXT("Walk the Iglin tunnels")) == 0)
+		else if (FCString::Strcmp(Step.Name, TEXT("Move to the Iglin tunnels exit")) == 0)
 		{
 			Run = &Step;
 		}

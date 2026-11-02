@@ -54,17 +54,17 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::WalkToMarker(TEXT("Walk to Iglin Bridge encounter"), ESolidWorldChartMarkKind::Encounter, TEXT("Iglin Bridge")),
 	FStep::WakeInStronghold(TEXT("Wake in the cave")),
 	FStep::DisableEncounter(TEXT("Disable the Iglin Bridge encounter"), TEXT("Iglin Bridge")),
-	FStep::WalkTo(TEXT("Walk to the stand"), StandCells, UE_ARRAY_COUNT(StandCells)),
+	FStep::MoveTo(TEXT("Move to the stand"), StandCells, UE_ARRAY_COUNT(StandCells)),
 	FStep::CraftItem(TEXT("Craft the torch"), SolidItemType::IdTorch),
 	FStep::EquipItem(TEXT("Equip the torch"), SolidItemType::IdTorch, SolidInventory::ESlot::OffHand),
 	FStep::EquipItem(TEXT("Equip the sword"), SolidItemType::IdRustySword, SolidInventory::ESlot::MainHand).ClosePage(),
-	FStep::WalkTo(TEXT("Walk to the entrance"), EntranceCells, UE_ARRAY_COUNT(EntranceCells)),
+	FStep::MoveTo(TEXT("Move to the entrance"), EntranceCells, UE_ARRAY_COUNT(EntranceCells)),
 	FStep::ExitStronghold(TEXT("Leave the cave")),
-	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
+	FStep::WalkToMarker(TEXT("Walk to Iglin"), ESolidWorldChartMarkKind::Town, TEXT("Iglin")),
 	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage),
 	FStep::WalkTo(TEXT("Walk to the Iglin tunnels"), EWalk::LairEntrance),
 	FStep::EnterLair(TEXT("Enter the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Entrance),
-	FStep::WalkTo(TEXT("Walk the Iglin tunnels"), EWalk::Lair, SolidLair::IdIglinTunnels, SolidLair::Exit),
+	FStep::MoveTo(TEXT("Move to the Iglin tunnels exit"), EWalk::Lair, SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::WalkToMarker(TEXT("Walk to Relion"), ESolidWorldChartMarkKind::Town, TEXT("Relion")),
 	FStep::WalkToMarker(TEXT("Walk to Kanfold"), ESolidWorldChartMarkKind::Town, TEXT("Kanfold")),
@@ -642,6 +642,7 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	switch (Step.Type)
 	{
 	case EStepType::WalkTo:
+	case EStepType::MoveTo:
 		return TickWalkTo(DeltaSeconds, Mode, Captain, Step);
 	case EStepType::CloseMessage:
 		return TickCloseMessage(DeltaSeconds, Captain, Step);

@@ -37,6 +37,7 @@ public:
 	enum class EStepType : uint8
 	{
 		WalkTo,
+		MoveTo,
 		CloseMessage,
 		CraftItem,
 		EquipItem,
@@ -73,7 +74,7 @@ public:
 
 	/**
 	 * One row of the opening script.
-	 * WalkTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold,
+	 * WalkTo, MoveTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold,
 	 * EnterLair, ExitLair, WakeInStronghold, SelectBattlePlan, AimRaven,
 	 * ChooseStronghold, BuildSquad, and Custom build one.
 	 * A later helper fills the one field that row also reads.
@@ -198,6 +199,37 @@ public:
 			Step.Walk = EWalk::Hexes;
 			Step.Cells = InCells;
 			Step.CellCount = InCount;
+			return Step;
+		}
+
+		/** An interior move along stronghold hexes. The same fields as that WalkTo. */
+		static constexpr FStep MoveTo(
+			const TCHAR* InName,
+			const SolidStrongholdGrid::FCell* InCells,
+			const int32 InCount)
+		{
+			FStep Step;
+			Step.Type = EStepType::MoveTo;
+			Step.Name = InName;
+			Step.Walk = EWalk::Hexes;
+			Step.Cells = InCells;
+			Step.CellCount = InCount;
+			return Step;
+		}
+
+		/** An interior lair move. The same fields as that WalkTo. */
+		static constexpr FStep MoveTo(
+			const TCHAR* InName,
+			const EWalk InWalk,
+			const TCHAR* InLairId,
+			const TCHAR InEnd)
+		{
+			FStep Step;
+			Step.Type = EStepType::MoveTo;
+			Step.Name = InName;
+			Step.Walk = InWalk;
+			Step.LairId = InLairId;
+			Step.EndMarker = InEnd;
 			return Step;
 		}
 

@@ -405,11 +405,24 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	if (Map)
 	{
 		const FIntPoint Cell = SolidStronghold::StartingCell();
-		FSolidWorldBang Cave;
-		TestTrue(TEXT("the starting cell is described"), Map->FindBang(Cell.X, Cell.Y, Cave));
-		TestEqual(TEXT("the starting cell is a stronghold"), static_cast<uint8>(Cave.Kind), static_cast<uint8>(ESolidWorldBang::Stronghold));
-		TestEqual(TEXT("the starting cell is meagre"), static_cast<uint8>(Cave.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Meagre));
-		TestEqual(TEXT("the starting cell is a dungeon"), static_cast<uint8>(Cave.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
+		const int32 CaveMark = Map->MarkAtCell(Cell);
+		TestTrue(TEXT("the starting cell is described"), CaveMark != INDEX_NONE);
+		if (CaveMark != INDEX_NONE)
+		{
+			const FSolidWorldChartMark& Cave = Map->Marks[CaveMark];
+			TestEqual(
+				TEXT("the starting cell is a stronghold"),
+				static_cast<uint8>(Cave.Kind),
+				static_cast<uint8>(ESolidWorldChartMarkKind::Stronghold));
+			TestEqual(
+				TEXT("the starting cell is meagre"),
+				static_cast<uint8>(Cave.StrongholdSize),
+				static_cast<uint8>(ESolidStrongholdSize::Meagre));
+			TestEqual(
+				TEXT("the starting cell is a dungeon"),
+				static_cast<uint8>(Cave.StrongholdType),
+				static_cast<uint8>(ESolidStrongholdType::Dungeon));
+		}
 		ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Humble;
 		TestFalse(TEXT("the starting cell is not a site"), Map->StrongholdSiteAtCell(Cell.X, Cell.Y, SiteSize));
 	}

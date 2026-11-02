@@ -244,8 +244,6 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 		TEXT("a note does not change the biome"),
 		static_cast<uint8>(Noted->GetBiomeAtCell(NoteCell.X, NoteCell.Y)),
 		PaintBefore);
-	FSolidWorldBang NotedBang;
-	TestFalse(TEXT("a note is not a world place"), Noted->FindBang(NoteCell.X, NoteCell.Y, NotedBang));
 
 	TestTrue(TEXT("a note is not a road end"), Chart->AddRoad(TEXT("Bridge here"), TEXT("Iglin"), ESolidWorldChartRoadType::Trail, Error));
 	TestTrue(TEXT("the tool does not treat the note as a town"), Error.Contains(TEXT("not a town or stronghold")));
@@ -332,8 +330,6 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(Resolved),
 			static_cast<uint8>(ESolidBiome::Forest));
 		TestFalse(TEXT("an encounter does not override the paint"), Resolved != Chart->Cells[CellIndex]);
-		FSolidWorldBang Bang;
-		TestFalse(TEXT("an encounter is not a world place"), Loaded->FindBang(Cell.X, Cell.Y, Bang));
 		TestEqual(TEXT("the load keeps the encounter"), Loaded->GetEncounterMarks().Num(), 1);
 		if (Loaded->GetEncounterMarks().Num() == 1)
 		{

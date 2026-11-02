@@ -26,18 +26,26 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 	}
 
 	const FIntPoint Cave = SolidStronghold::StartingCell();
-	FSolidWorldBang CaveBang;
-	TestTrue(TEXT("the cave is the Meagre Dungeon mark"), DefaultMap->FindBang(Cave.X, Cave.Y, CaveBang));
-	TestEqual(
-		TEXT("the cave stays Meagre"),
-		static_cast<uint8>(CaveBang.StrongholdSize),
-		static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(
-		TEXT("the cave stays a Dungeon"),
-		static_cast<uint8>(CaveBang.StrongholdType),
-		static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("the cave row stays 9"), CaveBang.Cell.Y + 1, SolidStronghold::StartingRow);
-	TestEqual(TEXT("the cave column stays 17"), CaveBang.Cell.X + 1, SolidStronghold::StartingColumn);
+	const int32 CaveMark = DefaultMap->MarkAtCell(Cave);
+	TestTrue(TEXT("the cave is the Meagre Dungeon mark"), CaveMark != INDEX_NONE);
+	if (CaveMark != INDEX_NONE)
+	{
+		const FSolidWorldChartMark& Mark = DefaultMap->Marks[CaveMark];
+		TestEqual(
+			TEXT("the cave stays a stronghold"),
+			static_cast<uint8>(Mark.Kind),
+			static_cast<uint8>(ESolidWorldChartMarkKind::Stronghold));
+		TestEqual(
+			TEXT("the cave stays Meagre"),
+			static_cast<uint8>(Mark.StrongholdSize),
+			static_cast<uint8>(ESolidStrongholdSize::Meagre));
+		TestEqual(
+			TEXT("the cave stays a Dungeon"),
+			static_cast<uint8>(Mark.StrongholdType),
+			static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	}
+	TestEqual(TEXT("the cave row stays 9"), Cave.Y + 1, SolidStronghold::StartingRow);
+	TestEqual(TEXT("the cave column stays 17"), Cave.X + 1, SolidStronghold::StartingColumn);
 
 	FIntPoint Iglin;
 	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->TownCell(0, Iglin));

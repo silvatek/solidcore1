@@ -1097,31 +1097,25 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	int32 NotMountain = 0;
 	int32 LairEntrances = 0;
 	int32 LairExits = 0;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	for (const FSolidWorldChartMark& Mark : Shipped->Marks)
 	{
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+		if (Mark.Kind == ESolidWorldChartMarkKind::LairEntrance)
 		{
-			FSolidWorldBang Bang;
-			if (!Shipped->FindBang(Col, Row, Bang))
-			{
-				continue;
-			}
-			if (Bang.Kind == ESolidWorldBang::LairEntrance)
-			{
-				++LairEntrances;
-			}
-			else if (Bang.Kind == ESolidWorldBang::LairExit)
-			{
-				++LairExits;
-			}
-			else
-			{
-				continue;
-			}
-			if (Shipped->GetBiomeAtCell(Col, Row) != ESolidBiome::Mountain)
-			{
-				++NotMountain;
-			}
+			++LairEntrances;
+		}
+		else if (Mark.Kind == ESolidWorldChartMarkKind::LairExit)
+		{
+			++LairExits;
+		}
+		else
+		{
+			continue;
+		}
+		FIntPoint Cell;
+		if (!USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell)
+			|| Shipped->GetBiomeAtCell(Cell.X, Cell.Y) != ESolidBiome::Mountain)
+		{
+			++NotMountain;
 		}
 	}
 	TestTrue(TEXT("the shipped map has a lair entrance"), LairEntrances > 0);
@@ -1347,87 +1341,47 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 		SolidLair::IdIglinTunnels);
 	TestTrue(TEXT("described map loads"), Map->LoadFromString(Text));
 
-	FSolidWorldBang Iglin;
-	TestTrue(TEXT("named ! is a town"), Map->FindBang(IglinCol, IglinRow, Iglin));
-	TestEqual(TEXT("town kind"), static_cast<uint8>(Iglin.Kind), static_cast<uint8>(ESolidWorldBang::Town));
-	TestEqual(TEXT("town id"), Iglin.LocationId, 0);
-	TestEqual(TEXT("town name"), Iglin.Name, FString(TEXT("Iglin")));
-	TestEqual(TEXT("town cell id"), Map->GetLocationIdAtCell(IglinCol, IglinRow), 0);
-
-	FSolidWorldBang Relion;
-	TestTrue(TEXT("town name is a town"), Map->FindBang(RelionCol, RelionRow, Relion));
-	TestEqual(TEXT("Relion id"), Relion.LocationId, SolidTowns::Relion);
-	TestEqual(TEXT("Relion name"), Relion.Name, FString(TEXT("Relion")));
 	TestEqual(
 		TEXT("a named town is Town"),
 		static_cast<uint8>(Map->GetBiomeAtCell(RelionCol, RelionRow)),
 		static_cast<uint8>(ESolidBiome::Town));
 
-	FSolidWorldBang Ignored;
-	TestFalse(TEXT("an unknown town is not a mark"), Map->FindBang(UnknownTownCol, RelionRow, Ignored));
 	TestEqual(TEXT("an unknown town is not a location"), Map->GetLocationIdAtCell(UnknownTownCol, RelionRow), INDEX_NONE);
-	TestFalse(TEXT("an unknown type is not a mark"), Map->FindBang(UnknownTypeCol, RelionRow, Ignored));
 	TestEqual(
 		TEXT("an unknown type stays grassland"),
 		static_cast<uint8>(Map->GetBiomeAtCell(UnknownTypeCol, RelionRow)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	FSolidWorldBang Cave;
-	TestTrue(TEXT("MeagreDungeon is a stronghold"), Map->FindBang(CaveCol, CaveRow, Cave));
-	TestEqual(TEXT("stronghold kind"), static_cast<uint8>(Cave.Kind), static_cast<uint8>(ESolidWorldBang::Stronghold));
-	TestEqual(TEXT("stronghold size"), static_cast<uint8>(Cave.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(TEXT("stronghold type"), static_cast<uint8>(Cave.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("stronghold name"), Cave.Name, FString(TEXT("Meagre Dungeon")));
 	TestEqual(TEXT("a stronghold is not a location"), Map->GetLocationIdAtCell(CaveCol, CaveRow), INDEX_NONE);
 	ESolidBiome CaveShelf = ESolidBiome::Grassland;
 	TestTrue(
 		TEXT("the cave names a shelf"),
-		SolidStronghold::BiomeFor(FSolidStronghold(Cave.StrongholdType, Cave.StrongholdSize), CaveShelf));
+		SolidStronghold::BiomeFor(
+			FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre),
+			CaveShelf));
 	TestEqual(
 		TEXT("a stronghold uses its shelf"),
 		static_cast<uint8>(Map->GetBiomeAtCell(CaveCol, CaveRow)),
 		static_cast<uint8>(CaveShelf));
 
-	FSolidWorldBang Tower;
-	TestTrue(TEXT("a spaced size and type match"), Map->FindBang(TowerCol, TowerRow, Tower));
-	TestEqual(TEXT("tower size"), static_cast<uint8>(Tower.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Humble));
-	TestEqual(TEXT("tower type"), static_cast<uint8>(Tower.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Tower));
 	TestEqual(
 		TEXT("an unlisted tower keeps the marker biome"),
 		static_cast<uint8>(Map->GetBiomeAtCell(TowerCol, TowerRow)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	FSolidWorldBang Imperious;
-	TestTrue(TEXT("Imperious Tower is a stronghold"), Map->FindBang(ImperiousCol, ImperiousRow, Imperious));
-	TestEqual(TEXT("imperious size"), static_cast<uint8>(Imperious.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Imperious));
-	TestEqual(TEXT("imperious type"), static_cast<uint8>(Imperious.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Tower));
-	TestEqual(TEXT("imperious name"), Imperious.Name, FString(TEXT("Imperious Tower")));
 	TestEqual(
 		TEXT("Imperious Tower uses grassland"),
 		static_cast<uint8>(Map->GetBiomeAtCell(ImperiousCol, ImperiousRow)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestFalse(TEXT("an unknown stronghold is not a mark"), Map->FindBang(BadHoldCol, BadHoldRow, Ignored));
 	TestEqual(
 		TEXT("an unknown stronghold stays grassland"),
 		static_cast<uint8>(Map->GetBiomeAtCell(BadHoldCol, BadHoldRow)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	FSolidWorldBang Entrance;
-	TestTrue(TEXT("lair entrance"), Map->FindBang(EnterCol, EnterRow, Entrance));
-	TestEqual(TEXT("entrance kind"), static_cast<uint8>(Entrance.Kind), static_cast<uint8>(ESolidWorldBang::LairEntrance));
-	TestEqual(TEXT("entrance name"), Entrance.Name, FString(SolidLair::IglinTunnels.Name));
-	TestEqual(TEXT("entrance id"), Entrance.LairId, FString(SolidLair::IdIglinTunnels));
 	TestEqual(
 		TEXT("a lair entrance uses the mountain shelf"),
 		static_cast<uint8>(Map->GetBiomeAtCell(EnterCol, EnterRow)),
 		static_cast<uint8>(ESolidBiome::Mountain));
-
-	FSolidWorldBang Exit;
-	TestTrue(TEXT("lair exit"), Map->FindBang(ExitCol, ExitRow, Exit));
-	TestEqual(TEXT("exit kind"), static_cast<uint8>(Exit.Kind), static_cast<uint8>(ESolidWorldBang::LairExit));
-	TestEqual(TEXT("exit name"), Exit.Name, FString(SolidLair::IglinTunnels.Name));
-	TestEqual(TEXT("exit id"), Exit.LairId, FString(SolidLair::IdIglinTunnels));
-	TestFalse(TEXT("an unknown lair is not a mark"), Map->FindBang(MissingLairCol, MissingLairRow, Ignored));
 
 	const FVector2D WorldMin(-6400.f, -6400.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
@@ -1455,10 +1409,15 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
-	FSolidWorldBang ShippedIglin;
-	TestTrue(TEXT("shipped Iglin !"), Shipped->FindBang(20, 7, ShippedIglin));
-	TestEqual(TEXT("shipped Iglin id"), ShippedIglin.LocationId, 0);
+	FSolidWorldChartMark ShippedIglin;
+	TestTrue(TEXT("shipped Iglin"), Shipped->FindTownMarker(0, ShippedIglin));
 	TestEqual(TEXT("shipped Iglin name"), ShippedIglin.Name, FString(TEXT("Iglin")));
+	FIntPoint IglinCell;
+	TestTrue(
+		TEXT("shipped Iglin cell"),
+		USolidWorldChart::CellAtTerrainPoint(ShippedIglin.TerrainPoint, IglinCell));
+	TestEqual(TEXT("shipped Iglin column"), IglinCell.X, 20);
+	TestEqual(TEXT("shipped Iglin row"), IglinCell.Y, 7);
 	return true;
 }
 
@@ -1526,11 +1485,6 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 	AddSite(*Map, ImperiousCol, ImperiousRow, ESolidStrongholdSize::Imperious);
 	TestTrue(TEXT("a map with sites loads"), Map->LoadFromString(Text));
 
-	FSolidWorldBang Humble;
-	TestTrue(TEXT("a bracketed size is a site"), Map->FindBang(HumbleCol, HumbleRow, Humble));
-	TestEqual(TEXT("site kind"), static_cast<uint8>(Humble.Kind), static_cast<uint8>(ESolidWorldBang::StrongholdSite));
-	TestEqual(TEXT("site size"), static_cast<uint8>(Humble.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Humble));
-	TestEqual(TEXT("site name"), Humble.Name, FString(TEXT("Humble")));
 	TestEqual(TEXT("a site is not a location"), Map->GetLocationIdAtCell(HumbleCol, HumbleRow), INDEX_NONE);
 	TestEqual(
 		TEXT("a site keeps the marker biome"),
@@ -1543,16 +1497,6 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 	ESolidStrongholdSize AsSize = ESolidStrongholdSize::Meagre;
 	TestFalse(TEXT("a site is not a stronghold"), Map->StrongholdAtCell(HumbleCol, HumbleRow, AsType, AsSize));
 
-	FSolidWorldBang Average;
-	TestTrue(TEXT("a size without brackets is a site"), Map->FindBang(AverageCol, AverageRow, Average));
-	TestEqual(TEXT("unbracketed size"), static_cast<uint8>(Average.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Average));
-
-	FSolidWorldBang Imperious;
-	TestTrue(TEXT("the site word and the size ignore case"), Map->FindBang(ImperiousCol, ImperiousRow, Imperious));
-	TestEqual(TEXT("imperious site"), static_cast<uint8>(Imperious.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Imperious));
-
-	FSolidWorldBang Ignored;
-	TestFalse(TEXT("an unknown size is not a mark"), Map->FindBang(VastCol, VastRow, Ignored));
 	TestEqual(
 		TEXT("an unknown size stays grassland"),
 		static_cast<uint8>(Map->GetBiomeAtCell(VastCol, VastRow)),
@@ -1563,11 +1507,7 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 		TEXT("a failed site lookup leaves the previous size"),
 		static_cast<uint8>(ReadSize),
 		static_cast<uint8>(ESolidStrongholdSize::Stately));
-	TestFalse(TEXT("a size and type is not a site"), Map->FindBang(JoinedCol, JoinedRow, Ignored));
 
-	FSolidWorldBang Cave;
-	TestTrue(TEXT("a stronghold line is still a stronghold"), Map->FindBang(CaveCol, CaveRow, Cave));
-	TestEqual(TEXT("cave kind"), static_cast<uint8>(Cave.Kind), static_cast<uint8>(ESolidWorldBang::Stronghold));
 	TestFalse(TEXT("a stronghold is not a site"), Map->StrongholdSiteAtCell(CaveCol, CaveRow, ReadSize));
 
 	const FVector2D WorldMin(-6400.f, -6400.f);

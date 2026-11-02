@@ -168,7 +168,7 @@ int32 SolidTownBuildings::CollectPlacements(
 					return true;
 				}
 			}
-			const float Radius = Trial.PackingRadiusCm() + Separation * 0.5f;
+			const float Radius = Placement.PackingRadiusCm() + Separation * 0.5f;
 			for (const FPlacement& Existing : OutPlacements)
 			{
 				const float MinDist = Radius + Existing.PackingRadiusCm() + Separation * 0.5f;

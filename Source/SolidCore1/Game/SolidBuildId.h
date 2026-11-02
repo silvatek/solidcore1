@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0935")
+#define SOLID_BUILD_ID TEXT("SC1-0936")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Paint writes terrain points, and the cell paint methods are gone.")
+#define SOLID_BUILD_NOTE TEXT("LoadFromChart copies marks and points, and tests no longer fill unused cells.")
 #endif

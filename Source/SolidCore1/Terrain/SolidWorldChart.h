@@ -34,7 +34,7 @@ public:
 	bool LoadDefault(bool bForceReload = false);
 
 	/**
-	 * Copy that chart's cells, marks, and terrain points onto this one, then solve the routes.
+	 * Copy that chart's marks and terrain points onto this one, then solve the routes.
 	 * The solve needs the terrain points to cover the grid.
 	 * Copying this chart only solves.
 	 */

@@ -554,7 +554,6 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Chart->Init(ESolidBiome::Grassland);
-	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	if (!TestTrue(TEXT("the unmarked chart loads"), Empty->LoadFromChart(Chart)))
 	{
 		return false;
@@ -647,7 +646,6 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	if (Rex)
 	{
 		Rex->Init(ESolidBiome::Grassland);
-		Rex->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	}
 	if (!TestNotNull(TEXT("a Dracorex chart"), Rex)
 		|| !TestFalse(TEXT("an unknown encounter is rejected"), Rex->PlaceEncounterAt(CellPoint(RexCell), TEXT("Nope"), RexError))
@@ -749,7 +747,6 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Chart->Init(ESolidBiome::Grassland);
-	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	TArray<FSolidWorldChartMark> GroundEncounters;
 	if (!TestTrue(TEXT("the mark places"), Chart->PlaceEncounterAt(CellPoint(Cell), TEXT("Iglin Bridge"), Error))
 		|| !TestTrue(TEXT("the chart loads"), WorldMap->LoadFromChart(Chart))

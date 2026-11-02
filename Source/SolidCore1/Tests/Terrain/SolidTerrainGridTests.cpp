@@ -20,7 +20,6 @@ namespace
 			return nullptr;
 		}
 		Chart->Init(ESolidBiome::Grassland);
-		Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		Chart->LoadFromChart(Chart);
 		return Chart;
 	}
@@ -347,6 +346,7 @@ bool FSolidTerrainGridPointBrushTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("north stays on the column"), North.X, Origin.X);
 
 	FString Error;
+	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	const int32 CellIndex = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
 	TestTrue(TEXT("one point stamps forest"), Chart->PaintBrush({ Origin }, 0, ESolidBiome::Forest, Error));
 	BiomeIs(*this, TEXT("the stamped point is forest"), Chart->GetPointBiome(Origin), ESolidBiome::Forest);

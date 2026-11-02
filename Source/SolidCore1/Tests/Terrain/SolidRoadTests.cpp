@@ -53,7 +53,6 @@ namespace
 		{
 			return false;
 		}
-		OutChart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		OutChart->Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
 		return true;
 	}

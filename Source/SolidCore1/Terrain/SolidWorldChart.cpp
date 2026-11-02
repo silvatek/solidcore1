@@ -362,7 +362,6 @@ bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 	}
 	if (Chart != this)
 	{
-		Cells = Chart->Cells;
 		Marks = Chart->Marks;
 		const int32 PointCount = PointAxis * PointAxis;
 		Points = Chart->Points.Num() == PointCount ? Chart->Points : TArray<ESolidBiome>();

@@ -116,7 +116,6 @@ namespace
 			return false;
 		}
 		Chart->Init(ESolidBiome::Grassland);
-		Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		Chart->Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
 
 		FString Error;
@@ -449,7 +448,6 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	UTEST_NOT_NULL(TEXT("chart"), Chart);
 	Chart->Init(ESolidBiome::Grassland);
-	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	TArray<SolidBridge::FBridge> None;
 	const USolidTerrainMap* Defaults = GetDefault<USolidTerrainMap>();
 	const FVector2D WorldMin = Defaults->GetWorldMinXY();
@@ -540,7 +538,6 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	UTEST_NOT_NULL(TEXT("chart"), Chart);
 	Chart->Init(ESolidBiome::Grassland);
-	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 
 	FString Error;
 	const FIntPoint Cell(11, 16);

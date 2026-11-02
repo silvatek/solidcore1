@@ -159,10 +159,13 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	{
 		const ESolidBiome MouthResolved = MouthSolved->GetBiomeAtCell(MouthCell.X, MouthCell.Y);
 		TestEqual(
-			TEXT("a lair mouth resolves as mountain"),
+			TEXT("a lair mouth keeps the grassland"),
 			static_cast<uint8>(MouthResolved),
-			static_cast<uint8>(ESolidBiome::Mountain));
-		TestTrue(TEXT("the mouth overrides the paint"), MouthResolved != Chart->Cells[MouthCellIndex]);
+			static_cast<uint8>(ESolidBiome::Grassland));
+		TestEqual(
+			TEXT("the mouth keeps the paint"),
+			static_cast<uint8>(MouthResolved),
+			static_cast<uint8>(Chart->Cells[MouthCellIndex]));
 	}
 	if (MouthMark != INDEX_NONE)
 	{

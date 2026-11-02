@@ -119,7 +119,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 		{
 			if (Row == 1 && Col == 2)
 			{
-				Line.AppendChar(USolidWorldChart::LocationMarker);
+				Line.AppendChar(USolidWorldChart::DeprecatedLocationMarker);
 			}
 			else if (Row == 3 && Col == 5)
 			{
@@ -127,7 +127,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 			}
 			else if ((Row == 3 && Col == 9) || (Row == 8 && Col == 9))
 			{
-				Line.AppendChar(USolidWorldChart::LocationMarker);
+				Line.AppendChar(USolidWorldChart::DeprecatedLocationMarker);
 			}
 			else
 			{
@@ -274,7 +274,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldChart::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldChart::LocationMarker : USolidWorldChart::GrassMarker);
+			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldChart::DeprecatedLocationMarker : USolidWorldChart::GrassMarker);
 		}
 		Text += Line;
 		Text += TEXT("\n");

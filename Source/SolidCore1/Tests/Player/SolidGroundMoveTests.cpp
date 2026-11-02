@@ -83,7 +83,7 @@ bool FSolidGroundMoveFootingTest::RunTest(const FString& Parameters)
 		{ 20, 10, USolidWorldChart::SeaMarker },
 		{ 22, 10, TEXT('M') },
 		{ 24, 10, USolidWorldChart::ForestMarker },
-		{ 26, 10, USolidWorldChart::LocationMarker },
+		{ 26, 10, USolidWorldChart::DeprecatedLocationMarker },
 	}, TEXT("! 11,27 = Stronghold (MeagreDungeon)\n"));
 	if (!TestTrue(TEXT("grid loads"), Map->LoadFromString(Grid)))
 	{

@@ -83,15 +83,7 @@ public:
 	 * Stronghold, StrongholdSite, LairEntrance, and LairExit use the same coordinates.
 	 * Row and column count from 1 at the top-left of the grid.
 	 */
-	static constexpr TCHAR LocationMarker = TEXT('!');
-
-	/**
-	 * Paint letters that are not locations. A LairEntrance ! and a LairExit !
-	 * use the mountain shelf. These letters themselves are not mouths, towns,
-	 * or the cave.
-	 */
-	static constexpr TCHAR XMarker = TEXT('X');
-	static constexpr TCHAR YMarker = TEXT('Y');
+	static constexpr TCHAR DeprecatedLocationMarker = TEXT('!');
 
 	/** Editor path of the shipped chart. */
 	static const TCHAR* ShippedPath();
@@ -121,7 +113,7 @@ public:
 
 	/**
 	 * Marker biome at map cell (clamped). The town marker is Town; the desert marker is Desert; M is Mountain.
-	 * The mark on this cell names the rest. A town mark is Town. A lair mouth is Mountain.
+	 * The mark on this cell names the rest. A town mark is Town. A lair mouth keeps the paint.
 	 * A stronghold uses the shelf that stronghold names. One with no shelf keeps the marker biome.
 	 * A stronghold site keeps the marker biome. A ! with no mark is Grassland.
 	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
@@ -129,7 +121,7 @@ public:
 	ESolidBiome GetBiomeAtCell(int32 CellX, int32 CellY) const;
 
 	/**
-	 * Marker biome at a cell, before a named town, a stronghold shelf, or a lair mouth replaces it.
+	 * Marker biome at a cell, before a named town or a stronghold shelf replaces it.
 	 * A ! is grassland. Swamp and road are not marker biomes.
 	 */
 	ESolidBiome GetMarkerBiomeAtCell(int32 CellX, int32 CellY) const;

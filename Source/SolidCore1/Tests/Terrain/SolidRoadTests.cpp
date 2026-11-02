@@ -596,7 +596,7 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("the trail starts on the cave"),
 		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),
-		USolidWorldChart::LocationMarker);
+		USolidWorldChart::DeprecatedLocationMarker);
 	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
 	return true;
 }

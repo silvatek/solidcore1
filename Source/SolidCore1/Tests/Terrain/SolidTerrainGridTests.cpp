@@ -101,7 +101,7 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	FString Mouth = GrassGrid();
 	const int32 MouthCol = 10;
 	const int32 MouthRow = 10;
-	SetTerrainCell(Mouth, MouthCol, MouthRow, USolidWorldChart::LocationMarker);
+	SetTerrainCell(Mouth, MouthCol, MouthRow, USolidWorldChart::DeprecatedLocationMarker);
 	Mouth += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
 	USolidWorldChart* Lair = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("mouth chart"), Lair))
@@ -123,15 +123,15 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	}
 
 	const FVector2D MouthCentre = CellCentre(*Lair, MouthCol, MouthRow);
-	BiomeIs(*this, TEXT("the mouth cell is mountain"), Lair->GetBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Mountain);
-	BiomeIs(*this, TEXT("the mouth point is mountain"), SampleAt(*Lair, MouthCentre), ESolidBiome::Mountain);
-	BiomeIs(*this, TEXT("the point beside the mouth stays mountain"), SampleAt(*Lair, MouthCentre + FVector2D(400.f, 0.f)), ESolidBiome::Mountain);
-	BiomeIs(*this, TEXT("the solver reads the mouth point"), Lair->GetPointBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Mountain);
-	TestTrue(
-		TEXT("a trail cannot enter that mountain point"),
+	BiomeIs(*this, TEXT("the mouth cell stays grassland"), Lair->GetBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Grassland);
+	BiomeIs(*this, TEXT("the mouth point stays grassland"), SampleAt(*Lair, MouthCentre), ESolidBiome::Grassland);
+	BiomeIs(*this, TEXT("the point beside the mouth stays grassland"), SampleAt(*Lair, MouthCentre + FVector2D(400.f, 0.f)), ESolidBiome::Grassland);
+	BiomeIs(*this, TEXT("the solver reads the mouth point"), Lair->GetPointBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Grassland);
+	TestFalse(
+		TEXT("a trail can enter the mouth point"),
 		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetPointBiomeAtCell(MouthCol, MouthRow)) == SolidRoad::BannedStep);
-	TestTrue(
-		TEXT("the mouth cell is still closed to a trail"),
+	TestFalse(
+		TEXT("a trail can enter the mouth cell"),
 		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetBiomeAtCell(MouthCol, MouthRow)) == SolidRoad::BannedStep);
 	return true;
 }
@@ -199,7 +199,7 @@ bool FSolidTerrainGridMarkerPointTest::RunTest(const FString& Parameters)
 	const FVector2D MouthCentre = CellCentre(*Chart, Mouth.X, Mouth.Y);
 	BiomeIs(*this, TEXT("the mouth point takes the desert"), SampleAt(*Chart, MouthCentre), ESolidBiome::Desert);
 	BiomeIs(*this, TEXT("the other mouth points take the paint"), SampleAt(*Chart, MouthCentre + FVector2D(400.f, 0.f)), ESolidBiome::Desert);
-	BiomeIs(*this, TEXT("the mouth cell still resolves as mountain"), Chart->GetBiomeAtCell(Mouth.X, Mouth.Y), ESolidBiome::Mountain);
+	BiomeIs(*this, TEXT("the mouth cell keeps the desert"), Chart->GetBiomeAtCell(Mouth.X, Mouth.Y), ESolidBiome::Desert);
 	return true;
 }
 

@@ -366,11 +366,11 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 		{
 			if (Row == 2 && Col == 4)
 			{
-				Line.AppendChar(USolidWorldChart::LocationMarker);
+				Line.AppendChar(USolidWorldChart::DeprecatedLocationMarker);
 			}
 			else if (Row == 4 && Col == 6)
 			{
-				Line.AppendChar(USolidWorldChart::LocationMarker);
+				Line.AppendChar(USolidWorldChart::DeprecatedLocationMarker);
 			}
 			else if (Row == 2 && Col == 8)
 			{

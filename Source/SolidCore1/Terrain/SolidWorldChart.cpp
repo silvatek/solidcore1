@@ -415,7 +415,7 @@ namespace
 			USolidWorldChart::RiverMarker,
 			USolidWorldChart::SeaMarker,
 			USolidWorldChart::DesertMarker,
-			USolidWorldChart::LocationMarker,
+			USolidWorldChart::DeprecatedLocationMarker,
 		};
 		for (const TCHAR Marker : Expected)
 		{
@@ -441,7 +441,7 @@ bool USolidWorldChart::IsGridMarker(const TCHAR Marker)
 		|| WorldMapMarkerMatches(Marker, RiverMarker)
 		|| WorldMapMarkerMatches(Marker, SeaMarker)
 		|| WorldMapMarkerMatches(Marker, DesertMarker)
-		|| WorldMapMarkerMatches(Marker, LocationMarker);
+		|| WorldMapMarkerMatches(Marker, DeprecatedLocationMarker);
 }
 
 ESolidBiome USolidWorldChart::MarkerToBiome(const TCHAR Marker)
@@ -470,7 +470,7 @@ ESolidBiome USolidWorldChart::MarkerToBiome(const TCHAR Marker)
 	{
 		return ESolidBiome::Desert;
 	}
-	if (WorldMapMarkerMatches(Marker, LocationMarker))
+	if (WorldMapMarkerMatches(Marker, DeprecatedLocationMarker))
 	{
 		return ESolidBiome::Grassland;
 	}
@@ -539,7 +539,7 @@ namespace
 			Trimmed.LeftInline(Hash);
 			Trimmed.TrimEndInline();
 		}
-		if (Trimmed.IsEmpty() || Trimmed[0] != USolidWorldChart::LocationMarker)
+		if (Trimmed.IsEmpty() || Trimmed[0] != USolidWorldChart::DeprecatedLocationMarker)
 		{
 			return false;
 		}
@@ -711,7 +711,7 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 		const int32 Index = Ref.CellY * MapWidth + Ref.CellX;
 		const int32 Row = Ref.CellY + 1;
 		const int32 Column = Ref.CellX + 1;
-		if (static_cast<TCHAR>(Markers[Index]) != LocationMarker)
+		if (static_cast<TCHAR>(Markers[Index]) != DeprecatedLocationMarker)
 		{
 			UE_LOG(LogSolid, Warning,
 				TEXT("WorldMap: ! %d,%d is not an exclamation mark; ignored."),
@@ -821,7 +821,7 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 		return false;
 	}
 	const int32 Index = Cell.Y * MapWidth + Cell.X;
-	if (static_cast<TCHAR>(Markers[Index]) == LocationMarker)
+	if (static_cast<TCHAR>(Markers[Index]) == DeprecatedLocationMarker)
 	{
 		return false;
 	}
@@ -862,7 +862,7 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 	}
 
 	// A town id and the text file both use !. The chart stored that cell as grassland.
-	Markers[Index] = static_cast<uint8>(LocationMarker);
+	Markers[Index] = static_cast<uint8>(DeprecatedLocationMarker);
 	return true;
 }
 
@@ -976,11 +976,14 @@ ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 CellX, int32 CellY) const
 				return Shelf;
 			}
 		}
-		else if ((Mark.Kind == ESolidWorldChartMarkKind::LairEntrance
-				|| Mark.Kind == ESolidWorldChartMarkKind::LairExit)
-			&& (!Mark.LairId.IsEmpty() || SolidLair::FindByName(Mark.Name)))
+		else if (Mark.Kind == ESolidWorldChartMarkKind::LairEntrance
+			|| Mark.Kind == ESolidWorldChartMarkKind::LairExit)
 		{
-			return ESolidBiome::Mountain;
+			const int32 Index = CellY * MapWidth + CellX;
+			if (Cells.IsValidIndex(Index))
+			{
+				return Cells[Index];
+			}
 		}
 		break;
 	}
@@ -1172,7 +1175,7 @@ bool USolidWorldChart::IsMarkedTown(
 	}
 
 	const TCHAR Marker = GetMarkerAtCell(CellX, CellY);
-	if (Marker == LocationMarker)
+	if (Marker == DeprecatedLocationMarker)
 	{
 		return GetLocationIdAtCell(CellX, CellY) != INDEX_NONE;
 	}
@@ -1716,7 +1719,7 @@ int32 USolidWorldChart::ResolveLocationId(const int32 CellX, const int32 CellY) 
 		return INDEX_NONE;
 	}
 
-	if (static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]) != LocationMarker)
+	if (static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]) != DeprecatedLocationMarker)
 	{
 		return INDEX_NONE;
 	}

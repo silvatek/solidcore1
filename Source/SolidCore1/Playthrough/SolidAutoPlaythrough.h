@@ -457,8 +457,8 @@ public:
 
 	/** Sets the dim flag and starts at the first step. */
 	void Start(USolidGameState& State);
-	/** The HUD line goes. The dim flag stays set. */
-	void Stop();
+	/** The HUD line goes. The dim flag stays set. Reason is written to the log. */
+	void Stop(const TCHAR* Reason = nullptr);
 	bool IsRunning() const { return bRunning; }
 
 	/**
@@ -468,10 +468,12 @@ public:
 	void Tick(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 private:
-	/** Moves to the next row of Script. The list ending stops the script. */
-	void Advance();
+	/** Moves to the next row of Script. The list ending stops the script. Reason is written to the log. */
+	void Advance(const TCHAR* Reason = nullptr);
 	/** Logs the current row once. A later row logs again. */
 	void NoteStepStart();
+	/** Logs a wait reason once, and again when the reason changes. */
+	void NoteWait(const TCHAR* Reason);
 	/** Logs the row NoteStepStart logged. A second call logs nothing. */
 	void NoteStepEnd();
 	void ResetWalk();
@@ -534,6 +536,8 @@ private:
 	int32 StepIndex = 0;
 	/** Row whose start has been logged. INDEX_NONE after its end is logged. */
 	int32 LoggedStep = INDEX_NONE;
+	/** Last wait reason logged for the current walk. */
+	const TCHAR* WaitReason = nullptr;
 	bool bWalkReady = false;
 	/** The inventory page is open, so the next tick crafts. */
 	bool bPageOpen = false;

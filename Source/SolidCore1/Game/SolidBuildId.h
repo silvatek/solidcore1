@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0911")
+#define SOLID_BUILD_ID TEXT("SC1-0912")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The tick cycle is gone, and the build id is marked after the streamer is ready.")
+#define SOLID_BUILD_NOTE TEXT("Auto playthrough logs each wait once, and three equals lines mark the build id.")
 #endif

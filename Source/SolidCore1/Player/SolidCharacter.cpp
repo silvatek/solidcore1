@@ -669,7 +669,7 @@ bool ASolidCharacter::IsAutoPlaythroughRunning() const
 	return Instance && Instance->IsAutoPlaythroughRunning();
 }
 
-bool ASolidCharacter::StopAutoPlaythrough()
+bool ASolidCharacter::StopAutoPlaythrough(const TCHAR* Reason)
 {
 	UWorld* World = GetWorld();
 	USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
@@ -677,7 +677,7 @@ bool ASolidCharacter::StopAutoPlaythrough()
 	{
 		return false;
 	}
-	Instance->GetAutoPlaythrough().Stop();
+	Instance->GetAutoPlaythrough().Stop(Reason);
 	ClearClickMove();
 	ReleaseRightMouse();
 	return true;
@@ -685,7 +685,7 @@ bool ASolidCharacter::StopAutoPlaythrough()
 
 void ASolidCharacter::ToggleMainMenuFromInput()
 {
-	if (StopAutoPlaythrough())
+	if (StopAutoPlaythrough(TEXT("main menu key")))
 	{
 		return;
 	}
@@ -772,7 +772,7 @@ void ASolidCharacter::TakePlayshot()
 
 void ASolidCharacter::CloseMenuOverlayFromInput()
 {
-	if (StopAutoPlaythrough())
+	if (StopAutoPlaythrough(TEXT("close menu overlay")))
 	{
 		return;
 	}

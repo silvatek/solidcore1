@@ -250,6 +250,10 @@ void ASolidGameMode::SyncBattlePlans()
 void ASolidGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	const FString Bar = FString::ChrN(80, TEXT('='));
+	UE_LOG(LogSolid, Warning, TEXT("%s"), *Bar);
+	UE_LOG(LogSolid, Warning, TEXT("%s"), *Bar);
+	UE_LOG(LogSolid, Warning, TEXT("%s"), *Bar);
 	UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
 	EnsureCompanyAndSquad();
 	RestoreTravelSession();

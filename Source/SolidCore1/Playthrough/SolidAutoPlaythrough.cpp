@@ -754,12 +754,29 @@ void FSolidAutoPlaythrough::Start(USolidGameState& State)
 	NoteStepStart();
 }
 
-void FSolidAutoPlaythrough::Stop()
+void FSolidAutoPlaythrough::Stop(const TCHAR* Reason)
 {
+	if (bRunning)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Auto playthrough stop: %s"), Reason ? Reason : TEXT("no reason given"));
+	}
 	NoteStepEnd();
 	bRunning = false;
 	bAimRavenHeld = false;
 	ResetWalk();
+}
+
+void FSolidAutoPlaythrough::NoteWait(const TCHAR* Reason)
+{
+	if (WaitReason == Reason)
+	{
+		return;
+	}
+	WaitReason = Reason;
+	if (Reason)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Auto playthrough wait: %s"), Reason);
+	}
 }
 
 void FSolidAutoPlaythrough::NoteStepStart()
@@ -792,7 +809,7 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 
 	if (StepIndex < 0 || StepIndex >= ScriptCount)
 	{
-		Stop();
+		Stop(TEXT("step index is outside the script"));
 		Captain.ReleaseRightMouse();
 		return;
 	}
@@ -850,14 +867,15 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	}
 }
 
-void FSolidAutoPlaythrough::Advance()
+void FSolidAutoPlaythrough::Advance(const TCHAR* Reason)
 {
+	UE_LOG(LogSolid, Warning, TEXT("Auto playthrough advance: %s"), Reason ? Reason : TEXT("no reason given"));
 	NoteStepEnd();
 	++StepIndex;
 	ResetWalk();
 	if (StepIndex >= ScriptCount)
 	{
-		Stop();
+		Stop(TEXT("script finished"));
 		return;
 	}
 	NoteStepStart();
@@ -866,6 +884,7 @@ void FSolidAutoPlaythrough::Advance()
 void FSolidAutoPlaythrough::ResetWalk()
 {
 	bWalkReady = false;
+	WaitReason = nullptr;
 	bPageOpen = false;
 	PointIndex = 0;
 	Points.Reset();
@@ -888,7 +907,7 @@ void FSolidAutoPlaythrough::NoteDistance(const float DeltaSeconds, const float D
 	StallAccumulated += DeltaSeconds;
 	if (StallAccumulated >= StallSeconds)
 	{
-		Stop();
+		Stop(TEXT("distance stall"));
 	}
 }
 
@@ -901,19 +920,37 @@ bool FSolidAutoPlaythrough::BuildWalk(
 	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
 	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!Chart || !Chart->IsLoaded() || Mode.GetBridges().Num() == 0)
+	if (!Chart)
 	{
+		NoteWait(TEXT("no chart"));
+		return false;
+	}
+	if (!Chart->IsLoaded())
+	{
+		NoteWait(TEXT("chart is not loaded"));
+		return false;
+	}
+	if (Mode.GetBridges().Num() == 0)
+	{
+		NoteWait(TEXT("no bridges"));
 		return false;
 	}
 	if (!Step.MarkName || !FindChartMark(*Chart, Step.MarkKind, Step.MarkName))
 	{
-		Stop();
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Auto playthrough mark lookup failed: kind %d name %s"),
+			static_cast<int32>(Step.MarkKind),
+			Step.MarkName ? Step.MarkName : TEXT("(null)"));
+		Stop(TEXT("mark lookup failed"));
 		return false;
 	}
 
 	const SolidRoad::FSolidRoad* Road = FindIglinRelionRoad(*Chart);
 	if (!Road || Road->Points.Num() == 0)
 	{
+		NoteWait(TEXT("no Iglin-Relion road"));
 		return false;
 	}
 
@@ -922,13 +959,20 @@ bool FSolidAutoPlaythrough::BuildWalk(
 	FVector2D IglinXY = FVector2D::ZeroVector;
 	if (!Chart->GetLocationWorldXY(SolidTowns::Iglin, WorldMin, WorldMax, IglinXY))
 	{
+		NoteWait(TEXT("no Iglin world position"));
 		return false;
 	}
 
 	const FSolidMonster* Monster = ClosestIglinBridgeMonster(Mode, Step.MarkName, IglinXY);
-	FVector2D Approach = FVector2D::ZeroVector;
-	if (!Monster || !EncounterApproach(Mode, *Monster, IglinXY, Approach))
+	if (!Monster)
 	{
+		NoteWait(TEXT("no Iglin Bridge monster"));
+		return false;
+	}
+	FVector2D Approach = FVector2D::ZeroVector;
+	if (!EncounterApproach(Mode, *Monster, IglinXY, Approach))
+	{
+		NoteWait(TEXT("no encounter approach"));
 		return false;
 	}
 
@@ -951,6 +995,7 @@ bool FSolidAutoPlaythrough::BuildWalk(
 	}
 	if (Centers.Num() == 0)
 	{
+		NoteWait(TEXT("road has no world points"));
 		return false;
 	}
 
@@ -1014,7 +1059,20 @@ bool FSolidAutoPlaythrough::BuildWalk(
 	bWalkReady = true;
 	bHasBestDistance = false;
 	StallAccumulated = 0.f;
-	return Points.Num() > 0;
+	if (Points.Num() == 0)
+	{
+		NoteWait(TEXT("walk built no points"));
+		return false;
+	}
+	NoteWait(nullptr);
+	UE_LOG(
+		LogSolid,
+		Warning,
+		TEXT("Auto playthrough walk ready: %d points from (%.0f, %.0f)"),
+		Points.Num(),
+		CaptainLocation.X,
+		CaptainLocation.Y);
+	return true;
 }
 
 bool FSolidAutoPlaythrough::TickWalk(
@@ -1025,7 +1083,7 @@ bool FSolidAutoPlaythrough::TickWalk(
 {
 	if (!Step.MarkName)
 	{
-		Stop();
+		Stop(TEXT("walk has no mark name"));
 		return false;
 	}
 
@@ -1033,7 +1091,7 @@ bool FSolidAutoPlaythrough::TickWalk(
 	const FVector2D Here(Location.X, Location.Y);
 	if (Step.MarkKind == ESolidWorldChartMarkKind::Encounter && IglinBridgeDetects(Mode, Step.MarkName, Here))
 	{
-		Advance();
+		Advance(TEXT("encounter detects the captain"));
 		return false;
 	}
 	if (!bWalkReady && !BuildWalk(Mode, Location, Step))
@@ -1042,7 +1100,7 @@ bool FSolidAutoPlaythrough::TickWalk(
 	}
 	if (!Points.IsValidIndex(PointIndex))
 	{
-		Stop();
+		Stop(TEXT("walk has no current point"));
 		return false;
 	}
 

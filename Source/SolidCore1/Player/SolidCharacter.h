@@ -215,7 +215,7 @@ protected:
 	void ToggleMainMenuFromInput();
 	bool IsAutoPlaythroughRunning() const;
 	/** Player Esc and F10. True when a running script was stopped. */
-	bool StopAutoPlaythrough();
+	bool StopAutoPlaythrough(const TCHAR* Reason);
 	void ToggleInventoryFromSlash();
 	void ToggleInventoryFromController();
 	void ToggleDebugPanelFromInput();

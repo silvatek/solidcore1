@@ -110,55 +110,26 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 {
-	FString Text;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		FString Line;
-		Line.Reserve(USolidWorldChart::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
-		{
-			if (Row == 1 && Col == 2)
-			{
-				Line.AppendChar(USolidWorldChart::DeprecatedLocationMarker);
-			}
-			else if (Row == 3 && Col == 5)
-			{
-				Line.AppendChar(TEXT('9'));
-			}
-			else if ((Row == 3 && Col == 9) || (Row == 8 && Col == 9))
-			{
-				Line.AppendChar(USolidWorldChart::DeprecatedLocationMarker);
-			}
-			else
-			{
-				Line.AppendChar(SolidBiome::Of(ESolidBiome::Grassland).Marker());
-			}
-		}
-		Text += Line;
-		Text += TEXT("\n");
-	}
-	Text += TEXT("! 2,3 = Town Iglin\n");
-	Text += TEXT("! 4,10 = Town Kanfold\n");
-	Text += TEXT("! 9,10 = Town Kanfold\n");
-
 	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
-	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
-	FSolidWorldChartMark IglinMark;
-	IglinMark.Kind = ESolidWorldChartMarkKind::Town;
-	IglinMark.Name = TEXT("Iglin");
-	int32 IglinTerrainX = 0;
-	int32 IglinTerrainY = 0;
-	USolidWorldChart::PointUnderCell(2, 1, IglinTerrainX, IglinTerrainY);
-	IglinMark.TerrainPoint = FIntPoint(IglinTerrainX, IglinTerrainY);
-	WorldMap->Marks.Add(IglinMark);
-	FSolidWorldChartMark KanfoldMark;
-	KanfoldMark.Kind = ESolidWorldChartMarkKind::Town;
-	KanfoldMark.Name = TEXT("Kanfold");
-	int32 KanfoldTerrainX = 0;
-	int32 KanfoldTerrainY = 0;
-	USolidWorldChart::PointUnderCell(9, 3, KanfoldTerrainX, KanfoldTerrainY);
-	KanfoldMark.TerrainPoint = FIntPoint(KanfoldTerrainX, KanfoldTerrainY);
-	WorldMap->Marks.Add(KanfoldMark);
+	if (!TestNotNull(TEXT("chart"), WorldMap))
+	{
+		return false;
+	}
+	WorldMap->Init(ESolidBiome::Grassland);
+
+	auto AddTown = [](USolidWorldChart& Chart, const int32 CellX, const int32 CellY, const TCHAR* Name)
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = ESolidWorldChartMarkKind::Town;
+		Mark.Name = Name;
+		int32 TerrainX = 0;
+		int32 TerrainY = 0;
+		USolidWorldChart::PointUnderCell(CellX, CellY, TerrainX, TerrainY);
+		Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
+		Chart.Marks.Add(Mark);
+	};
+	AddTown(*WorldMap, 2, 1, TEXT("Iglin"));
+	AddTown(*WorldMap, 9, 3, TEXT("Kanfold"));
 
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
@@ -267,22 +238,12 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("one wall gate"), WallGateCount, 1);
 
-	FString Text;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		FString Line;
-		Line.Reserve(USolidWorldChart::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
-		{
-			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldChart::DeprecatedLocationMarker : SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		}
-		Text += Line;
-		Text += TEXT("\n");
-	}
-	Text += TEXT("! 10,17 = Town Dragongate\n");
-
 	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
-	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
+	if (!TestNotNull(TEXT("chart"), WorldMap))
+	{
+		return false;
+	}
+	WorldMap->Init(ESolidBiome::Grassland);
 	FSolidWorldChartMark GateMark;
 	GateMark.Kind = ESolidWorldChartMarkKind::Town;
 	GateMark.Name = TEXT("Dragongate");

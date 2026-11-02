@@ -309,15 +309,16 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	FIntPoint GateCell;
-	if (!TestTrue(TEXT("shipped Dragongate"), Shipped->TownCell(SolidTowns::Dragongate, GateCell)))
+	FSolidWorldChartMark GateMark;
+	if (!TestTrue(TEXT("shipped Dragongate"), Shipped->FindTownMarker(SolidTowns::Dragongate, GateMark)))
 	{
 		return false;
 	}
-	const FVector2D Centre = CellCentre(*Shipped, GateCell.X, GateCell.Y);
+	FVector2D GateXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("the Dragongate mark projects"), Shipped->TerrainPointToWorld(GateMark.TerrainPoint, GridMin, GridMax, GateXY));
 	TestEqual(
 		TEXT("standing on a Dragongate mark is Dragongate"),
-		Shipped->SampleLocationId(Centre.X, Centre.Y, GridMin, GridMax),
+		Shipped->SampleLocationId(GateXY.X, GateXY.Y, GridMin, GridMax),
 		SolidTowns::Dragongate);
 	return true;
 }

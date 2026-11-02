@@ -617,7 +617,6 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	}
 
 	FIntPoint CaveCell = FIntPoint::ZeroValue;
-	FIntPoint EndCell = FIntPoint::ZeroValue;
 	TestTrue(TEXT("the trail starts at a stronghold"), Roads[0].From.Kind == ESolidWorldChartMarkKind::Stronghold);
 	TestTrue(TEXT("the trail start is a point"), USolidWorldChart::CellAtTerrainPoint(Roads[0].From.TerrainPoint, CaveCell));
 	TestEqual(TEXT("the trail starts at 9,17"), CaveCell, FIntPoint(16, 8));
@@ -625,10 +624,9 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	ESolidStrongholdSize TrailSize = ESolidStrongholdSize::Imperious;
 	TestTrue(TEXT("the trail starts on the cave"),
 		Map->StrongholdAtTerrain(Roads[0].Points[0].X, Roads[0].Points[0].Y, TrailType, TrailSize));
-	TestTrue(TEXT("the trail's last point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points.Last(), EndCell));
-	FIntPoint IglinCell = FIntPoint::ZeroValue;
-	TestTrue(TEXT("Iglin is a cell"), Map->TownCell(SolidTowns::Iglin, IglinCell));
-	TestEqual(TEXT("trail ends at Iglin"), EndCell, IglinCell);
+	FSolidWorldChartMark IglinMark;
+	TestTrue(TEXT("Iglin is a marker"), Map->FindTownMarker(SolidTowns::Iglin, IglinMark));
+	TestEqual(TEXT("trail ends at Iglin"), Roads[0].Points.Last(), IglinMark.TerrainPoint);
 	return true;
 }
 

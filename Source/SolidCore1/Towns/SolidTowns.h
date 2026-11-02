@@ -39,7 +39,7 @@ namespace SolidTowns
 	{
 		int32 Id = INDEX_NONE;
 		const TCHAR* Name = TEXT("");
-		/** Centimetres from the cell center. +X is west, +Y is north. */
+		/** Centimetres from the marker. +X is west, +Y is north. */
 		FVector2D SignOffsetCm = FVector2D(0.f, 0.f);
 		float SignYawDeg = SignFacesSouthYawDeg;
 		ETownType Type = ETownType::Town;

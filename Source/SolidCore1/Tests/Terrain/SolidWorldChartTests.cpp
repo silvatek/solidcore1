@@ -58,10 +58,10 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the cave row stays 9"), Cave.Y + 1, SolidStronghold::StartingRow);
 	TestEqual(TEXT("the cave column stays 17"), Cave.X + 1, SolidStronghold::StartingColumn);
 
-	FIntPoint Iglin;
-	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->TownCell(0, Iglin));
-	FIntPoint Gate;
-	TestTrue(TEXT("Dragongate stays one town"), DefaultMap->TownCell(SolidTowns::Dragongate, Gate));
+	FSolidWorldChartMark Iglin;
+	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->FindTownMarker(0, Iglin));
+	FSolidWorldChartMark Gate;
+	TestTrue(TEXT("Dragongate stays one town"), DefaultMap->FindTownMarker(SolidTowns::Dragongate, Gate));
 	return true;
 }
 

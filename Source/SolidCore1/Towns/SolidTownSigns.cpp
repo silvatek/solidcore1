@@ -1,6 +1,5 @@
 #include "SolidTownSigns.h"
 #include "SolidTowns.h"
-#include "SolidWallgate.h"
 #include "SolidWorldChart.h"
 
 static_assert(
@@ -39,36 +38,17 @@ int32 SolidTownSigns::CollectPlacements(
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
 		FSolidWorldChartMark Mark;
-		FIntPoint Cell;
+		FVector2D MarkerXY = FVector2D::ZeroVector;
 		if (!WorldMap->FindTownMarker(Town.Id, Mark)
-			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
+			|| !WorldMap->TerrainPointToWorld(Mark.TerrainPoint, WorldMinXY, WorldMaxXY, MarkerXY))
 		{
 			continue;
-		}
-
-		FVector2D Anchor = FVector2D::ZeroVector;
-		if (!WorldMap->TerrainPointToWorld(Mark.TerrainPoint, WorldMinXY, WorldMaxXY, Anchor))
-		{
-			continue;
-		}
-		FIntPoint AnchorCell = Cell;
-		if (SolidTowns::IsWallGate(Town.Id))
-		{
-			FVector2D Gate = FVector2D::ZeroVector;
-			FIntPoint Marker = FIntPoint::ZeroValue;
-			if (SolidWallgate::GateCenterXY(WorldMap, Town.Id, WorldMinXY, WorldMaxXY, Gate)
-				&& SolidWallgate::MarkerCell(WorldMap, Town.Id, Marker))
-			{
-				Anchor = Gate;
-				AnchorCell = Marker;
-			}
 		}
 
 		FPlacement Placement;
 		Placement.LocationId = Town.Id;
 		Placement.Name = Town.Name;
-		Placement.Cell = AnchorCell;
-		Placement.WorldXY = Anchor + Town.SignOffsetCm;
+		Placement.WorldXY = MarkerXY + Town.SignOffsetCm;
 		Placement.YawDeg = Town.SignYawDeg;
 		OutPlacements.Add(Placement);
 	}

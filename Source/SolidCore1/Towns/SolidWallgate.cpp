@@ -149,7 +149,12 @@ bool SolidWallgate::MarkerCell(
 		return false;
 	}
 
-	return WorldMap->TownCell(TownId, OutCell);
+	FSolidWorldChartMark Mark;
+	if (!WorldMap->FindTownMarker(TownId, Mark))
+	{
+		return false;
+	}
+	return USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
 }
 
 int32 SolidWallgate::CollectPieces(

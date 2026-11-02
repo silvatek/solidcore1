@@ -995,16 +995,6 @@ bool USolidWorldChart::FindStrongholdSiteMarker(
 	return false;
 }
 
-bool USolidWorldChart::TownCell(const int32 TownId, FIntPoint& OutCell) const
-{
-	FSolidWorldChartMark Mark;
-	if (!FindTownMarker(TownId, Mark))
-	{
-		return false;
-	}
-	return CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
-}
-
 bool USolidWorldChart::CellAtWorld(
 	const float WorldX,
 	const float WorldY,

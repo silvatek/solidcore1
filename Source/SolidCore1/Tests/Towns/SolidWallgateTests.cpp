@@ -409,15 +409,15 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault());
 	if (Shipped && Shipped->IsLoaded())
 	{
-		FIntPoint Cell;
-		TestTrue(TEXT("shipped Dragongate"), Shipped->TownCell(SolidTowns::Dragongate, Cell));
-		FVector2D CellXY = FVector2D::ZeroVector;
+		FSolidWorldChartMark Gate;
+		TestTrue(TEXT("shipped Dragongate"), Shipped->FindTownMarker(SolidTowns::Dragongate, Gate));
+		FVector2D MarkerXY = FVector2D::ZeroVector;
 		FVector2D Opening = FVector2D::ZeroVector;
 		TestTrue(TEXT("the marker projects"),
-			WallgateCellWorld(*Shipped, Cell, WallgateTestMin, WallgateTestMax, CellXY));
+			Shipped->TerrainPointToWorld(Gate.TerrainPoint, WallgateTestMin, WallgateTestMax, MarkerXY));
 		TestTrue(TEXT("the shipped gate has an opening"),
 			SolidWallgate::GateCenterXY(Shipped, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
-		TestTrue(TEXT("the shipped opening is that cell"), Opening.Equals(CellXY, 0.5f));
+		TestTrue(TEXT("the shipped opening is that marker"), Opening.Equals(MarkerXY, 0.5f));
 	}
 	return true;
 }
@@ -452,8 +452,12 @@ bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 		SolidTownSigns::CollectPlacements(Map, WallgateTestMin, WallgateTestMax, Signs), 1);
 	if (Signs.Num() == 1)
 	{
-		const FVector2D Expected = East + FVector2D(SolidTowns::DragongateSignWestCm, SolidTowns::DragongateSignNorthCm);
-		TestTrue(TEXT("the sign stands by the eastern marker"), Signs[0].WorldXY.Equals(Expected, 0.5f));
+		FSolidWorldChartMark Gate;
+		FVector2D MarkerXY = FVector2D::ZeroVector;
+		TestTrue(TEXT("Dragongate has a marker"), Map->FindTownMarker(SolidTowns::Dragongate, Gate));
+		TestTrue(TEXT("the marker projects"), Map->TerrainPointToWorld(Gate.TerrainPoint, WallgateTestMin, WallgateTestMax, MarkerXY));
+		const FVector2D Expected = MarkerXY + FVector2D(SolidTowns::DragongateSignWestCm, SolidTowns::DragongateSignNorthCm);
+		TestTrue(TEXT("the sign stands at the town offset from the marker"), Signs[0].WorldXY.Equals(Expected, 0.5f));
 	}
 
 	const FIntPoint Origin = WallgatePoint(*Map, East);

@@ -115,8 +115,8 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 			TownId);
 	}
 
-	FIntPoint Kanfold;
-	TestTrue(TEXT("Kanfold"), Map->TownCell(SolidTowns::Kanfold, Kanfold));
+	FSolidWorldChartMark Kanfold;
+	TestTrue(TEXT("Kanfold"), Map->FindTownMarker(SolidTowns::Kanfold, Kanfold));
 	return true;
 }
 

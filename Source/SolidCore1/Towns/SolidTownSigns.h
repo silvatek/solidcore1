@@ -7,7 +7,7 @@ class USolidWorldChart;
 /**
  * Welcome signs for numbered WorldMap locations.
  * The board reads "Welcome to" on the first line and the town name on the second.
- * One placement per named town, at the middle of its cells.
+ * One placement per named town, at that town's offset from its marker.
  * Pure logic — no actor spawning (safe for automation).
  */
 namespace SolidTownSigns
@@ -39,7 +39,6 @@ namespace SolidTownSigns
 	{
 		int32 LocationId = INDEX_NONE;
 		FString Name;
-		FIntPoint Cell = FIntPoint::ZeroValue;
 		FVector2D WorldXY = FVector2D::ZeroVector;
 		/** Actor yaw from the town. The default faces south. */
 		float YawDeg = FacingYawDeg;
@@ -52,8 +51,8 @@ namespace SolidTownSigns
 	float BoardWidthCm(const FString& Label);
 
 	/**
-	 * One placement per location that has a non-empty name, at the middle of its cells.
-	 * A town offset is added from that middle. Ordered by location id.
+	 * One placement per location that has a non-empty name.
+	 * The sign stands at the town's offset from its marker. Ordered by location id.
 	 * @return Number of placements written.
 	 */
 	int32 CollectPlacements(

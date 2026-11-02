@@ -10,22 +10,6 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
-{
-	bool TownSignCellWorld(
-		const USolidWorldChart& Chart,
-		const FIntPoint Cell,
-		const FVector2D& WorldMin,
-		const FVector2D& WorldMax,
-		FVector2D& OutWorld)
-	{
-		int32 X = 0;
-		int32 Y = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
-		return Chart.TerrainPointToWorld(FIntPoint(X, Y), WorldMin, WorldMax, OutWorld);
-	}
-}
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidTownSignPlacementsTest,
 	"SolidCore1.Vegetation.TownSignPlacements",
@@ -43,8 +27,8 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 	int32 NamedTowns = 0;
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
-		FIntPoint Cell;
-		if (WorldMap->TownCell(Town.Id, Cell))
+		FSolidWorldChartMark Mark;
+		if (WorldMap->FindTownMarker(Town.Id, Mark))
 		{
 			++NamedTowns;
 		}
@@ -74,23 +58,17 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 			SolidTownSigns::MakeLabel(Placement.Name),
 			FString::Printf(TEXT("%s\n%s"), SolidTownSigns::WelcomeLine, *Placement.Name));
 
-		FVector2D CellXY = FVector2D::ZeroVector;
-		TestTrue(TEXT("cell projects"), TownSignCellWorld(*WorldMap, Placement.Cell, WorldMin, WorldMax, CellXY));
 		const SolidTowns::FTownInfo* Town = SolidTowns::Find(Placement.LocationId);
 		TestNotNull(TEXT("town"), Town);
 		if (Town)
 		{
-			FVector2D Anchor = CellXY;
-			if (SolidTowns::IsWallGate(Town->Id))
-			{
-				FVector2D Gate = FVector2D::ZeroVector;
-				TestTrue(
-					TEXT("the wall gate sign uses its marker"),
-					SolidWallgate::GateCenterXY(WorldMap, Town->Id, WorldMin, WorldMax, Gate));
-				Anchor = Gate;
-			}
-			TestTrue(TEXT("placement is the town anchor plus the town offset"),
-				Placement.WorldXY.Equals(Anchor + Town->SignOffsetCm, 0.1f));
+			FSolidWorldChartMark Mark;
+			FVector2D MarkerXY = FVector2D::ZeroVector;
+			TestTrue(TEXT("the town mark"), WorldMap->FindTownMarker(Town->Id, Mark));
+			TestTrue(TEXT("the marker projects"),
+				WorldMap->TerrainPointToWorld(Mark.TerrainPoint, WorldMin, WorldMax, MarkerXY));
+			TestTrue(TEXT("placement is the marker plus the town offset"),
+				Placement.WorldXY.Equals(MarkerXY + Town->SignOffsetCm, 0.1f));
 			TestTrue(TEXT("placement uses the town yaw"),
 				FMath::IsNearlyEqual(Placement.YawDeg, Town->SignYawDeg, 0.1f));
 		}
@@ -158,14 +136,16 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("first is Iglin"), Placements[0].Name, FString(TEXT("Iglin")));
 	TestEqual(TEXT("second is Kanfold"), Placements[1].Name, FString(TEXT("Kanfold")));
+	FSolidWorldChartMark KanfoldMark;
+	FSolidWorldChartMark IglinMark;
 	FVector2D KanfoldXY = FVector2D::ZeroVector;
-	TestTrue(TEXT("Kanfold cell"), TownSignCellWorld(*WorldMap, FIntPoint(9, 3), WorldMin, WorldMax, KanfoldXY));
-	TestTrue(TEXT("Kanfold sign sits on its marker"),
-		Placements[1].WorldXY.Equals(KanfoldXY, 0.1f));
-
 	FVector2D IglinXY = FVector2D::ZeroVector;
-	TestTrue(TEXT("Iglin cell"), TownSignCellWorld(*WorldMap, FIntPoint(2, 1), WorldMin, WorldMax, IglinXY));
-	TestTrue(TEXT("Iglin sign sits on its cell"), Placements[0].WorldXY.Equals(IglinXY, 0.1f));
+	TestTrue(TEXT("Kanfold mark"), WorldMap->FindTownMarker(SolidTowns::Kanfold, KanfoldMark));
+	TestTrue(TEXT("Iglin mark"), WorldMap->FindTownMarker(SolidTowns::Iglin, IglinMark));
+	TestTrue(TEXT("Kanfold projects"), WorldMap->TerrainPointToWorld(KanfoldMark.TerrainPoint, WorldMin, WorldMax, KanfoldXY));
+	TestTrue(TEXT("Iglin projects"), WorldMap->TerrainPointToWorld(IglinMark.TerrainPoint, WorldMin, WorldMax, IglinXY));
+	TestTrue(TEXT("Kanfold sign sits on its marker"), Placements[1].WorldXY.Equals(KanfoldXY, 0.1f));
+	TestTrue(TEXT("Iglin sign sits on its marker"), Placements[0].WorldXY.Equals(IglinXY, 0.1f));
 	return true;
 }
 
@@ -247,7 +227,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 				TEXT("other towns stay towns"),
 				static_cast<uint8>(Town.Type),
 				static_cast<uint8>(SolidTowns::ETownType::Town));
-			TestTrue(TEXT("other signs stay on the cell"), Town.SignOffsetCm.IsNearlyZero());
+			TestTrue(TEXT("other signs stay on the marker"), Town.SignOffsetCm.IsNearlyZero());
 			TestTrue(TEXT("other signs face south"),
 				FMath::IsNearlyEqual(Town.SignYawDeg, SolidTownSigns::FacingYawDeg, 0.1f));
 		}
@@ -278,13 +258,12 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	FVector2D CellXY = FVector2D::ZeroVector;
-	TestTrue(TEXT("cell projects"), TownSignCellWorld(*WorldMap, FIntPoint(16, 9), WorldMin, WorldMax, CellXY));
-	const float CellNorth = (WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldChart::MapHeight) * 0.5f;
-	const FVector2D Expected = CellXY + FVector2D(SolidTowns::DragongateSignWestCm, CellNorth);
-	TestTrue(TEXT("sign stands west of the gate on the north edge"), Placements[0].WorldXY.Equals(Expected, 0.1f));
-	TestTrue(TEXT("sign is north of the cell center"), Placements[0].WorldXY.Y > CellXY.Y + TowerNorthCm);
-	TestTrue(TEXT("sign is west of the cell center"), Placements[0].WorldXY.X > CellXY.X);
+	FVector2D MarkerXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("the marker projects"), WorldMap->TerrainPointToWorld(GateMark.TerrainPoint, WorldMin, WorldMax, MarkerXY));
+	const FVector2D Expected = MarkerXY + FVector2D(SolidTowns::DragongateSignWestCm, SolidTowns::DragongateSignNorthCm);
+	TestTrue(TEXT("sign stands at the town offset from the marker"), Placements[0].WorldXY.Equals(Expected, 0.1f));
+	TestTrue(TEXT("sign is north of the marker"), Placements[0].WorldXY.Y > MarkerXY.Y + TowerNorthCm);
+	TestTrue(TEXT("sign is west of the marker"), Placements[0].WorldXY.X > MarkerXY.X);
 	TestTrue(TEXT("spawn yaw faces north"),
 		FMath::IsNearlyEqual(Placements[0].YawDeg, SolidTowns::SignFacesNorthYawDeg, 0.1f));
 	return true;

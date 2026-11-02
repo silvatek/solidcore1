@@ -69,9 +69,6 @@ public:
 	/** Tint for this biome. */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;
 
-	/** Deprecated. Cell of this town's marker. False when the chart has no such town. */
-	bool TownCell(int32 TownId, FIntPoint& OutCell) const;
-
 	/** This town's mark. False when the chart has no such town. */
 	bool FindTownMarker(int32 TownId, FSolidWorldChartMark& OutMark) const;
 

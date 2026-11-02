@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0914")
+#define SOLID_BUILD_ID TEXT("SC1-0915")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Walk to Relion goes to the town mark.")
+#define SOLID_BUILD_NOTE TEXT("Kanfold and Dragongate walks go to the town marks.")
 #endif

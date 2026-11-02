@@ -116,15 +116,6 @@ void USolidTerrainMap::Build(
 		FogOriginWorldCm.X, FogOriginWorldCm.Y);
 }
 
-bool USolidTerrainMap::GetStartTownWorldXY(FVector2D& OutWorldXY) const
-{
-	if (!WorldMap || !WorldMap->IsLoaded())
-	{
-		return false;
-	}
-	return WorldMap->GetStartTownWorldXY(GetWorldMinXY(), GetWorldMaxXY(), OutWorldXY);
-}
-
 void USolidTerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutTerrainX, int32& OutTerrainY) const
 {
 	const float FX = (WorldX - WorldMinCm.X) / PointSpacing;

@@ -4,7 +4,25 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainStreamer.h"
 #include "SolidTerrainTestHelpers.h"
+#include "SolidTowns.h"
 #include "SolidWorldChart.h"
+
+namespace
+{
+	bool IglinWorldXY(
+		const USolidWorldChart* Chart,
+		const FVector2D& WorldMin,
+		const FVector2D& WorldMax,
+		FVector2D& OutXY)
+	{
+		FSolidWorldChartMark Mark;
+		if (!Chart || !Chart->FindTownMarker(SolidTowns::Iglin, Mark))
+		{
+			return false;
+		}
+		return Chart->TerrainPointToWorld(Mark.TerrainPoint, WorldMin, WorldMax, OutXY);
+	}
+}
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -18,10 +36,8 @@ bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("LoadDefault succeeds"), Map->LoadDefault());
 	TestTrue(TEXT("reports loaded"), Map->IsLoaded());
-	FVector2D StartXY = FVector2D::ZeroVector;
-	TestTrue(
-		TEXT("has starting town Z cells"),
-		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), StartXY));
+	FSolidWorldChartMark Iglin;
+	TestTrue(TEXT("Iglin has a mark"), Map->FindTownMarker(SolidTowns::Iglin, Iglin));
 
 	// Row 0 is all sea (north edge of the file).
 	TestEqual(
@@ -71,7 +87,8 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("world map loaded"), Terrain->GetWorldMap()->IsLoaded());
 
 	FVector2D TownXY = FVector2D::ZeroVector;
-	TestTrue(TEXT("terrain exposes start town"), Terrain->GetStartTownWorldXY(TownXY));
+	TestTrue(TEXT("terrain exposes start town"),
+		IglinWorldXY(Terrain->GetWorldMap(), Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), TownXY));
 
 	// The small fixture steps across the whole world, so its nearest point can
 	// miss a painted town. Play uses the chart grid. A road ends on the town
@@ -93,7 +110,8 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 		FVector2D ChartTown = FVector2D::ZeroVector;
 		FIntPoint TownCell = FIntPoint::ZeroValue;
 		if (TestNotNull(TEXT("chart grid map"), Chart)
-			&& TestTrue(TEXT("chart grid exposes the start town"), ChartGrid->GetStartTownWorldXY(ChartTown))
+			&& TestTrue(TEXT("chart grid exposes the start town"),
+				IglinWorldXY(Chart, ChartGrid->GetWorldMinXY(), ChartGrid->GetWorldMaxXY(), ChartTown))
 			&& TestTrue(
 				TEXT("the start town is a cell"),
 				Chart->CellAtWorld(
@@ -146,7 +164,8 @@ bool FSolidWorldMapFogFollowsPlayerTest::RunTest(const FString& Parameters)
 		/*bForceRebuild=*/true);
 
 	FVector2D StartXY = FVector2D::ZeroVector;
-	TestTrue(TEXT("start town exists"), Map->GetStartTownWorldXY(StartXY));
+	TestTrue(TEXT("start town exists"),
+		IglinWorldXY(Map->GetWorldMap(), Map->GetWorldMinXY(), Map->GetWorldMaxXY(), StartXY));
 	TestTrue(TEXT("build leaves the Z town fogged"),
 		FMath::IsNearlyEqual(Map->GetNearestPoint(StartXY.X, StartXY.Y).Fog, 1.f));
 	TestTrue(TEXT("build leaves the world origin fogged"),

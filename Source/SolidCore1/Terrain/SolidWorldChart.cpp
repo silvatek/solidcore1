@@ -474,28 +474,11 @@ bool USolidWorldChart::LoadDefault(const bool bForceReload)
 void USolidWorldChart::ResetLoad() const
 {
 	Markers.SetNum(MapWidth * MapHeight);
-	StartTownCells.Reset();
 	RoutedRoads.Reset();
-	bHasStartTown = false;
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	EncounterMarks.Reset();
 	PointTowns.Reset();
 	bIsLoaded = false;
-}
-
-void USolidWorldChart::CollectNamedTowns() const
-{
-	for (int32 CellY = 0; CellY < MapHeight; ++CellY)
-	{
-		for (int32 CellX = 0; CellX < MapWidth; ++CellX)
-		{
-			if (ResolveLocationId(CellX, CellY) == 0)
-			{
-				StartTownCells.Add(FIntPoint(CellX, CellY));
-			}
-		}
-	}
-	bHasStartTown = StartTownCells.Num() > 0;
 }
 
 namespace
@@ -633,7 +616,6 @@ bool USolidWorldChart::BuildQuery() const
 		RememberChartMark(Mark, Cell);
 	}
 
-	CollectNamedTowns();
 	CopyPlayOntoPoints(false);
 	AssignTownPoints();
 
@@ -641,8 +623,8 @@ bool USolidWorldChart::BuildQuery() const
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
-		TEXT("WorldChart loaded: %dx%d startTownCells=%d roads=%d"),
-		MapWidth, MapHeight, StartTownCells.Num(), RoutedRoads.Num());
+		TEXT("WorldChart loaded: %dx%d roads=%d"),
+		MapWidth, MapHeight, RoutedRoads.Num());
 	return true;
 }
 
@@ -1539,18 +1521,6 @@ bool USolidWorldChart::CellsToWorldXY(
 	}
 	OutWorldXY = Sum / static_cast<float>(InCells.Num());
 	return true;
-}
-
-bool USolidWorldChart::GetStartTownWorldXY(
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY,
-	FVector2D& OutWorldXY) const
-{
-	if (!EnsureQuery() || !bHasStartTown || StartTownCells.Num() == 0)
-	{
-		return false;
-	}
-	return CellsToWorldXY(StartTownCells, WorldMinXY, WorldMaxXY, OutWorldXY);
 }
 
 bool USolidWorldChart::FindTownMarker(const int32 TownId, FSolidWorldChartMark& OutMark) const

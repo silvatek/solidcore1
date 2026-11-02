@@ -113,12 +113,6 @@ public:
 	/** Tint for this biome. */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;
 
-	/**
-	 * World XY of the starting-town centroid, using the same world rectangle as SampleBiome.
-	 * Location 0. Returns false when that town has no cells.
-	 */
-	bool GetStartTownWorldXY(FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
-
 	/** Cell of this town's marker. False when the chart has no such town. */
 	bool TownCell(int32 TownId, FIntPoint& OutCell) const;
 
@@ -308,9 +302,9 @@ private:
 	 * BuildListedRoads routes each road in SolidRoads.h across the terrain points.
 	 * The cell grid is legacy. MarkerForChartBiome still fills Markers from the cells,
 	 * or from the point under each cell when the cells are empty. CellAtTerrainPoint
-	 * turns a mark into a cell, and RememberChartMark stamps that cell. CollectNamedTowns
-	 * gathers the start town as cells. CopyPlayOntoPoints copies each cell's play biome
-	 * onto the points. Those cell steps go when the cell grid goes.
+	 * turns a mark into a cell, and RememberChartMark stamps that cell.
+	 * CopyPlayOntoPoints copies each cell's play biome onto the points.
+	 * Those cell steps go when the cell grid goes.
 	 */
 	bool BuildQuery() const;
 	/** Drop the solved copy. The next query solves Cells and Marks again. */
@@ -322,8 +316,6 @@ private:
 	mutable bool bIsLoaded = false;
 	mutable TArray<uint8> Markers;
 	mutable TArray<int32> BangLocationIds;
-	mutable bool bHasStartTown = false;
-	mutable TArray<FIntPoint> StartTownCells;
 	mutable TArray<FSolidWorldEncounterMark> EncounterMarks;
 
 	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
@@ -343,8 +335,6 @@ protected:
 	void ResetLoad() const;
 	/** Record a town on this cell and mark the cell. A note, an encounter, and a bridge are skipped. */
 	bool RememberChartMark(const FSolidWorldChartMark& Mark, FIntPoint Cell) const;
-	/** One location per town id. Two cells with the same name are one town. Iglin is the start. */
-	void CollectNamedTowns() const;
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
 	/** Location id of a named town on this cell, or INDEX_NONE. */
 	int32 ResolveLocationId(int32 CellX, int32 CellY) const;

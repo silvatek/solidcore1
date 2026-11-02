@@ -121,9 +121,6 @@ public:
 
 	USolidWorldChart* GetWorldMap() const { return WorldMap; }
 
-	/** World XY of the WorldMap starting-town (Z) centroid, if available. */
-	bool GetStartTownWorldXY(FVector2D& OutWorldXY) const;
-
 	/**
 	 * World centimetres fog bands were last centered on.
 	 * Valid after CenterExplorationFogOn. Build leaves this at zero and every point fully fogged.

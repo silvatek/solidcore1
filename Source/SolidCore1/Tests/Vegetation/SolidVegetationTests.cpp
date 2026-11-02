@@ -173,9 +173,8 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("placements filled"), PlacementsA.Num(), CountA);
 	TestEqual(TEXT("a share of the open town points"), CountA, Expected);
 
-	FVector2D TownCenter = FVector2D::ZeroVector;
-	const bool bHasTownCenter = Map->GetStartTownWorldXY(TownCenter);
-	TestTrue(TEXT("start town XY available"), bHasTownCenter);
+	FSolidWorldChartMark IglinMark;
+	TestTrue(TEXT("Iglin has a mark"), WorldMap->FindTownMarker(SolidTowns::Iglin, IglinMark));
 
 	for (int32 I = 0; I < PlacementsA.Num(); ++I)
 	{
@@ -323,8 +322,11 @@ bool FSolidTownBuildingRoadTest::RunTest(const FString& Parameters)
 		Map, Defaults->TownBuildingSeed, Params, Placements, Signs);
 	TestTrue(TEXT("the towns have buildings"), Count > 0);
 
+	FSolidWorldChartMark IglinMark;
 	FVector2D Iglin = FVector2D::ZeroVector;
-	TestTrue(TEXT("Iglin"), Map->GetStartTownWorldXY(Iglin));
+	TestTrue(TEXT("Iglin"),
+		WorldMap->FindTownMarker(SolidTowns::Iglin, IglinMark)
+		&& WorldMap->TerrainPointToWorld(IglinMark.TerrainPoint, WorldMin, WorldMax, Iglin));
 	bool bNearIglin = false;
 	for (const SolidTownBuildings::FPlacement& Placement : Placements)
 	{

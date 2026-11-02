@@ -14,6 +14,12 @@ The mode, the chart, the road, play, and the dump use the terrain point Paint al
 
 This story introduces no new class.
 
+## Background
+
+When the original `WorldMap.txt` was implemented, the Product Owner did not state sufficiently explicitly that it should only be used to set up the terrain grid while loading, and that the rest of the game should use the terrain grid.
+
+This story removes the code written since then that uses `WorldMap.txt` concepts. Those concepts should have been mapped to the terrain grid.
+
 ## Acceptance
 
 - In the World chart mode, the ground shows no outline around a cell.

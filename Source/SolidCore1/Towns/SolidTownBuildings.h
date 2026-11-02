@@ -62,6 +62,7 @@ namespace SolidTownBuildings
 	/**
 	 * Fill OutPlacements with non-overlapping buildings on town points.
 	 * A point counts when AssignTownPoints claimed it. A routed road does not.
+	 * Each claimed town offers its own points, so the cap does not spend itself on the largest town.
 	 * Deterministic for a given map + seed + params.
 	 * ExtraClearCenters use the same radius as the start-town centroid (welcome signs).
 	 * @return Number of placements written.

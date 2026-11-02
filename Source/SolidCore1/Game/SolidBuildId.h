@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0903")
+#define SOLID_BUILD_ID TEXT("SC1-0904")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Town buildings stand on claimed town points.")
+#define SOLID_BUILD_NOTE TEXT("Each claimed town offers buildings before the cap fills.")
 #endif

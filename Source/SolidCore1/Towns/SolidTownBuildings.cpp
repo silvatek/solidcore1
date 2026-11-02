@@ -83,8 +83,7 @@ int32 SolidTownBuildings::CollectPlacements(
 	const bool bMapLoaded = WorldMap && WorldMap->IsLoaded();
 
 	const TArray<FSolidTerrainPoint>& Points = TerrainMap->GetPoints();
-	TArray<int32> TownIndices;
-	TownIndices.Reserve(Points.Num() / 16);
+	TMap<int32, TArray<int32>> ByTown;
 	for (int32 Index = 0; Index < Points.Num(); ++Index)
 	{
 		const FSolidTerrainPoint& Point = Points[Index];
@@ -92,32 +91,68 @@ int32 SolidTownBuildings::CollectPlacements(
 		{
 			continue;
 		}
-		if (bMapLoaded && WorldMap->SampleLocationId(Point.WorldX, Point.WorldY, WorldMin, WorldMax) == INDEX_NONE)
+		int32 TownId = 0;
+		if (bMapLoaded)
+		{
+			TownId = WorldMap->SampleLocationId(Point.WorldX, Point.WorldY, WorldMin, WorldMax);
+			if (TownId == INDEX_NONE)
+			{
+				continue;
+			}
+		}
+		ByTown.FindOrAdd(TownId).Add(Index);
+	}
+	if (ByTown.Num() == 0)
+	{
+		return 0;
+	}
+
+	TArray<int32> TownIds;
+	ByTown.GetKeys(TownIds);
+	TownIds.Sort();
+
+	FRandomStream Rng(Seed != 0 ? Seed : 1337);
+	TArray<TArray<int32>> Buckets;
+	Buckets.Reserve(TownIds.Num());
+	int32 Longest = 0;
+	for (const int32 TownId : TownIds)
+	{
+		TArray<int32>& Indices = ByTown.FindChecked(TownId);
+		for (int32 I = Indices.Num() - 1; I > 0; --I)
+		{
+			Indices.Swap(I, Rng.RandRange(0, I));
+		}
+		const int32 Keep = FMath::Clamp(
+			FMath::RoundToInt(static_cast<float>(Indices.Num()) * Density),
+			0,
+			Indices.Num());
+		if (Keep <= 0)
 		{
 			continue;
 		}
-		TownIndices.Add(Index);
+		Indices.SetNum(Keep);
+		Longest = FMath::Max(Longest, Keep);
+		Buckets.Add(MoveTemp(Indices));
 	}
-	if (TownIndices.Num() == 0)
+	if (Buckets.Num() == 0)
 	{
 		return 0;
 	}
 
-	FRandomStream Rng(Seed != 0 ? Seed : 1337);
-	for (int32 I = TownIndices.Num() - 1; I > 0; --I)
+	// One point from each town, then the next, so the cap does not spend itself on the largest town.
+	TArray<int32> TownIndices;
+	TownIndices.Reserve(Longest * Buckets.Num());
+	for (int32 Slot = 0; Slot < Longest; ++Slot)
 	{
-		const int32 J = Rng.RandRange(0, I);
-		TownIndices.Swap(I, J);
+		for (const TArray<int32>& Bucket : Buckets)
+		{
+			if (Slot < Bucket.Num())
+			{
+				TownIndices.Add(Bucket[Slot]);
+			}
+		}
 	}
-
-	const int32 CandidateCount = FMath::Clamp(
-		FMath::RoundToInt(static_cast<float>(TownIndices.Num()) * Density),
-		0,
-		TownIndices.Num());
-	if (CandidateCount <= 0)
-	{
-		return 0;
-	}
+	const int32 CandidateCount = TownIndices.Num();
 
 	FVector2D TownCenter = FVector2D::ZeroVector;
 	const bool bHasTownCenter = TerrainMap->GetStartTownWorldXY(TownCenter);

@@ -1130,13 +1130,25 @@ bool USolidWorldChart::StrongholdAtCell(
 
 bool USolidWorldChart::StrongholdSiteAtCell(const int32 CellX, const int32 CellY, ESolidStrongholdSize& OutSize) const
 {
-	FSolidWorldBang Mark;
-	if (!FindBang(CellX, CellY, Mark) || Mark.Kind != ESolidWorldBang::StrongholdSite)
+	if (!EnsureQuery() || CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
 	{
 		return false;
 	}
-	OutSize = Mark.StrongholdSize;
-	return true;
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		if (Mark.Kind != ESolidWorldChartMarkKind::StrongholdSite)
+		{
+			continue;
+		}
+		FIntPoint Cell;
+		if (!CellAtTerrainPoint(Mark.TerrainPoint, Cell) || Cell.X != CellX || Cell.Y != CellY)
+		{
+			continue;
+		}
+		OutSize = Mark.StrongholdSize;
+		return true;
+	}
+	return false;
 }
 
 TCHAR USolidWorldChart::GetMarkerAtCell(int32 CellX, int32 CellY) const

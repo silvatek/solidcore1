@@ -1509,6 +1509,21 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 	Text += TEXT("! 6,4 = Stronghold (MeagreDungeon)\n");
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
+	auto AddSite = [](USolidWorldChart& Chart, const int32 CellX, const int32 CellY, const ESolidStrongholdSize Size)
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = ESolidWorldChartMarkKind::StrongholdSite;
+		Mark.StrongholdSize = Size;
+		Mark.Name = SolidStronghold::SizeName(Size);
+		int32 TerrainX = 0;
+		int32 TerrainY = 0;
+		USolidWorldChart::PointUnderCell(CellX, CellY, TerrainX, TerrainY);
+		Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
+		Chart.Marks.Add(Mark);
+	};
+	AddSite(*Map, HumbleCol, HumbleRow, ESolidStrongholdSize::Humble);
+	AddSite(*Map, AverageCol, AverageRow, ESolidStrongholdSize::Average);
+	AddSite(*Map, ImperiousCol, ImperiousRow, ESolidStrongholdSize::Imperious);
 	TestTrue(TEXT("a map with sites loads"), Map->LoadFromString(Text));
 
 	FSolidWorldBang Humble;

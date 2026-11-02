@@ -26,9 +26,8 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 	}
 
 	const FIntPoint Cave = SolidStronghold::StartingCell();
-	int32 CaveX = 0;
-	int32 CaveY = 0;
-	USolidWorldChart::PointUnderCell(Cave.X, Cave.Y, CaveX, CaveY);
+	const int32 CaveX = 510 - 4 * Cave.X;
+	const int32 CaveY = 508 - 8 * Cave.Y;
 	int32 CaveMark = INDEX_NONE;
 	for (int32 Index = 0; Index < DefaultMap->Marks.Num(); ++Index)
 	{

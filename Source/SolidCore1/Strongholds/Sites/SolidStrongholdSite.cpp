@@ -36,9 +36,9 @@ void ASolidStrongholdSite::BeginPlay()
 	BuildVisuals();
 }
 
-void ASolidStrongholdSite::SetSite(const FIntPoint InCell, const ESolidStrongholdSize InSize)
+void ASolidStrongholdSite::SetSite(const FIntPoint InTerrainPoint, const ESolidStrongholdSize InSize)
 {
-	Cell = InCell;
+	TerrainPoint = InTerrainPoint;
 	Size = InSize;
 }
 
@@ -108,9 +108,7 @@ void ASolidStrongholdSite::Spawn(
 	{
 		const ESolidStrongholdSize SiteSize = static_cast<ESolidStrongholdSize>(SizeValue);
 		FSolidWorldChartMark Mark;
-		FIntPoint SiteCell;
-		if (!Map->FindStrongholdSiteMarker(SiteSize, Mark)
-			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, SiteCell))
+		if (!Map->FindStrongholdSiteMarker(SiteSize, Mark))
 		{
 			continue;
 		}
@@ -147,7 +145,7 @@ void ASolidStrongholdSite::Spawn(
 			{
 				continue;
 			}
-			Site->SetSite(SiteCell, SiteSize);
+			Site->SetSite(Mark.TerrainPoint, SiteSize);
 			Site->BuildVisuals();
 			Sites.Add(Site);
 			++SpawnedSites;

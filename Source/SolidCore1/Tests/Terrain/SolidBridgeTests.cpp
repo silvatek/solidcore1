@@ -13,10 +13,7 @@ namespace
 {
 	FIntPoint BridgeCellPoint(const FIntPoint Cell)
 	{
-		int32 X = 0;
-		int32 Y = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
-		return FIntPoint(X, Y);
+		return FIntPoint(510 - 4 * Cell.X, 508 - 8 * Cell.Y);
 	}
 
 	const FVector2D BridgeTestMin(-51200.f, -51200.f);
@@ -128,10 +125,7 @@ namespace
 
 		if (bRiver)
 		{
-			int32 RiverTerrainX = 0;
-			int32 RiverTerrainY = 0;
-			USolidWorldChart::PointUnderCell(12, 16, RiverTerrainX, RiverTerrainY);
-			const FIntPoint RiverTerrainPoint(RiverTerrainX, RiverTerrainY);
+			const FIntPoint RiverTerrainPoint(462, 380);
 			if (!Test.TestTrue(TEXT("the river sits on a point"), RiverTerrainPoint.X >= 0))
 			{
 				return false;
@@ -459,10 +453,7 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	const FIntPoint BridgePoint = BridgeCellPoint(FIntPoint(11, 16));
 	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridgeAt(BridgePoint, TEXT("Iglin Bridge"), Error));
 
-	int32 RiverTerrainX = 0;
-	int32 RiverTerrainY = 0;
-	USolidWorldChart::PointUnderCell(12, 16, RiverTerrainX, RiverTerrainY);
-	const FIntPoint RiverTerrainPoint(RiverTerrainX, RiverTerrainY);
+	const FIntPoint RiverTerrainPoint(462, 380);
 	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
 	if (TestTrue(TEXT("the river sits on a point"), RiverTerrainPoint.X >= 0))
 	{
@@ -555,9 +546,9 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	int32 CentreTerrainX = 0;
-	int32 CentreTerrainY = 0;
-	USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, CentreTerrainX, CentreTerrainY);
+	const FIntPoint CentrePoint = BridgeCellPoint(Cell);
+	const int32 CentreTerrainX = CentrePoint.X;
+	const int32 CentreTerrainY = CentrePoint.Y;
 	const USolidTerrainMap* Defaults = GetDefault<USolidTerrainMap>();
 	const FVector2D WorldMin = Defaults->GetWorldMinXY();
 	const FVector2D WorldMax = Defaults->GetWorldMaxXY();

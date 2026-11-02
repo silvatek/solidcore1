@@ -753,7 +753,7 @@ void ASolidGameMode::ShowOpenStronghold()
 			SpawnedStrongholdSites.RemoveAt(Index);
 			continue;
 		}
-		if (Site->GetCell() != Stronghold->Cell)
+		if (Site->GetTerrainPoint() != Stronghold->Cell)
 		{
 			continue;
 		}

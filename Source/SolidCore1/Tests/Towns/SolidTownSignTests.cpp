@@ -116,10 +116,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 		FSolidWorldChartMark Mark;
 		Mark.Kind = ESolidWorldChartMarkKind::Town;
 		Mark.Name = Name;
-		int32 TerrainX = 0;
-		int32 TerrainY = 0;
-		USolidWorldChart::PointUnderCell(CellX, CellY, TerrainX, TerrainY);
-		Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
+		Mark.TerrainPoint = FIntPoint(510 - 4 * CellX, 508 - 8 * CellY);
 		Chart.Marks.Add(Mark);
 	};
 	AddTown(*WorldMap, 2, 1, TEXT("Iglin"));
@@ -243,10 +240,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 	FSolidWorldChartMark GateMark;
 	GateMark.Kind = ESolidWorldChartMarkKind::Town;
 	GateMark.Name = TEXT("Dragongate");
-	int32 GateTerrainX = 0;
-	int32 GateTerrainY = 0;
-	USolidWorldChart::PointUnderCell(16, 9, GateTerrainX, GateTerrainY);
-	GateMark.TerrainPoint = FIntPoint(GateTerrainX, GateTerrainY);
+	GateMark.TerrainPoint = FIntPoint(446, 436);
 	WorldMap->Marks.Add(GateMark);
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);

@@ -27,10 +27,7 @@ namespace SolidLairTestPrivate
 {
 	FIntPoint CellPoint(const FIntPoint Cell)
 	{
-		int32 X = 0;
-		int32 Y = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
-		return FIntPoint(X, Y);
+		return FIntPoint(510 - 4 * Cell.X, 508 - 8 * Cell.Y);
 	}
 
 	/** Bounds of a mesh built in its own space, then shifted by the component. */
@@ -241,10 +238,7 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	Map->Init(ESolidBiome::Mountain);
 	const FIntPoint CaveCell(14, 10);
 	const FIntPoint GrassCell(14, 9);
-	int32 GrassTerrainX = 0;
-	int32 GrassTerrainY = 0;
-	USolidWorldChart::PointUnderCell(GrassCell.X, GrassCell.Y, GrassTerrainX, GrassTerrainY);
-	const FIntPoint GrassPoint(GrassTerrainX, GrassTerrainY);
+	const FIntPoint GrassPoint = SolidLairTestPrivate::CellPoint(GrassCell);
 	FString Error;
 	if (!TestTrue(
 		TEXT("the north face paints grass"),
@@ -264,10 +258,7 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	TArray<SolidLair::FEntrance> Entrances;
 	TestEqual(TEXT("no lair mark means no tunnel mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
 
-	int32 CaveTerrainX = 0;
-	int32 CaveTerrainY = 0;
-	USolidWorldChart::PointUnderCell(CaveCell.X, CaveCell.Y, CaveTerrainX, CaveTerrainY);
-	const FIntPoint CavePoint(CaveTerrainX, CaveTerrainY);
+	const FIntPoint CavePoint = SolidLairTestPrivate::CellPoint(CaveCell);
 	SolidStrongholds::FEntrance CaveFace;
 	TestTrue(
 		TEXT("the cave marker has a grass face"),

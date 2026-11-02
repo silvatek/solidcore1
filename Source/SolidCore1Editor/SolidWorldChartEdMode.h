@@ -89,9 +89,7 @@ private:
 	/** True after this left click has already placed a mark. */
 	bool bPlacedClick = false;
 	FIntPoint AnchorTerrainPoint = FIntPoint::ZeroValue;
-	FIntPoint CurrentCell = FIntPoint::ZeroValue;
 	FIntPoint CurrentTerrainPoint = FIntPoint::ZeroValue;
-	bool bHasCell = false;
 	bool bHasPoint = false;
 	TArray<FIntPoint> StrokePoints;
 
@@ -101,7 +99,6 @@ private:
 
 	bool IsOpenWorld(const UWorld* World) const;
 	bool CursorHit(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FVector& OutHit) const;
-	bool CursorCell(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutCell) const;
 	bool CursorPoint(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutTerrainPoint) const;
 	void HoverAt(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y);
 	void PlaceUnderCursor(FEditorViewportClient* ViewportClient, FViewport* Viewport);

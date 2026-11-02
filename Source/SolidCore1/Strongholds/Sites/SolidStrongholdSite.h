@@ -27,7 +27,7 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	void SetSite(FIntPoint Cell, ESolidStrongholdSize Size);
+	void SetSite(FIntPoint TerrainPoint, ESolidStrongholdSize Size);
 	void BuildVisuals();
 
 	/**
@@ -46,7 +46,7 @@ public:
 	static constexpr float BlockCm = 200.f;
 
 	UStaticMeshComponent* GetBlockMesh() const { return BlockMesh; }
-	FIntPoint GetCell() const { return Cell; }
+	FIntPoint GetTerrainPoint() const { return TerrainPoint; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
@@ -56,6 +56,6 @@ protected:
 	TObjectPtr<UStaticMeshComponent> BlockMesh;
 
 private:
-	FIntPoint Cell = FIntPoint::ZeroValue;
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Humble;
 };

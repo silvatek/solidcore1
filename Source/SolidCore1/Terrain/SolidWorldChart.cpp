@@ -412,60 +412,6 @@ bool USolidWorldChart::StrongholdAtTerrain(
 	return false;
 }
 
-bool USolidWorldChart::WorldXYToCell(
-	const float WorldX,
-	const float WorldY,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY,
-	int32& OutCellX,
-	int32& OutCellY) const
-{
-	if (!EnsureQuery())
-	{
-		return false;
-	}
-
-	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
-	const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-	// File column 0 is the left side of the text → world west (max X).
-	const float UFromWest = FMath::Clamp((WorldMaxXY.X - WorldX) / ExtentX, 0.f, 1.f);
-	// File row 0 is north (max Y).
-	const float VFromSouth = FMath::Clamp((WorldY - WorldMinXY.Y) / ExtentY, 0.f, 1.f);
-	const float VFromNorth = 1.f - VFromSouth;
-
-	OutCellX = FMath::Clamp(FMath::FloorToInt(UFromWest * MapWidth), 0, MapWidth - 1);
-	OutCellY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
-	return true;
-}
-
-void USolidWorldChart::PointUnderCell(const int32 CellX, const int32 CellY, int32& OutTerrainX, int32& OutTerrainY)
-{
-	const float Span = static_cast<float>(PointAxis - 1);
-	OutTerrainX = FMath::Clamp(
-		FMath::RoundToInt((1.f - (static_cast<float>(CellX) + 0.5f) / static_cast<float>(MapWidth)) * Span),
-		0,
-		PointAxis - 1);
-	OutTerrainY = FMath::Clamp(
-		FMath::RoundToInt((1.f - (static_cast<float>(CellY) + 0.5f) / static_cast<float>(MapHeight)) * Span),
-		0,
-		PointAxis - 1);
-}
-
-bool USolidWorldChart::CellAtTerrainPoint(const FIntPoint TerrainPoint, FIntPoint& OutCell)
-{
-	if (TerrainPoint.X < 0 || TerrainPoint.Y < 0
-		|| TerrainPoint.X >= PointAxis || TerrainPoint.Y >= PointAxis)
-	{
-		return false;
-	}
-	const float Span = static_cast<float>(PointAxis - 1);
-	const float UFromWest = 1.f - static_cast<float>(TerrainPoint.X) / Span;
-	const float VFromNorth = 1.f - static_cast<float>(TerrainPoint.Y) / Span;
-	OutCell.X = FMath::Clamp(FMath::FloorToInt(UFromWest * static_cast<float>(MapWidth)), 0, MapWidth - 1);
-	OutCell.Y = FMath::Clamp(FMath::FloorToInt(VFromNorth * static_cast<float>(MapHeight)), 0, MapHeight - 1);
-	return true;
-}
-
 namespace
 {
 	constexpr int32 PointCount = USolidWorldChart::PointAxis * USolidWorldChart::PointAxis;
@@ -993,23 +939,6 @@ bool USolidWorldChart::FindStrongholdSiteMarker(
 		return true;
 	}
 	return false;
-}
-
-bool USolidWorldChart::CellAtWorld(
-	const float WorldX,
-	const float WorldY,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY,
-	FIntPoint& OutCell) const
-{
-	int32 CellX = 0;
-	int32 CellY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, CellX, CellY))
-	{
-		return false;
-	}
-	OutCell = FIntPoint(CellX, CellY);
-	return true;
 }
 
 const TCHAR* USolidWorldChart::RoadTypeName(const SolidRoad::EType Type)

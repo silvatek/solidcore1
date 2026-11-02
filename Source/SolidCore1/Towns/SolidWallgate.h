@@ -48,11 +48,6 @@ namespace SolidWallgate
 	};
 
 	/**
-	 * The town's cell. False when that id is not a wall gate, or it has no cell.
-	 */
-	bool MarkerCell(const USolidWorldChart* WorldMap, int32 TownId, FIntPoint& OutCell);
-
-	/**
 	 * Two wall lengths and two towers for each WallGate town on the map.
 	 * A run that is too narrow, or that has no mountain to the east or the west, writes nothing.
 	 * @return Number of pieces written.

@@ -138,25 +138,6 @@ namespace
 	}
 }
 
-bool SolidWallgate::MarkerCell(
-	const USolidWorldChart* WorldMap,
-	const int32 TownId,
-	FIntPoint& OutCell)
-{
-	OutCell = FIntPoint::ZeroValue;
-	if (!WorldMap || !SolidTowns::IsWallGate(TownId))
-	{
-		return false;
-	}
-
-	FSolidWorldChartMark Mark;
-	if (!WorldMap->FindTownMarker(TownId, Mark))
-	{
-		return false;
-	}
-	return USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
-}
-
 int32 SolidWallgate::CollectPieces(
 	const USolidWorldChart* WorldMap,
 	const FVector2D WorldMinXY,

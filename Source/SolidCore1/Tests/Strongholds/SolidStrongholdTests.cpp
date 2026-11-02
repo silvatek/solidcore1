@@ -18,10 +18,7 @@ namespace
 		const FVector2D& WorldMax,
 		FVector2D& OutWorld)
 	{
-		int32 X = 0;
-		int32 Y = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
-		return Chart.TerrainPointToWorld(FIntPoint(X, Y), WorldMin, WorldMax, OutWorld);
+		return Chart.TerrainPointToWorld(FIntPoint(510 - 4 * Cell.X, 508 - 8 * Cell.Y), WorldMin, WorldMax, OutWorld);
 	}
 }
 
@@ -306,9 +303,8 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	if (Map)
 	{
 		const FIntPoint Cell = SolidStronghold::StartingCell();
-		int32 CaveX = 0;
-		int32 CaveY = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, CaveX, CaveY);
+		const int32 CaveX = 510 - 4 * Cell.X;
+		const int32 CaveY = 508 - 8 * Cell.Y;
 		int32 CaveMark = INDEX_NONE;
 		for (int32 Index = 0; Index < Map->Marks.Num(); ++Index)
 		{

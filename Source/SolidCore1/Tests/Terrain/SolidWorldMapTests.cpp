@@ -30,10 +30,7 @@ namespace
 		const FVector2D& WorldMax,
 		FVector2D& OutXY)
 	{
-		int32 X = 0;
-		int32 Y = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
-		return Chart.TerrainPointToWorld(FIntPoint(X, Y), WorldMin, WorldMax, OutXY);
+		return Chart.TerrainPointToWorld(FIntPoint(510 - 4 * Cell.X, 508 - 8 * Cell.Y), WorldMin, WorldMax, OutXY);
 	}
 }
 
@@ -52,9 +49,8 @@ bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 	FSolidWorldChartMark Iglin;
 	TestTrue(TEXT("Iglin has a mark"), Map->FindTownMarker(SolidTowns::Iglin, Iglin));
 
-	int32 NorthX = 0;
-	int32 NorthY = 0;
-	USolidWorldChart::PointUnderCell(0, 0, NorthX, NorthY);
+	const int32 NorthX = 510;
+	const int32 NorthY = 508;
 	TestEqual(
 		TEXT("north-west point is sea"),
 		static_cast<uint8>(Map->GetPointBiome(FIntPoint(NorthX, NorthY))),
@@ -118,25 +114,15 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 			/*bForceRebuild=*/true);
 		USolidWorldChart* Chart = ChartGrid->GetWorldMap();
 		FVector2D ChartTown = FVector2D::ZeroVector;
-		FIntPoint TownCell = FIntPoint::ZeroValue;
+		FSolidWorldChartMark IglinMark;
 		if (TestNotNull(TEXT("chart grid map"), Chart)
 			&& TestTrue(TEXT("chart grid exposes the start town"),
 				IglinWorldXY(Chart, ChartGrid->GetWorldMinXY(), ChartGrid->GetWorldMaxXY(), ChartTown))
-			&& TestTrue(
-				TEXT("the start town is a cell"),
-				Chart->CellAtWorld(
-					ChartTown.X,
-					ChartTown.Y,
-					ChartGrid->GetWorldMinXY(),
-					ChartGrid->GetWorldMaxXY(),
-					TownCell)))
+			&& TestTrue(TEXT("Iglin has a mark"), Chart->FindTownMarker(SolidTowns::Iglin, IglinMark)))
 		{
-			int32 TownX = 0;
-			int32 TownY = 0;
-			USolidWorldChart::PointUnderCell(TownCell.X, TownCell.Y, TownX, TownY);
 			TestEqual(
 				TEXT("the start town point is Town"),
-				static_cast<uint8>(Chart->GetPointBiome(FIntPoint(TownX, TownY))),
+				static_cast<uint8>(Chart->GetPointBiome(IglinMark.TerrainPoint)),
 				static_cast<uint8>(ESolidBiome::Town));
 			const ESolidBiome AtTown = ChartGrid->SamplePoint(ChartTown.X, ChartTown.Y).Biome;
 			TestTrue(

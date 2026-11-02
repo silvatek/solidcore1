@@ -20,10 +20,7 @@ namespace SolidMonsterTestPrivate
 {
 	FIntPoint CellPoint(const FIntPoint Cell)
 	{
-		int32 X = 0;
-		int32 Y = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
-		return FIntPoint(X, Y);
+		return FIntPoint(510 - 4 * Cell.X, 508 - 8 * Cell.Y);
 	}
 
 	FSolidTerrainPoint PointAt(const float X, const ESolidBiome Biome, const float Fog = 1.f)
@@ -620,10 +617,7 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	FSolidWorldChartMark Second;
 	Second.Kind = ESolidWorldChartMarkKind::Encounter;
 	Second.Name = TEXT("Iglin Bridge");
-	int32 SecondTerrainX = 0;
-	int32 SecondTerrainY = 0;
-	USolidWorldChart::PointUnderCell(22, 9, SecondTerrainX, SecondTerrainY);
-	Second.TerrainPoint = FIntPoint(SecondTerrainX, SecondTerrainY);
+	Second.TerrainPoint = FIntPoint(422, 436);
 	Chart->Marks.Add(Second);
 	USolidWorldChart* Two = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("both marks load"), Two && Two->LoadFromChart(Chart)))
@@ -717,10 +711,7 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	FSolidWorldChartMark SecondRex;
 	SecondRex.Kind = ESolidWorldChartMarkKind::Encounter;
 	SecondRex.Name = TEXT("Dracorex");
-	int32 SecondRexX = 0;
-	int32 SecondRexY = 0;
-	USolidWorldChart::PointUnderCell(RexCellTwo.X, RexCellTwo.Y, SecondRexX, SecondRexY);
-	SecondRex.TerrainPoint = FIntPoint(SecondRexX, SecondRexY);
+	SecondRex.TerrainPoint = SolidMonsterTestPrivate::CellPoint(RexCellTwo);
 	Rex->Marks.Add(SecondRex);
 	USolidWorldChart* TwoRex = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("both Dracorex marks load"), TwoRex && TwoRex->LoadFromChart(Rex)))

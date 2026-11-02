@@ -332,44 +332,38 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		{
 			continue;
 		}
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
-		{
-			continue;
-		}
-		const int32 Col = Cell.X;
-		const int32 Row = Cell.Y;
+		const FIntPoint Point = Mark.TerrainPoint;
 		const ESolidStrongholdSize SiteSize = Mark.StrongholdSize;
 		++Sites;
-			USolidGameState& Fresh = *NewObject<USolidGameState>();
-			USolidCompany* FreshCompany = NewObject<USolidCompany>();
-			FreshCompany->InitializeStartingStronghold();
-			Fresh.bStrongholdSiteRestrictions = true;
-			TArray<FSolidStrongholdChoice> Offered;
-			Unlock(Fresh, SiteSize);
-			const SolidStrongholdTransition::EOffer Offer = SolidStrongholdTransition::Consider(
-				Fresh,
-				FreshCompany->GetStronghold(),
-				Offered);
-			const int32 Expected = OfferedCount(Fresh, FreshCompany->GetStronghold());
-			if (Expected == 0)
-			{
-				TestEqual(
-					*FString::Printf(TEXT("site %d,%d has nothing built above the company"), Row + 1, Col + 1),
-					static_cast<uint8>(Offer),
-					static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
-			}
-			else
-			{
-				TestEqual(
-					*FString::Printf(TEXT("site %d,%d asks"), Row + 1, Col + 1),
-					static_cast<uint8>(Offer),
-					static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
-				TestEqual(
-					*FString::Printf(TEXT("site %d,%d lists built sizes and types"), Row + 1, Col + 1),
-					Offered.Num(),
-					Expected);
-			}
+		USolidGameState& Fresh = *NewObject<USolidGameState>();
+		USolidCompany* FreshCompany = NewObject<USolidCompany>();
+		FreshCompany->InitializeStartingStronghold();
+		Fresh.bStrongholdSiteRestrictions = true;
+		TArray<FSolidStrongholdChoice> Offered;
+		Unlock(Fresh, SiteSize);
+		const SolidStrongholdTransition::EOffer Offer = SolidStrongholdTransition::Consider(
+			Fresh,
+			FreshCompany->GetStronghold(),
+			Offered);
+		const int32 Expected = OfferedCount(Fresh, FreshCompany->GetStronghold());
+		if (Expected == 0)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("site point %d,%d has nothing built above the company"), Point.X, Point.Y),
+				static_cast<uint8>(Offer),
+				static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
+		}
+		else
+		{
+			TestEqual(
+				*FString::Printf(TEXT("site point %d,%d asks"), Point.X, Point.Y),
+				static_cast<uint8>(Offer),
+				static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
+			TestEqual(
+				*FString::Printf(TEXT("site point %d,%d lists built sizes and types"), Point.X, Point.Y),
+				Offered.Num(),
+				Expected);
+		}
 	}
 	TestTrue(TEXT("the shipped map has a site"), Sites >= 1);
 	return true;

@@ -1215,28 +1215,6 @@ bool FSolidWorldChartEdMode::CursorHit(
 	return HitGround(*Terrain, Origin, Direction, OutHit);
 }
 
-bool FSolidWorldChartEdMode::CursorCell(
-	FEditorViewportClient* ViewportClient,
-	FViewport* Viewport,
-	int32 X,
-	int32 Y,
-	FIntPoint& OutCell) const
-{
-	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
-	FVector Hit = FVector::ZeroVector;
-	if (!WorldMap || !CursorHit(ViewportClient, Viewport, X, Y, Hit))
-	{
-		return false;
-	}
-	return WorldMap->CellAtWorld(
-		Hit.X,
-		Hit.Y,
-		Terrain->GetWorldMinXY(),
-		Terrain->GetWorldMaxXY(),
-		OutCell);
-}
-
 bool FSolidWorldChartEdMode::CursorPoint(
 	FEditorViewportClient* ViewportClient,
 	FViewport* Viewport,
@@ -1271,16 +1249,6 @@ void FSolidWorldChartEdMode::HoverAt(
 	}
 
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (WorldMap)
-	{
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (WorldMap->CellAtWorld(Hit.X, Hit.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Cell))
-		{
-			bHasCell = true;
-			CurrentCell = Cell;
-		}
-	}
 	if (Chart && Terrain)
 	{
 		FIntPoint TerrainPoint = FIntPoint::ZeroValue;
@@ -1320,12 +1288,6 @@ void FSolidWorldChartEdMode::PlaceUnderCursor(FEditorViewportClient* ViewportCli
 	bHasPoint = true;
 	CurrentTerrainPoint = TerrainPoint;
 	Hover = DescribePoint(TerrainPoint);
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell))
-	{
-		bHasCell = true;
-		CurrentCell = Cell;
-	}
 	PlaceCurrentMark();
 }
 

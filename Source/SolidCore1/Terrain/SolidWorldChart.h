@@ -84,15 +84,6 @@ public:
 	/** True when the mark on this terrain point is a stronghold. A site is not one. */
 	bool StrongholdAtTerrain(int32 TerrainX, int32 TerrainY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
 
-	/** Deprecated. Map cell under a world XY. Column 0 is west, row 0 is north. */
-	bool CellAtWorld(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutCell) const;
-
-	/** Deprecated. Terrain point at a cell centre. Column 0 is west, row 0 is north. */
-	static void PointUnderCell(int32 CellX, int32 CellY, int32& OutTerrainX, int32& OutTerrainY);
-
-	/** Deprecated. Cell that contains a terrain point. Column 0 is west, row 0 is north. */
-	static bool CellAtTerrainPoint(FIntPoint TerrainPoint, FIntPoint& OutCell);
-
 	/** The biome's colour. The same answer as GetBiomeColor. */
 	static FLinearColor DefaultColorForBiome(ESolidBiome Biome);
 
@@ -233,8 +224,6 @@ private:
 	mutable TArray<SolidRoad::FSolidRoad> RoutedRoads;
 
 protected:
-	/** Deprecated. Map cell under a world XY. Column 0 is west, row 0 is north. */
-	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutCellX, int32& OutCellY) const;
 	/** Clear the solved roads. */
 	void ResetRoads() const;
 	/** Route one listed road. */

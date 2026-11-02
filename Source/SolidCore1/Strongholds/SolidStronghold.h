@@ -254,6 +254,9 @@ namespace SolidStronghold
 	 */
 	FVector2D WorldXY(FIntPoint Cell);
 
+	/** World centimetres of a terrain point. The grid is 513 points at 200 cm, centered on the origin. */
+	FVector2D TerrainPointXY(FIntPoint TerrainPoint);
+
 	/**
 	 * Full size of one map cell along an exit, in centimetres.
 	 * North and south use the taller cell. East and west use the shorter one.

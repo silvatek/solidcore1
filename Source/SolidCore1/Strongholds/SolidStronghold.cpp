@@ -71,6 +71,16 @@ namespace SolidStronghold
 			Half - (static_cast<float>(Cell.Y) + 0.5f) * CellH);
 	}
 
+	FVector2D TerrainPointXY(const FIntPoint TerrainPoint)
+	{
+		constexpr float PointSpacing = 200.f;
+		constexpr int32 Grid = 513;
+		const float Half = static_cast<float>(Grid - 1) * PointSpacing * 0.5f;
+		return FVector2D(
+			-Half + static_cast<float>(TerrainPoint.X) * PointSpacing,
+			-Half + static_cast<float>(TerrainPoint.Y) * PointSpacing);
+	}
+
 	float CellExtentAlongExitCm(const ESolidStrongholdOrientation Orientation)
 	{
 		constexpr float PointSpacing = 200.f;
@@ -476,7 +486,7 @@ bool SolidStrongholdTransition::Move(
 		Type,
 		Size,
 		SiteCell,
-		SolidStronghold::WorldXY(SiteCell)));
+		SolidStronghold::TerrainPointXY(SiteCell)));
 	if (FSolidStronghold* Next = Company.GetStronghold())
 	{
 		Next->Furnishings = MoveTemp(Moved);

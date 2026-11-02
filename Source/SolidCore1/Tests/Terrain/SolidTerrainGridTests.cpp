@@ -31,26 +31,15 @@ namespace
 
 	FIntPoint GridCellPoint(const FIntPoint Cell)
 	{
-		int32 X = 0;
-		int32 Y = 0;
-		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
-		return FIntPoint(X, Y);
+		return FIntPoint(510 - 4 * Cell.X, 508 - 8 * Cell.Y);
 	}
 
-	void GridPointsUnderCells(const TArray<FIntPoint>& Cells, TArray<FIntPoint>& OutPoints)
+	void AddRow(TArray<FIntPoint>& OutPoints, const FIntPoint& From, const FIntPoint& To)
 	{
-		OutPoints.Reset();
-		for (int32 TerrainY = 0; TerrainY < USolidWorldChart::PointAxis; ++TerrainY)
+		const int32 Step = From.X <= To.X ? 1 : -1;
+		for (int32 X = From.X; X != To.X + Step; X += Step)
 		{
-			for (int32 TerrainX = 0; TerrainX < USolidWorldChart::PointAxis; ++TerrainX)
-			{
-				const FIntPoint TerrainPoint(TerrainX, TerrainY);
-				FIntPoint Cell = FIntPoint::ZeroValue;
-				if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell) && Cells.Contains(Cell))
-				{
-					OutPoints.Add(TerrainPoint);
-				}
-			}
+			OutPoints.Add(FIntPoint(X, From.Y));
 		}
 	}
 
@@ -154,17 +143,20 @@ bool FSolidTerrainGridCellPaintTest::RunTest(const FString& Parameters)
 
 	const FIntPoint Cell(4, 6);
 	const FIntPoint Beside(5, 6);
+	const FIntPoint Centre = GridCellPoint(Cell);
+	const FIntPoint Neighbour(Centre.X + 2, Centre.Y);
 	FString Error;
 	TArray<FIntPoint> Covered;
-	GridPointsUnderCells({ Cell }, Covered);
-	TestTrue(TEXT("the cell paints forest"), Chart->PaintPoints(Covered, ESolidBiome::Forest, Error));
+	AddRow(Covered, Centre, Neighbour);
+	TestTrue(TEXT("the points paint forest"), Chart->PaintPoints(Covered, ESolidBiome::Forest, Error));
 	BiomeIs(*this, TEXT("the painted centre is forest"), SampleAt(*Chart, CellCentre(*Chart, Cell.X, Cell.Y)), ESolidBiome::Forest);
 	BiomeIs(*this, TEXT("the next cell stays grassland"), SampleAt(*Chart, CellCentre(*Chart, Beside.X, Beside.Y)), ESolidBiome::Grassland);
 	TestTrue(TEXT("undo restores the paint"), Chart->Undo());
 	BiomeIs(*this, TEXT("the centre is grassland again"), SampleAt(*Chart, CellCentre(*Chart, Cell.X, Cell.Y)), ESolidBiome::Grassland);
 
-	GridPointsUnderCells({ Cell }, Covered);
-	TestTrue(TEXT("river paint fills the cell"), Chart->PaintPoints(Covered, ESolidBiome::River, Error));
+	Covered.Reset();
+	AddRow(Covered, Centre, Neighbour);
+	TestTrue(TEXT("river paint fills those points"), Chart->PaintPoints(Covered, ESolidBiome::River, Error));
 	const FVector2D RiverCentre = CellCentre(*Chart, Cell.X, Cell.Y);
 	BiomeIs(*this, TEXT("the painted centre is river"), SampleAt(*Chart, RiverCentre), ESolidBiome::River);
 	BiomeIs(*this, TEXT("the point beside the centre is river"), SampleAt(*Chart, RiverCentre + FVector2D(400.f, 0.f)), ESolidBiome::River);
@@ -192,23 +184,23 @@ bool FSolidTerrainGridMarkerPointTest::RunTest(const FString& Parameters)
 	BiomeIs(*this, TEXT("the town point stays grassland"), SampleAt(*Chart, TownCentre), ESolidBiome::Grassland);
 	BiomeIs(*this, TEXT("the rest of the town cell stays grassland"), SampleAt(*Chart, TownCentre + FVector2D(400.f, 0.f)), ESolidBiome::Grassland);
 	FSolidWorldChartMark TownMark;
-	FIntPoint TownCell = FIntPoint::ZeroValue;
 	TestTrue(TEXT("the town mark remains"), Chart->FindTownMarker(SolidTowns::Iglin, TownMark));
-	TestTrue(TEXT("the town mark is a cell"), USolidWorldChart::CellAtTerrainPoint(TownMark.TerrainPoint, TownCell));
-	TestEqual(TEXT("the town mark stands on its cell"), TownCell, Town);
+	TestEqual(TEXT("the town mark stands on its point"), TownMark.TerrainPoint, GridCellPoint(Town));
 	BiomeIs(*this, TEXT("the solver reads the town point"), Chart->GetPointBiome(GridCellPoint(Town)), ESolidBiome::Grassland);
 
 	TArray<FIntPoint> TownPoints;
-	GridPointsUnderCells({ Town }, TownPoints);
-	TestTrue(TEXT("forest paint fills the town cell"), Chart->PaintPoints(TownPoints, ESolidBiome::Forest, Error));
+	const FIntPoint TownPoint = GridCellPoint(Town);
+	AddRow(TownPoints, TownPoint, FIntPoint(TownPoint.X + 2, TownPoint.Y));
+	TestTrue(TEXT("forest paint covers the town point"), Chart->PaintPoints(TownPoints, ESolidBiome::Forest, Error));
 	BiomeIs(*this, TEXT("the town point takes the forest"), SampleAt(*Chart, TownCentre), ESolidBiome::Forest);
 	BiomeIs(*this, TEXT("the other town points take the paint"), SampleAt(*Chart, TownCentre + FVector2D(400.f, 0.f)), ESolidBiome::Forest);
 
 	const FIntPoint Mouth(3, 3);
 	TestTrue(TEXT("the mouth places"), Chart->PlaceLairMouthAt(GridCellPoint(Mouth), SolidLair::IglinTunnels.Name, true, Error));
 	TArray<FIntPoint> MouthPoints;
-	GridPointsUnderCells({ Mouth }, MouthPoints);
-	TestTrue(TEXT("desert paint fills the mouth cell"), Chart->PaintPoints(MouthPoints, ESolidBiome::Desert, Error));
+	const FIntPoint MouthPoint = GridCellPoint(Mouth);
+	AddRow(MouthPoints, MouthPoint, FIntPoint(MouthPoint.X + 2, MouthPoint.Y));
+	TestTrue(TEXT("desert paint covers the mouth point"), Chart->PaintPoints(MouthPoints, ESolidBiome::Desert, Error));
 	const FVector2D MouthCentre = CellCentre(*Chart, Mouth.X, Mouth.Y);
 	BiomeIs(*this, TEXT("the mouth point takes the desert"), SampleAt(*Chart, MouthCentre), ESolidBiome::Desert);
 	BiomeIs(*this, TEXT("the other mouth points take the paint"), SampleAt(*Chart, MouthCentre + FVector2D(400.f, 0.f)), ESolidBiome::Desert);
@@ -259,18 +251,16 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 		Chart->SampleLocationId(IglinCentre.X + 400.f, IglinCentre.Y, GridMin, GridMax),
 		INDEX_NONE);
 	FSolidWorldChartMark IglinMark;
-	FIntPoint IglinCell = FIntPoint::ZeroValue;
 	TestTrue(TEXT("the Iglin mark remains"), Chart->FindTownMarker(SolidTowns::Iglin, IglinMark));
-	TestTrue(TEXT("the Iglin mark is a cell"), USolidWorldChart::CellAtTerrainPoint(IglinMark.TerrainPoint, IglinCell));
-	TestEqual(TEXT("the mark stays on its cell"), IglinCell, Iglin);
+	TestEqual(TEXT("the mark stays on its point"), IglinMark.TerrainPoint, GridCellPoint(Iglin));
 
-	const FIntPoint Far(20, 20);
+	const FIntPoint FarPoint = GridCellPoint(Far);
 	TArray<FIntPoint> FarPoints;
-	GridPointsUnderCells({ Far }, FarPoints);
-	TestTrue(TEXT("a far cell paints town"), Chart->PaintPoints(FarPoints, ESolidBiome::Town, Error));
+	FarPoints.Add(FarPoint);
+	TestTrue(TEXT("a far point paints town"), Chart->PaintPoints(FarPoints, ESolidBiome::Town, Error));
 	TestEqual(
 		TEXT("town paint without a marker is not a town"),
-		Chart->SampleLocationId(CellCentre(*Chart, Far.X, Far.Y).X, CellCentre(*Chart, Far.X, Far.Y).Y, GridMin, GridMax),
+		Chart->SampleLocationId(PointWorld(*Chart, FarPoint).X, PointWorld(*Chart, FarPoint).Y, GridMin, GridMax),
 		INDEX_NONE);
 
 	const FIntPoint Relion(8, 8);
@@ -278,23 +268,23 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Relion places first"), Chart->PlaceTownAt(GridCellPoint(Relion), TEXT("Relion"), Error));
 	TestTrue(TEXT("Iglin places second"), Chart->PlaceTownAt(GridCellPoint(Second), TEXT("Iglin"), Error));
 	TArray<FIntPoint> TownPoints;
-	GridPointsUnderCells({ Relion, Second }, TownPoints);
-	TestTrue(TEXT("the two cells paint town"), Chart->PaintPoints(TownPoints, ESolidBiome::Town, Error));
+	AddRow(TownPoints, GridCellPoint(Relion), GridCellPoint(Second));
+	TestTrue(TEXT("the points between the markers paint town"), Chart->PaintPoints(TownPoints, ESolidBiome::Town, Error));
 	const FVector2D RelionCentre = CellCentre(*Chart, Relion.X, Relion.Y);
 	const FVector2D SecondCentre = CellCentre(*Chart, Second.X, Second.Y);
 	TestEqual(TEXT("the first marker keeps the region"), Chart->SampleLocationId(RelionCentre.X, RelionCentre.Y, GridMin, GridMax), SolidTowns::Relion);
 	TestEqual(TEXT("the second marker stands in that region"), Chart->SampleLocationId(SecondCentre.X, SecondCentre.Y, GridMin, GridMax), SolidTowns::Relion);
 	TestTrue(TEXT("the Iglin mark remains"), Chart->FindTownMarker(SolidTowns::Iglin, IglinMark));
-	TestTrue(TEXT("the Iglin mark is a cell"), USolidWorldChart::CellAtTerrainPoint(IglinMark.TerrainPoint, IglinCell));
-	TestEqual(TEXT("the Iglin mark stands on the second cell"), IglinCell, Second);
+	TestEqual(TEXT("the Iglin mark stands on the second point"), IglinMark.TerrainPoint, GridCellPoint(Second));
 
 	const FIntPoint GateEast(10, 12);
 	const FIntPoint GateWest(11, 12);
 	TestTrue(TEXT("Dragongate's east mark places"), Chart->PlaceTownAt(GridCellPoint(GateEast), TEXT("Dragongate"), Error));
 	TestTrue(TEXT("Dragongate's west mark places"), Chart->PlaceTownAt(GridCellPoint(GateWest), TEXT("Dragongate"), Error));
 	TArray<FIntPoint> GatePoints;
-	GridPointsUnderCells({ GateEast, GateWest }, GatePoints);
-	TestTrue(TEXT("Dragongate paints one region"), Chart->PaintPoints(GatePoints, ESolidBiome::Town, Error));
+	GatePoints.Add(GridCellPoint(GateEast));
+	GatePoints.Add(GridCellPoint(GateWest));
+	TestTrue(TEXT("Dragongate's points paint town"), Chart->PaintPoints(GatePoints, ESolidBiome::Town, Error));
 	TestEqual(
 		TEXT("the east mark is Dragongate"),
 		Chart->SampleLocationId(CellCentre(*Chart, GateEast.X, GateEast.Y).X, CellCentre(*Chart, GateEast.X, GateEast.Y).Y, GridMin, GridMax),

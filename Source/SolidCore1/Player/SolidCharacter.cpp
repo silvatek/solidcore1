@@ -2324,7 +2324,7 @@ void ASolidCharacter::OfferStrongholdSite(const ASolidStrongholdSite* Site)
 	{
 		return;
 	}
-	HUD->OpenStrongholdChoice(Site->GetCell(), Choices);
+	HUD->OpenStrongholdChoice(Site->GetTerrainPoint(), Choices);
 }
 
 void ASolidCharacter::ConfirmStrongholdChoice()

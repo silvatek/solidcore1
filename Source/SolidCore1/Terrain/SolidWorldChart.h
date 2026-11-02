@@ -8,15 +8,14 @@
 #include "SolidWorldChart.generated.h"
 
 /**
- * The shipped world. Cells hold the old squares. Points hold the biome of each
- * terrain point. Marks hold the towns, strongholds, and the other placed names.
+ * The shipped world. Points hold the biome of each terrain point.
+ * Marks hold the towns, strongholds, and the other placed names.
  * The same object answers the map queries: biomes, towns, and solved routes.
  * Those solved routes are not saved with the asset.
  * The game builds the world from /Game/World/WorldChart.
- * World +Y is north and world +X is west, for a terrain point and for a world cell.
+ * World +Y is north and world +X is west.
  * A terrain point's row number counts up toward the north. Point row 0 is the south edge.
- * A world cell's row number counts up toward the south. Cell row 0 is the north edge.
- * Column 0 is west on both.
+ * Column 0 is west.
  */
 UCLASS(BlueprintType)
 class SOLIDCORE1_API USolidWorldChart : public UDataAsset
@@ -127,7 +126,7 @@ public:
 
 	/**
 	 * Paint the points under a round brush. One call is one undo step.
-	 * The cell array stays. A mark on a point does not change that paint.
+	 * A mark on a point does not change that paint.
 	 * Swamp and road are rejected.
 	 */
 	bool PaintBrush(const TArray<FIntPoint>& Centres, int32 Radius, ESolidBiome Biome, FString& OutError);
@@ -137,7 +136,7 @@ public:
 
 	/**
 	 * Fill the inclusive rectangle of terrain points. One call is one undo step.
-	 * The cell array stays. A mark inside the rectangle does not change that paint.
+	 * A mark inside the rectangle does not change that paint.
 	 */
 	bool PaintPointRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
@@ -174,8 +173,7 @@ public:
 	/**
 	 * Biome of each terrain point. Row-major. Point row 0 is the south edge, so a
 	 * higher row is further north. Index 0 is the south-east corner. World +Y is
-	 * north, the same direction as a cell. A cell row counts the other way.
-	 * Mutable because a const helper writes a point.
+	 * north. Mutable because a const helper writes a point.
 	 */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	mutable TArray<ESolidBiome> Points;
@@ -184,13 +182,6 @@ public:
 	TArray<FSolidWorldChartMark> Marks;
 
 private:
-	/**
-	 * Deprecated. The cell grid. The land is the terrain points.
-	 * Marker biome of each cell. Row-major. Row 0 is north, so a higher row is further south. Column 0 is west. A ! is grassland.
-	 */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	TArray<ESolidBiome> Cells;
-
 	/** Points and marks from before one edit. Not saved with the asset. */
 	struct FSnapshot
 	{

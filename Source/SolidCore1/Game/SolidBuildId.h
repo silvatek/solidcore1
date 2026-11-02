@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0898")
+#define SOLID_BUILD_ID TEXT("SC1-0899")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A town run starts from its mark.")
+#define SOLID_BUILD_NOTE TEXT("The text chart loader goes.")
 #endif

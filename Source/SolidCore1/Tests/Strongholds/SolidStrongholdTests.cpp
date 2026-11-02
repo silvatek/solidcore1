@@ -9,29 +9,6 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
-{
-	FString MountainGrid()
-	{
-		FString Text;
-		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight);
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
-			{
-				Text.AppendChar(TEXT('M'));
-			}
-			Text.AppendChar(TEXT('\n'));
-		}
-		return Text;
-	}
-
-	void SetStrongholdCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
-	{
-		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
-	}
-}
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStrongholdCatalogTest,
 	"SolidCore1.Stronghold.Catalog",
@@ -214,87 +191,6 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 
 	SolidStrongholds::FEntrance Nowhere;
 	TestFalse(TEXT("null map yields none"), SolidStrongholds::MakeEntrance(nullptr, WorldMin, WorldMax, FIntPoint(0, 0), Nowhere));
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidStrongholdFaceChoiceTest,
-	"SolidCore1.Stronghold.FaceChoice",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
-{
-	const FVector2D WorldMin(0.f, 0.f);
-	const FVector2D WorldMax(6400.f, 6400.f);
-
-	{
-		FString Grid = MountainGrid();
-		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::DeprecatedLocationMarker);
-		SetStrongholdCell(Grid, 9, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestTrue(TEXT("west grass loads"), Map->LoadFromString(Grid));
-		const FSolidStronghold Cave(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
-		ESolidBiome Shelf = ESolidBiome::Grassland;
-		TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Cave, Shelf));
-		TestEqual(
-			TEXT("a stronghold uses its shelf"),
-			static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
-			static_cast<uint8>(Shelf));
-
-		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
-		{
-			SolidStrongholds::FEntrance Entrance;
-			TestTrue(TEXT("west face"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
-			TestEqual(TEXT("grass column is west"), Entrance.GrassCell.X, 9);
-			TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, 10);
-			TestTrue(TEXT("yaw faces west"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 0.f, 0.1f));
-			TestTrue(TEXT("spawn is west of the edge"), Entrance.WorldXY.X > Entrance.EdgeXY.X);
-		}
-	}
-
-	{
-		FString Grid = MountainGrid();
-		SetStrongholdCell(Grid, 10, 10, TEXT('Q'));
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestTrue(TEXT("unknown letter loads"), Map->LoadFromString(Grid));
-		TestEqual(
-			TEXT("Q is still grassland"),
-			static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
-			static_cast<uint8>(ESolidBiome::Grassland));
-	}
-
-	{
-		FString Grid = MountainGrid();
-		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::DeprecatedLocationMarker);
-		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestTrue(TEXT("sealed cave loads"), Map->LoadFromString(Grid));
-		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
-		{
-			SolidStrongholds::FEntrance Sealed;
-			TestFalse(TEXT("no grass face means no mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Sealed));
-		}
-	}
-
-	{
-		FString Grid = MountainGrid();
-		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::DeprecatedLocationMarker);
-		SetStrongholdCell(Grid, 10, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		SetStrongholdCell(Grid, 9, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));
-		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
-		{
-			SolidStrongholds::FEntrance Entrance;
-			TestTrue(TEXT("one mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
-			TestEqual(TEXT("north column wins"), Entrance.GrassCell.X, 10);
-			TestEqual(TEXT("north row wins"), Entrance.GrassCell.Y, 9);
-			TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
-		}
-	}
-
 	return true;
 }
 

@@ -48,21 +48,13 @@ public:
 	bool LoadDefault(bool bForceReload = false);
 
 	/**
-	 * Deprecated. The chart stores marks.
-	 * Fill the solved queries from map text. A colour line is ignored.
-	 * A Road: line is ignored.
-	 * Digits and tunnel letters stay markers. An encounter is not in the text.
-	 */
-	bool LoadFromString(const FString& Text);
-
-	/**
 	 * Copy that chart's cells, marks, and terrain points onto this one, then solve the routes.
 	 * A chart saved as cells has no points yet. Solving copies the play biomes onto them.
 	 * Copying this chart only solves.
 	 */
 	bool LoadFromChart(const USolidWorldChart* Chart);
 
-	/** Encounter marks. Empty after LoadFromString. */
+	/** Encounter marks. */
 	const TArray<FSolidWorldEncounterMark>& GetEncounterMarks() const { return EncounterMarks; }
 
 	bool IsLoaded() const { return bIsLoaded; }
@@ -372,7 +364,6 @@ protected:
 	/** One location per town id. Two cells with the same name are one town. Iglin is the start. */
 	void CollectNamedTowns() const;
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
-	static bool IsGridMarker(TCHAR Marker);
 	/** Location id of a named town on this cell, or INDEX_NONE. */
 	int32 ResolveLocationId(int32 CellX, int32 CellY) const;
 };

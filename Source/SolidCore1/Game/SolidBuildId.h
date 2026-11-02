@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0901")
+#define SOLID_BUILD_ID TEXT("SC1-0902")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The chart drops the solved cell routes.")
+#define SOLID_BUILD_NOTE TEXT("The company stands two metres south of the Iglin mark.")
 #endif

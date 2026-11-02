@@ -13,6 +13,8 @@
 #include "SolidTerrainMaterials.h"
 #include "SolidTerrainNoise.h"
 #include "SolidWorldChart.h"
+#include "Towns/SolidTowns.h"
+#include "Towns/SolidTownSigns.h"
 #include "SolidCore1.h"
 #include "Company/SolidCompanionCharacter.h"
 #include "Player/SolidCharacter.h"
@@ -696,6 +698,44 @@ void ASolidTerrainStreamer::CenterExplorationFogOnFocus()
 		Loc.X, Loc.Y);
 }
 
+bool ASolidTerrainStreamer::StartTownSpawnXY(
+	const USolidWorldChart* Chart,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FVector2D& OutXY)
+{
+	FSolidWorldChartMark Mark;
+	if (!Chart || !Chart->FindTownMarker(SolidTowns::Iglin, Mark))
+	{
+		return false;
+	}
+	FVector2D MarkXY = FVector2D::ZeroVector;
+	if (!Chart->TerrainPointToWorld(Mark.TerrainPoint, WorldMinXY, WorldMaxXY, MarkXY))
+	{
+		return false;
+	}
+
+	OutXY = MarkXY;
+	TArray<SolidTownSigns::FPlacement> Signs;
+	SolidTownSigns::CollectPlacements(Chart, WorldMinXY, WorldMaxXY, Signs);
+	for (const SolidTownSigns::FPlacement& Sign : Signs)
+	{
+		if (Sign.LocationId != SolidTowns::Iglin)
+		{
+			continue;
+		}
+		FIntPoint SignPoint = FIntPoint::ZeroValue;
+		if (Chart->TerrainPointAt(Sign.WorldXY.X, Sign.WorldXY.Y, WorldMinXY, WorldMaxXY, SignPoint)
+			&& SignPoint == Mark.TerrainPoint)
+		{
+			// The board faces south. Stand one terrain step in front of it.
+			OutXY = MarkXY + FVector2D(0.f, -200.f);
+		}
+		break;
+	}
+	return true;
+}
+
 void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 {
 	if (bDidRelocateToStartTown)
@@ -794,15 +834,20 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 
 	if (!bCaveMouth)
 	{
-		FVector2D TownXY = FVector2D::ZeroVector;
-		if (!TerrainMap->GetStartTownWorldXY(TownXY))
+		const USolidWorldChart* Chart = TerrainMap->GetWorldMap();
+		FVector2D SpawnXY = FVector2D::ZeroVector;
+		FSolidWorldChartMark Iglin;
+		FVector2D MarkXY = FVector2D::ZeroVector;
+		if (!Chart
+			|| !StartTownSpawnXY(Chart, TerrainMap->GetWorldMinXY(), TerrainMap->GetWorldMaxXY(), SpawnXY)
+			|| !Chart->FindTownMarker(SolidTowns::Iglin, Iglin)
+			|| !Chart->TerrainPointToWorld(Iglin.TerrainPoint, TerrainMap->GetWorldMinXY(), TerrainMap->GetWorldMaxXY(), MarkXY))
 		{
 			bDidRelocateToStartTown = true;
 			return;
 		}
-		// Stand in the town plaza, offset from the start-town centroid.
-		PawnXY = TownXY + StartTownPawnOffsetXY;
-		const FVector2D ToTown = TownXY - PawnXY;
+		PawnXY = SpawnXY;
+		const FVector2D ToTown = MarkXY - PawnXY;
 		if (!ToTown.IsNearlyZero())
 		{
 			FacingYawDeg = FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));

@@ -98,11 +98,21 @@ public:
 
 	/**
 	 * True after the one-shot start-town relocate has run (or been skipped because
-	 * WorldMap has no location 0 cells). Companions should wait on this before first spawn.
+	 * the chart has no Iglin mark). Companions should wait on this before first spawn.
 	 */
 	bool HasAttemptedStartTownRelocate() const { return bDidRelocateToStartTown; }
 
-	/** Move the focus pawn once to the WorldMap location-0 centroid. */
+	/**
+	 * Where the company appears in Iglin. The town mark's terrain point.
+	 * Two metres south of that point when the welcome sign stands on it.
+	 */
+	static bool StartTownSpawnXY(
+		const USolidWorldChart* Chart,
+		FVector2D WorldMinXY,
+		FVector2D WorldMaxXY,
+		FVector2D& OutXY);
+
+	/** Move the focus pawn once to the Iglin mark. */
 	void TryRelocateFocusToStartTown();
 
 	/** Apply the same XY delta (and terrain Z snap) to every companion in the world. */
@@ -167,8 +177,8 @@ public:
 	TWeakObjectPtr<AActor> FocusActor;
 
 	/**
-	 * Planar offset from the WorldMap location-0 centroid for the Captain spawn.
-	 * Keeps the pawn in the town plaza, facing that centroid.
+	 * Planar offset from a town cell for a portal landing.
+	 * +X is west and +Y is north.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Start Town")
 	FVector2D StartTownPawnOffsetXY = FVector2D(0.f, -450.f);

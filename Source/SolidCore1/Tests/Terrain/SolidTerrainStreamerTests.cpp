@@ -80,15 +80,17 @@ bool FSolidStreamerStartTownRelocateFlagTest::RunTest(const FString& Parameters)
 
 	if (Streamer->GetTerrainMap() && Streamer->GetTerrainMap()->IsBuilt())
 	{
-		FVector2D TownXY = FVector2D::ZeroVector;
-		if (Streamer->GetTerrainMap()->GetStartTownWorldXY(TownXY))
+		const USolidWorldChart* Chart = Streamer->GetTerrainMap()->GetWorldMap();
+		FVector2D ExpectedXY = FVector2D::ZeroVector;
+		if (Chart && ASolidTerrainStreamer::StartTownSpawnXY(
+			Chart,
+			Streamer->GetTerrainMap()->GetWorldMinXY(),
+			Streamer->GetTerrainMap()->GetWorldMaxXY(),
+			ExpectedXY))
 		{
-			const FVector2D ExpectedXY = TownXY + Streamer->StartTownPawnOffsetXY;
 			const FVector Loc = Focus->GetActorLocation();
-			TestTrue(TEXT("focus X near offset spawn"), FMath::IsNearlyEqual(Loc.X, ExpectedXY.X, 50.f));
-			TestTrue(TEXT("focus Y near offset spawn"), FMath::IsNearlyEqual(Loc.Y, ExpectedXY.Y, 50.f));
-			TestTrue(TEXT("focus cleared of town centroid"),
-				FVector2D::Distance(FVector2D(Loc.X, Loc.Y), TownXY) > 200.f);
+			TestTrue(TEXT("focus X is the Iglin spawn"), FMath::IsNearlyEqual(Loc.X, ExpectedXY.X, 50.f));
+			TestTrue(TEXT("focus Y is the Iglin spawn"), FMath::IsNearlyEqual(Loc.Y, ExpectedXY.Y, 50.f));
 		}
 	}
 

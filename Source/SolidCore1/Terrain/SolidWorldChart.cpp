@@ -1145,42 +1145,18 @@ void USolidWorldChart::AssignTownPoints() const
 		}
 	};
 
-	if (Marks.Num() > 0)
+	for (const FSolidWorldChartMark& Mark : Marks)
 	{
-		for (const FSolidWorldChartMark& Mark : Marks)
+		if (Mark.Kind != ESolidWorldChartMarkKind::Town)
 		{
-			if (Mark.Kind != ESolidWorldChartMarkKind::Town)
-			{
-				continue;
-			}
-			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
-			if (!Town)
-			{
-				continue;
-			}
-			Claim(Town->Id, Mark.TerrainPoint.X, Mark.TerrainPoint.Y);
+			continue;
 		}
-		return;
-	}
-
-	if (Markers.Num() != MapWidth * MapHeight || BangLocationIds.Num() != Markers.Num())
-	{
-		return;
-	}
-	for (int32 CellY = 0; CellY < MapHeight; ++CellY)
-	{
-		for (int32 CellX = 0; CellX < MapWidth; ++CellX)
+		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
+		if (!Town)
 		{
-			const int32 Index = CellY * MapWidth + CellX;
-			if (static_cast<TCHAR>(Markers[Index]) != DeprecatedLocationMarker)
-			{
-				continue;
-			}
-			int32 TerrainX = 0;
-			int32 TerrainY = 0;
-			PointUnderCell(CellX, CellY, TerrainX, TerrainY);
-			Claim(BangLocationIds[Index], TerrainX, TerrainY);
+			continue;
 		}
+		Claim(Town->Id, Mark.TerrainPoint.X, Mark.TerrainPoint.Y);
 	}
 }
 

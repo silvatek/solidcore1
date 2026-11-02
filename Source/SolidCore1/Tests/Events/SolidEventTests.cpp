@@ -12,6 +12,7 @@
 #include "SolidSight.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldChart.h"
+#include "Towns/SolidTowns.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -362,23 +363,19 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 	const float Half = 0.5f * 512.f * 200.f;
 	const FVector2D GameMin(-Half, -Half);
 	const FVector2D GameMax(Half, Half);
-	FVector2D Start = FVector2D::ZeroVector;
-	TestTrue(TEXT("start town"), Shipped->GetStartTownWorldXY(GameMin, GameMax, Start));
+	FSolidWorldChartMark Iglin;
+	FVector2D MarkXY = FVector2D::ZeroVector;
+	FVector2D Spawn = FVector2D::ZeroVector;
+	TestTrue(TEXT("Iglin is on the chart"), Shipped->FindTownMarker(SolidTowns::Iglin, Iglin));
+	TestTrue(TEXT("Iglin projects"), Shipped->TerrainPointToWorld(Iglin.TerrainPoint, GameMin, GameMax, MarkXY));
+	TestTrue(TEXT("the company has a spawn"), ASolidTerrainStreamer::StartTownSpawnXY(Shipped, GameMin, GameMax, Spawn));
 	TestEqual(
-		TEXT("start centroid is town 0"),
-		Shipped->SampleLocationId(Start.X, Start.Y, GameMin, GameMax),
+		TEXT("the mark is town 0"),
+		Shipped->SampleLocationId(MarkXY.X, MarkXY.Y, GameMin, GameMax),
 		0);
-
-	ASolidTerrainStreamer* Streamer = NewObject<ASolidTerrainStreamer>();
-	TestNotNull(TEXT("streamer"), Streamer);
-	if (Streamer)
-	{
-		const FVector2D Pawn = Start + Streamer->StartTownPawnOffsetXY;
-		TestEqual(
-			TEXT("captain spawn is still inside town 0"),
-			Shipped->SampleLocationId(Pawn.X, Pawn.Y, GameMin, GameMax),
-			0);
-	}
+	TestTrue(
+		TEXT("spawn stands on the mark or one step south"),
+		Spawn.Equals(MarkXY, 1.f) || Spawn.Equals(MarkXY + FVector2D(0.f, -200.f), 1.f));
 	return true;
 }
 

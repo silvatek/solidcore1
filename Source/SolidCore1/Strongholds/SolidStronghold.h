@@ -666,10 +666,10 @@ namespace SolidStrongholds
 	};
 
 	/**
-	 * Grass face of one cell.
+	 * North face of one cell. The door faces north.
 	 * The working door is the company's active stronghold.
 	 * A previous stronghold uses the same face for its exterior mesh.
-	 * False when the cell has no grassland neighbor or the world points fail.
+	 * False when the north neighbor is off the map or the world points fail.
 	 */
 	bool MakeEntrance(
 		const USolidWorldChart* WorldMap,
@@ -678,7 +678,7 @@ namespace SolidStrongholds
 		FIntPoint Cell,
 		FEntrance& OutEntrance);
 
-	/** Grass neighbor of one map cell. North, then west, south, and east, matching MakeEntrance. */
+	/** The cell north of one map cell. The door faces that way. */
 	struct FGrassFace
 	{
 		FIntPoint GrassCell = FIntPoint::ZeroValue;

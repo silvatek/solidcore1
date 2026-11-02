@@ -190,13 +190,8 @@ namespace SolidStronghold
 
 namespace
 {
-	/** Map step (column, row) toward grass. Row +1 is south; column +1 is east. */
-	const FIntPoint NeighborSteps[] = {
-		FIntPoint(0, -1),
-		FIntPoint(-1, 0),
-		FIntPoint(0, 1),
-		FIntPoint(1, 0),
-	};
+	/** Row +1 is south, so the north neighbor is the row above. */
+	const FIntPoint NorthStep(0, -1);
 
 	bool InBounds(const int32 X, const int32 Y)
 	{
@@ -225,25 +220,8 @@ bool SolidStrongholds::MakeEntrance(
 		return false;
 	}
 
-	const FIntPoint* ChosenStep = nullptr;
-	FIntPoint GrassCell = FIntPoint::ZeroValue;
-	for (const FIntPoint& Step : NeighborSteps)
-	{
-		const int32 NextX = Cell.X + Step.X;
-		const int32 NextY = Cell.Y + Step.Y;
-		if (!InBounds(NextX, NextY))
-		{
-			continue;
-		}
-		if (WorldMap->GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
-		{
-			continue;
-		}
-		ChosenStep = &Step;
-		GrassCell = FIntPoint(NextX, NextY);
-		break;
-	}
-	if (!ChosenStep)
+	const FIntPoint GrassCell(Cell.X + NorthStep.X, Cell.Y + NorthStep.Y);
+	if (!InBounds(GrassCell.X, GrassCell.Y))
 	{
 		return false;
 	}
@@ -261,7 +239,7 @@ bool SolidStrongholds::MakeEntrance(
 	OutEntrance.EdgeXY = (CaveXY + GrassXY) * 0.5f;
 	const FVector2D TowardGrass = (GrassXY - CaveXY).GetSafeNormal();
 	OutEntrance.WorldXY = OutEntrance.EdgeXY + TowardGrass * FaceInsetCm;
-	OutEntrance.FacingYawDeg = YawFacingGrass(*ChosenStep);
+	OutEntrance.FacingYawDeg = YawFacingGrass(NorthStep);
 	return true;
 }
 
@@ -276,23 +254,14 @@ bool SolidStrongholds::FindGrassFace(
 		return false;
 	}
 
-	for (const FIntPoint& Step : NeighborSteps)
+	const FIntPoint GrassCell(Cell.X + NorthStep.X, Cell.Y + NorthStep.Y);
+	if (!InBounds(Cell.X, Cell.Y) || !InBounds(GrassCell.X, GrassCell.Y))
 	{
-		const int32 NextX = Cell.X + Step.X;
-		const int32 NextY = Cell.Y + Step.Y;
-		if (!InBounds(NextX, NextY))
-		{
-			continue;
-		}
-		if (WorldMap->GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
-		{
-			continue;
-		}
-		Out.GrassCell = FIntPoint(NextX, NextY);
-		Out.FacingYawDeg = YawFacingGrass(Step);
-		return true;
+		return false;
 	}
-	return false;
+	Out.GrassCell = GrassCell;
+	Out.FacingYawDeg = YawFacingGrass(NorthStep);
+	return true;
 }
 
 bool SolidStrongholdTransition::IsFinalPair(const FSolidStronghold& Stronghold)

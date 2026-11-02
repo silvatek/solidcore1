@@ -161,11 +161,6 @@ namespace
 		return IsTown(Mark, SolidTowns::Iglin);
 	}
 
-	bool IsRelion(const FSolidWorldChartMark& Mark)
-	{
-		return IsTown(Mark, SolidTowns::Relion);
-	}
-
 	bool IsCaveTrail(const SolidRoad::FSolidRoad& Road)
 	{
 		if (Road.Type != SolidRoad::EType::Trail || Road.Points.Num() == 0)
@@ -321,31 +316,6 @@ namespace
 			&& SolidStrongholdTransition::CompanyChestOpen(*State, Hold, Mode.IsInStronghold());
 	}
 
-	const SolidRoad::FSolidRoad* FindIglinRelionRoad(const USolidWorldChart& Chart)
-	{
-		for (const SolidRoad::FSolidRoad& Road : Chart.GetRoutedRoads())
-		{
-			if (Road.Points.Num() == 0)
-			{
-				continue;
-			}
-			const bool bForward = IsIglin(Road.From) && IsRelion(Road.To);
-			const bool bBackward = IsRelion(Road.From) && IsIglin(Road.To);
-			if (bForward || bBackward)
-			{
-				return &Road;
-			}
-		}
-		return nullptr;
-	}
-
-	bool IsThisEncounter(const FSolidEncounter& Encounter, const TCHAR* Name)
-	{
-		return Name
-			&& Encounter.Definition.Name
-			&& FCString::Stricmp(Encounter.Definition.Name, Name) == 0;
-	}
-
 	const FSolidWorldChartMark* FindChartMark(
 		const USolidWorldChart& Chart,
 		const ESolidWorldChartMarkKind Kind,
@@ -391,165 +361,6 @@ namespace
 			const float T = static_cast<float>(Step) / static_cast<float>(Steps);
 			if (OnIglinRamp(Mode, FMath::Lerp(From, To, T)))
 			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/** True when a placed Iglin Bridge member can see this ground point. */
-	bool IglinBridgeDetects(const ASolidGameMode& Mode, const TCHAR* Name, const FVector2D& Here)
-	{
-		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
-		{
-			if (!IsThisEncounter(Encounter, Name))
-			{
-				continue;
-			}
-			for (const FSolidMonsterGroup& Group : Encounter.Groups)
-			{
-				for (int32 Index = 0; Index < Group.Num(); ++Index)
-				{
-					const FSolidMonster* Monster = Group.Get(Index);
-					if (Monster && Monster->Detects(Here))
-					{
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-	/** The placed member closest to Iglin. That is the one the walk from town meets. */
-	const FSolidMonster* ClosestIglinBridgeMonster(
-		const ASolidGameMode& Mode,
-		const TCHAR* Name,
-		const FVector2D& IglinXY)
-	{
-		const FSolidMonster* Found = nullptr;
-		float Best = TNumericLimits<float>::Max();
-		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
-		{
-			if (!IsThisEncounter(Encounter, Name))
-			{
-				continue;
-			}
-			for (const FSolidMonsterGroup& Group : Encounter.Groups)
-			{
-				for (int32 Index = 0; Index < Group.Num(); ++Index)
-				{
-					const FSolidMonster* Monster = Group.Get(Index);
-					if (!Monster || Monster->PointIndex == INDEX_NONE)
-					{
-						continue;
-					}
-					const float Dist = FVector2D::DistSquared(Monster->XY, IglinXY);
-					if (Dist < Best)
-					{
-						Best = Dist;
-						Found = Monster;
-					}
-				}
-			}
-		}
-		return Found;
-	}
-
-	/**
-	 * A point inside that monster's detection, toward Iglin, and off the ramps.
-	 * Standing there starts the fight. Standing on a ramp would show the message instead.
-	 */
-	bool EncounterApproach(
-		const ASolidGameMode& Mode,
-		const FSolidMonster& Monster,
-		const FVector2D& IglinXY,
-		FVector2D& OutPoint)
-	{
-		const FVector2D TowardIglin = IglinXY - Monster.XY;
-		const float Length = TowardIglin.Size();
-		if (Length < 1.f || Monster.DetectionRange <= 1.f)
-		{
-			return false;
-		}
-
-		const FVector2D Direction = TowardIglin / Length;
-		const FVector2D Perp(-Direction.Y, Direction.X);
-		const float Limit = Monster.DetectionRange - 1.f;
-		auto Consider = [&Mode, &Monster, Limit, &OutPoint](const FVector2D& Point)
-		{
-			if (FVector2D::Distance(Point, Monster.XY) > Limit || OnIglinRamp(Mode, Point))
-			{
-				return false;
-			}
-			OutPoint = Point;
-			return true;
-		};
-
-		const float Preferred = FMath::Min(Monster.DetectionRange * 0.5f, Limit);
-		if (Consider(Monster.XY + Direction * Preferred))
-		{
-			return true;
-		}
-		for (float Distance = Preferred; Distance <= Limit; Distance += SegmentStepCm)
-		{
-			if (Consider(Monster.XY + Direction * Distance))
-			{
-				return true;
-			}
-		}
-		const float Sides[] = {1.f, -1.f};
-		for (float Distance = Preferred; Distance <= Limit; Distance += SegmentStepCm)
-		{
-			for (const float Side : Sides)
-			{
-				for (float Across = SegmentStepCm; Across <= Limit; Across += SegmentStepCm)
-				{
-					if (Consider(Monster.XY + Direction * Distance + Perp * Side * Across))
-					{
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-	/** Slide the approach sideways until the straight line from the road stays off the ramps. */
-	bool ClearOfRamp(
-		const ASolidGameMode& Mode,
-		const FSolidMonster& Monster,
-		const FVector2D& From,
-		const FVector2D& Approach,
-		FVector2D& OutPoint)
-	{
-		if (!SegmentOnIglinRamp(Mode, From, Approach))
-		{
-			OutPoint = Approach;
-			return true;
-		}
-
-		const FVector2D Delta = Approach - From;
-		const float DeltaLength = Delta.Size();
-		const FVector2D Perp = DeltaLength > 1.f
-			? FVector2D(-Delta.Y, Delta.X) / DeltaLength
-			: FVector2D(1.f, 0.f);
-		const float Limit = Monster.DetectionRange - 1.f;
-		const float Sides[] = {1.f, -1.f};
-		for (const float Side : Sides)
-		{
-			for (float Across = 100.f; Across <= 2000.f; Across += 100.f)
-			{
-				const FVector2D Candidate = Approach + Perp * Side * Across;
-				if (FVector2D::Distance(Candidate, Monster.XY) > Limit || OnIglinRamp(Mode, Candidate))
-				{
-					continue;
-				}
-				if (SegmentOnIglinRamp(Mode, From, Candidate))
-				{
-					continue;
-				}
-				OutPoint = Candidate;
 				return true;
 			}
 		}
@@ -930,12 +741,11 @@ bool FSolidAutoPlaythrough::BuildWalk(
 		NoteWait(TEXT("chart is not loaded"));
 		return false;
 	}
-	if (Mode.GetBridges().Num() == 0)
-	{
-		NoteWait(TEXT("no bridges"));
-		return false;
-	}
-	if (!Step.MarkName || !FindChartMark(*Chart, Step.MarkKind, Step.MarkName))
+
+	const FSolidWorldChartMark* Mark = Step.MarkName
+		? FindChartMark(*Chart, Step.MarkKind, Step.MarkName)
+		: nullptr;
+	if (!Mark)
 	{
 		UE_LOG(
 			LogSolid,
@@ -947,129 +757,28 @@ bool FSolidAutoPlaythrough::BuildWalk(
 		return false;
 	}
 
-	const SolidRoad::FSolidRoad* Road = FindIglinRelionRoad(*Chart);
-	if (!Road || Road->Points.Num() == 0)
-	{
-		NoteWait(TEXT("no Iglin-Relion road"));
-		return false;
-	}
-
 	const FVector2D WorldMin = Terrain->GetWorldMinXY();
 	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	FVector2D IglinXY = FVector2D::ZeroVector;
-	if (!Chart->GetLocationWorldXY(SolidTowns::Iglin, WorldMin, WorldMax, IglinXY))
+	FVector2D WorldXY = FVector2D::ZeroVector;
+	if (!Chart->TerrainPointToWorld(Mark->TerrainPoint, WorldMin, WorldMax, WorldXY))
 	{
-		NoteWait(TEXT("no Iglin world position"));
+		NoteWait(TEXT("mark has no world position"));
 		return false;
-	}
-
-	const FSolidMonster* Monster = ClosestIglinBridgeMonster(Mode, Step.MarkName, IglinXY);
-	if (!Monster)
-	{
-		NoteWait(TEXT("no Iglin Bridge monster"));
-		return false;
-	}
-	FVector2D Approach = FVector2D::ZeroVector;
-	if (!EncounterApproach(Mode, *Monster, IglinXY, Approach))
-	{
-		NoteWait(TEXT("no encounter approach"));
-		return false;
-	}
-
-	TArray<FIntPoint> RoutePoints = Road->Points;
-	if (!IsIglin(Road->From))
-	{
-		Algo::Reverse(RoutePoints);
-	}
-
-	const FVector2D Paint = SolidRoad::StripPaintOffset();
-	TArray<FVector2D> Centers;
-	Centers.Reserve(RoutePoints.Num());
-	for (const FIntPoint& TerrainPoint : RoutePoints)
-	{
-		FVector2D WorldXY = FVector2D::ZeroVector;
-		if (Chart->TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, WorldXY))
-		{
-			Centers.Add(WorldXY + Paint);
-		}
-	}
-	if (Centers.Num() == 0)
-	{
-		NoteWait(TEXT("road has no world points"));
-		return false;
-	}
-
-	int32 LastSafe = INDEX_NONE;
-	for (int32 Index = 0; Index < Centers.Num(); ++Index)
-	{
-		if (OnIglinRamp(Mode, Centers[Index]))
-		{
-			break;
-		}
-		if (LastSafe != INDEX_NONE && SegmentOnIglinRamp(Mode, Centers[LastSafe], Centers[Index]))
-		{
-			break;
-		}
-		LastSafe = Index;
-	}
-
-	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
-	int32 Closest = 0;
-	int32 Start = 0;
-	if (LastSafe != INDEX_NONE)
-	{
-		float BestApproach = TNumericLimits<float>::Max();
-		for (int32 Index = 0; Index <= LastSafe; ++Index)
-		{
-			const float Dist = FVector2D::DistSquared(Centers[Index], Approach);
-			if (Dist < BestApproach)
-			{
-				BestApproach = Dist;
-				Closest = Index;
-			}
-		}
-
-		float Nearest = TNumericLimits<float>::Max();
-		for (int32 Index = 0; Index <= Closest; ++Index)
-		{
-			const float Dist = FVector2D::DistSquared(Centers[Index], Here);
-			if (Dist < Nearest)
-			{
-				Nearest = Dist;
-				Start = Index;
-			}
-		}
 	}
 
 	Points.Reset();
-	if (LastSafe != INDEX_NONE)
-	{
-		Points.Reserve(Closest - Start + 2);
-		for (int32 Index = Start; Index <= Closest; ++Index)
-		{
-			Points.Add(Centers[Index]);
-		}
-	}
-
-	const FVector2D From = Points.Num() > 0 ? Points.Last() : Here;
-	FVector2D Final = Approach;
-	ClearOfRamp(Mode, *Monster, From, Approach, Final);
-	Points.Add(Final);
+	Points.Add(WorldXY);
 	PointIndex = 0;
 	bWalkReady = true;
 	bHasBestDistance = false;
 	StallAccumulated = 0.f;
-	if (Points.Num() == 0)
-	{
-		NoteWait(TEXT("walk built no points"));
-		return false;
-	}
 	NoteWait(nullptr);
 	UE_LOG(
 		LogSolid,
 		Warning,
-		TEXT("Auto playthrough walk ready: %d points from (%.0f, %.0f)"),
-		Points.Num(),
+		TEXT("Auto playthrough walk ready: mark (%.0f, %.0f) from (%.0f, %.0f)"),
+		WorldXY.X,
+		WorldXY.Y,
 		CaptainLocation.X,
 		CaptainLocation.Y);
 	return true;
@@ -1089,11 +798,6 @@ bool FSolidAutoPlaythrough::TickWalk(
 
 	const FVector Location = Captain.GetActorLocation();
 	const FVector2D Here(Location.X, Location.Y);
-	if (Step.MarkKind == ESolidWorldChartMarkKind::Encounter && IglinBridgeDetects(Mode, Step.MarkName, Here))
-	{
-		Advance(TEXT("encounter detects the captain"));
-		return false;
-	}
 	if (!bWalkReady && !BuildWalk(Mode, Location, Step))
 	{
 		return false;
@@ -1105,12 +809,11 @@ bool FSolidAutoPlaythrough::TickWalk(
 	}
 
 	const FVector2D Target = Points[PointIndex];
-	const bool bLast = PointIndex + 1 >= Points.Num();
-	if (!bLast && SolidClickMove::HasArrived(Here, Target, ArriveCm))
+	if (SolidClickMove::HasArrived(Here, Target, ArriveCm))
 	{
-		++PointIndex;
 		bHasBestDistance = false;
 		StallAccumulated = 0.f;
+		Advance(TEXT("reached the mark"));
 		return false;
 	}
 
@@ -1120,8 +823,7 @@ bool FSolidAutoPlaythrough::TickWalk(
 		return false;
 	}
 
-	// The last point sits inside detection. Keep steering until a raptor sees him.
-	return Steer(DeltaSeconds, Mode, Captain, Target, bLast, true);
+	return Steer(DeltaSeconds, Mode, Captain, Target, true, false);
 }
 
 bool FSolidAutoPlaythrough::Steer(

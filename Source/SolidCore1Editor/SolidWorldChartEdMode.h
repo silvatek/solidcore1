@@ -119,6 +119,5 @@ private:
 	void FaceSigns(const FVector& Camera);
 	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;
 	void Note(const FString& Message);
-	FString DescribeCell(const FIntPoint& Cell) const;
 	FString DescribePoint(const FIntPoint& TerrainPoint) const;
 };

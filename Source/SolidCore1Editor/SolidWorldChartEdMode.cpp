@@ -1138,7 +1138,7 @@ void FSolidWorldChartEdMode::DeleteCurrentMark()
 	}
 	RebuildOverlay();
 	RebuildSigns();
-	Hover = DescribeCell(CurrentCell);
+	Hover = bHasPoint ? DescribePoint(CurrentTerrainPoint) : FString();
 	RefreshPanel();
 }
 
@@ -1156,14 +1156,7 @@ void FSolidWorldChartEdMode::UndoChart()
 	}
 	RebuildOverlay();
 	RebuildSigns();
-	if (Tool == ESolidWorldChartTool::Paint && bHasPoint)
-	{
-		Hover = DescribePoint(CurrentTerrainPoint);
-	}
-	else if (bHasCell)
-	{
-		Hover = DescribeCell(CurrentCell);
-	}
+	Hover = bHasPoint ? DescribePoint(CurrentTerrainPoint) : FString();
 	RefreshPanel();
 }
 
@@ -1316,9 +1309,7 @@ void FSolidWorldChartEdMode::HoverAt(
 	{
 		SampleBrush(CurrentTerrainPoint);
 	}
-	const FString Next = Tool == ESolidWorldChartTool::Paint && bHasPoint
-		? DescribePoint(CurrentTerrainPoint)
-		: DescribeCell(CurrentCell);
+	const FString Next = bHasPoint ? DescribePoint(CurrentTerrainPoint) : FString();
 	if (Next != Hover)
 	{
 		Hover = Next;
@@ -1342,7 +1333,17 @@ void FSolidWorldChartEdMode::PlaceUnderCursor(FEditorViewportClient* ViewportCli
 	}
 	bHasCell = true;
 	CurrentCell = Cell;
-	Hover = DescribeCell(Cell);
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+	if (CursorPoint(ViewportClient, Viewport, Viewport->GetMouseX(), Viewport->GetMouseY(), TerrainPoint))
+	{
+		bHasPoint = true;
+		CurrentTerrainPoint = TerrainPoint;
+		Hover = DescribePoint(TerrainPoint);
+	}
+	else
+	{
+		Hover.Reset();
+	}
 	PlaceCurrentMark();
 }
 
@@ -1801,74 +1802,6 @@ void FSolidWorldChartEdMode::DrawHUD(
 void FSolidWorldChartEdMode::Note(const FString& Message)
 {
 	ToolMessage = Message;
-}
-
-FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
-{
-	if (!Chart)
-	{
-		return FString();
-	}
-	const int32 Index = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
-	if (!Chart->Cells.IsValidIndex(Index))
-	{
-		return FString();
-	}
-
-	const ESolidBiome Painted = Chart->Cells[Index];
-	ESolidBiome Resolved = Painted;
-	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (WorldMap && WorldMap->IsLoaded())
-	{
-		Resolved = WorldMap->GetBiomeAtCell(Cell.X, Cell.Y);
-	}
-
-	FString Line = FString::Printf(TEXT("%s."), SolidBiome::Of(Resolved).Name());
-	if (Resolved != Painted)
-	{
-		Line += FString::Printf(TEXT(" Painted %s."), SolidBiome::Of(Painted).Name());
-	}
-
-	const int32 MarkIndex = Chart->MarkAtCell(Cell);
-	if (MarkIndex != INDEX_NONE)
-	{
-		const FSolidWorldChartMark& Mark = Chart->Marks[MarkIndex];
-		Line += FString::Printf(TEXT(" %s, %s."), MarkKindName(Mark.Kind), *Mark.Name);
-	}
-
-	if (WorldMap && WorldMap->IsLoaded() && Terrain)
-	{
-		const FVector2D WorldMin = Terrain->GetWorldMinXY();
-		const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-		for (const SolidRoad::FSolidRoad& Road : WorldMap->GetRoutedRoads())
-		{
-			bool bOnCell = false;
-			for (const FIntPoint& TerrainPoint : Road.Points)
-			{
-				FVector2D World = FVector2D::ZeroVector;
-				FIntPoint PointCell = FIntPoint::ZeroValue;
-				if (!WorldMap->TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, World)
-					|| !WorldMap->CellAtWorld(World.X, World.Y, WorldMin, WorldMax, PointCell)
-					|| PointCell != Cell)
-				{
-					continue;
-				}
-				bOnCell = true;
-				break;
-			}
-			if (!bOnCell)
-			{
-				continue;
-			}
-			Line += FString::Printf(
-				TEXT(" Road %s -> %s, %s."),
-				*Road.From.Name,
-				*Road.To.Name,
-				USolidWorldChart::RoadTypeName(Road.Type));
-		}
-	}
-	return Line;
 }
 
 FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& TerrainPoint) const

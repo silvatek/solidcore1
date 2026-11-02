@@ -172,7 +172,11 @@ bool FSolidTerrainGridMarkerPointTest::RunTest(const FString& Parameters)
 	const FVector2D TownCentre = CellCentre(*Chart, Town.X, Town.Y);
 	BiomeIs(*this, TEXT("the town point stays grassland"), SampleAt(*Chart, TownCentre), ESolidBiome::Grassland);
 	BiomeIs(*this, TEXT("the rest of the town cell stays grassland"), SampleAt(*Chart, TownCentre + FVector2D(400.f, 0.f)), ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("the town cell still resolves as town"), Chart->GetBiomeAtCell(Town.X, Town.Y), ESolidBiome::Town);
+	FSolidWorldChartMark TownMark;
+	FIntPoint TownCell = FIntPoint::ZeroValue;
+	TestTrue(TEXT("the town mark remains"), Chart->FindTownMarker(SolidTowns::Iglin, TownMark));
+	TestTrue(TEXT("the town mark is a cell"), USolidWorldChart::CellAtTerrainPoint(TownMark.TerrainPoint, TownCell));
+	TestEqual(TEXT("the town mark stands on its cell"), TownCell, Town);
 	BiomeIs(*this, TEXT("the solver reads the town point"), Chart->GetPointBiomeAtCell(Town.X, Town.Y), ESolidBiome::Grassland);
 
 	TestTrue(TEXT("forest paint fills the town cell"), Chart->PaintRun({ Town }, ESolidBiome::Forest, Error));
@@ -185,7 +189,7 @@ bool FSolidTerrainGridMarkerPointTest::RunTest(const FString& Parameters)
 	const FVector2D MouthCentre = CellCentre(*Chart, Mouth.X, Mouth.Y);
 	BiomeIs(*this, TEXT("the mouth point takes the desert"), SampleAt(*Chart, MouthCentre), ESolidBiome::Desert);
 	BiomeIs(*this, TEXT("the other mouth points take the paint"), SampleAt(*Chart, MouthCentre + FVector2D(400.f, 0.f)), ESolidBiome::Desert);
-	BiomeIs(*this, TEXT("the mouth cell keeps the desert"), Chart->GetBiomeAtCell(Mouth.X, Mouth.Y), ESolidBiome::Desert);
+	BiomeIs(*this, TEXT("the mouth point under the cell is desert"), Chart->GetPointBiomeAtCell(Mouth.X, Mouth.Y), ESolidBiome::Desert);
 	return true;
 }
 
@@ -319,7 +323,7 @@ bool FSolidTerrainGridPointBrushTest::RunTest(const FString& Parameters)
 	BiomeIs(*this, TEXT("play reads that point"), SampleAt(*Chart, Centre), ESolidBiome::Forest);
 	BiomeIs(*this, TEXT("the next point stays grassland"), Chart->GetPointBiome(East), ESolidBiome::Grassland);
 	BiomeIs(*this, TEXT("the cell array stays grassland"), Chart->Cells[CellIndex], ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("the cell resolves as the stamped point"), Chart->GetBiomeAtCell(Cell.X, Cell.Y), ESolidBiome::Forest);
+	BiomeIs(*this, TEXT("the centre point is forest"), Chart->GetPointBiomeAtCell(Cell.X, Cell.Y), ESolidBiome::Forest);
 	TestTrue(TEXT("undo restores the stamp"), Chart->Undo());
 	BiomeIs(*this, TEXT("the stamp is grassland again"), Chart->GetPointBiome(Origin), ESolidBiome::Grassland);
 
@@ -367,13 +371,13 @@ bool FSolidTerrainGridPointBrushTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the rectangle is the inclusive points"), SeaPoints, 6);
 	BiomeIs(*this, TEXT("the point east of the rectangle stays grassland"), Chart->GetPointBiome(Origin + FIntPoint(3, 0)), ESolidBiome::Grassland);
 	BiomeIs(*this, TEXT("the point north of the rectangle stays grassland"), Chart->GetPointBiome(Origin + FIntPoint(0, 2)), ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("the cell resolves as the rectangle's centre"), Chart->GetBiomeAtCell(Cell.X, Cell.Y), ESolidBiome::Sea);
+	BiomeIs(*this, TEXT("the centre point is sea"), Chart->GetPointBiomeAtCell(Cell.X, Cell.Y), ESolidBiome::Sea);
 	TestTrue(TEXT("undo restores the rectangle"), Chart->Undo());
 
 	TestTrue(TEXT("river paint is one point"), Chart->PaintBrush({ Origin }, 0, ESolidBiome::River, Error));
 	BiomeIs(*this, TEXT("the painted point is river"), SampleAt(*Chart, Centre), ESolidBiome::River);
 	BiomeIs(*this, TEXT("the next point is not a channel"), SampleAt(*Chart, PointWorld(*Chart, East)), ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("the cell resolves as the river point"), Chart->GetBiomeAtCell(Cell.X, Cell.Y), ESolidBiome::River);
+	BiomeIs(*this, TEXT("the centre point is river"), Chart->GetPointBiomeAtCell(Cell.X, Cell.Y), ESolidBiome::River);
 	TestTrue(TEXT("undo restores the river point"), Chart->Undo());
 
 	TestFalse(TEXT("swamp is not a point paint"), Chart->PaintBrush({ Origin }, 0, ESolidBiome::Swamp, Error));

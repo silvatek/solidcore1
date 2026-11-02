@@ -102,7 +102,7 @@ namespace
 			&& End.Z < Ramp[0].Z;
 	}
 
-	// LoadFromChart needs a full cell grid. The river is one point column, and the towns are marks.
+	// The load needs a full point grid. The river is one point column, and the towns are marks.
 	bool BridgeLoadTrack(
 		FAutomationTestBase& Test,
 		USolidWorldChart*& OutMap,

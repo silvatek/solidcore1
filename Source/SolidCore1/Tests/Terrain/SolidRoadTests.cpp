@@ -476,8 +476,8 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	const FVector2D Grass = RoadTestCenter(*Track, 6, 12);
 	const FVector2D Forest = RoadTestCenter(*Track, 8, 12);
 	const float TrackHalf = SolidRoad::WidthCm(SolidRoad::EType::Track) * 0.5f;
-	TestEqual(TEXT("the cell under the track stays grass"),
-		static_cast<uint8>(Track->GetBiomeAtCell(6, 12)),
+	TestEqual(TEXT("the centre point under the track stays grass"),
+		static_cast<uint8>(Track->GetPointBiomeAtCell(6, 12)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(TEXT("track centre uses the road texture"),
 		static_cast<uint8>(Track->SampleBiome(Grass.X, Grass.Y, RoadTestMin, RoadTestMax)),
@@ -491,11 +491,12 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("forest on the track uses the road texture"),
 		static_cast<uint8>(Track->SampleBiome(Forest.X, Forest.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Road));
+	const int32 GrassMark = Track->MarkAtCell(FIntPoint(6, 12));
 	TestFalse(TEXT("grass under a track is not a town"),
-		Track->IsMarkedTown(Grass.X, Grass.Y, RoadTestMin, RoadTestMax));
-	const FVector2D Iglin = RoadTestCenter(*Track, 4, 12);
+		Track->Marks.IsValidIndex(GrassMark) && Track->Marks[GrassMark].Kind == ESolidWorldChartMarkKind::Town);
+	const int32 IglinMark = Track->MarkAtCell(FIntPoint(4, 12));
 	TestTrue(TEXT("Iglin is a town"),
-		Track->IsMarkedTown(Iglin.X, Iglin.Y, RoadTestMin, RoadTestMax));
+		Track->Marks.IsValidIndex(IglinMark) && Track->Marks[IglinMark].Kind == ESolidWorldChartMarkKind::Town);
 
 	const FVector2D River = RoadTestCenter(*Track, 12, 12);
 	TestEqual(TEXT("the channel stays river"),
@@ -522,8 +523,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the cave keeps its shelf"),
 		static_cast<uint8>(Cave->SampleBiome(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(CaveShelf));
+	const int32 CaveMark = Cave->MarkAtCell(FIntPoint(4, 8));
 	TestFalse(TEXT("the cave is not a town"),
-		Cave->IsMarkedTown(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax));
+		Cave->Marks.IsValidIndex(CaveMark) && Cave->Marks[CaveMark].Kind == ESolidWorldChartMarkKind::Town);
 
 	USolidWorldChart* HighwayChart = nullptr;
 	USolidWorldChart* Highway = nullptr;
@@ -607,10 +609,10 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the trail start is a point"), USolidWorldChart::CellAtTerrainPoint(Roads[0].From.TerrainPoint, CaveCell));
 	TestEqual(TEXT("the trail starts at 9,17"), CaveCell, FIntPoint(16, 8));
 	TestTrue(TEXT("the trail's first point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points[0], StartCell));
-	TestEqual(
-		TEXT("the trail starts on the cave"),
-		Map->GetMarkerAtCell(StartCell.X, StartCell.Y),
-		USolidWorldChart::DeprecatedLocationMarker);
+	ESolidStrongholdType TrailType = ESolidStrongholdType::Fortress;
+	ESolidStrongholdSize TrailSize = ESolidStrongholdSize::Imperious;
+	TestTrue(TEXT("the trail starts on the cave"),
+		Map->StrongholdAtCell(StartCell.X, StartCell.Y, TrailType, TrailSize));
 	TestTrue(TEXT("the trail's last point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points.Last(), EndCell));
 	FIntPoint IglinCell = FIntPoint::ZeroValue;
 	TestTrue(TEXT("Iglin is a cell"), Map->TownCell(SolidTowns::Iglin, IglinCell));

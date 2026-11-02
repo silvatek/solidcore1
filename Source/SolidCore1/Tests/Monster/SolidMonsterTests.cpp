@@ -559,9 +559,10 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("a definition with no mark places nobody"), Empty->GetEncounterMarks().Num(), 0);
+	TArray<FSolidWorldChartMark> EmptyMarks;
+	TestEqual(TEXT("a definition with no mark places nobody"), Empty->CollectEncounterMarks(EmptyMarks), 0);
 	int32 DracorexOnEmpty = 0;
-	for (const FSolidWorldEncounterMark& Mark : Empty->GetEncounterMarks())
+	for (const FSolidWorldChartMark& Mark : EmptyMarks)
 	{
 		if (Mark.Name.Equals(TEXT("Dracorex"), ESearchCase::IgnoreCase))
 		{
@@ -570,7 +571,7 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("a chart with no Dracorex mark places none of that encounter"), DracorexOnEmpty, 0);
 
-	auto StandAt = [](const FSolidWorldEncounterMark& Mark) -> int32
+	auto StandAt = [](const FSolidWorldChartMark& Mark) -> int32
 	{
 		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
 		if (!Def)
@@ -610,10 +611,11 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("one mark"), Marked->GetEncounterMarks().Num(), 1);
-	if (Marked->GetEncounterMarks().Num() == 1)
+	TArray<FSolidWorldChartMark> MarkedEncounters;
+	TestEqual(TEXT("one mark"), Marked->CollectEncounterMarks(MarkedEncounters), 1);
+	if (MarkedEncounters.Num() == 1)
 	{
-		TestEqual(TEXT("three members stand at the mark"), StandAt(Marked->GetEncounterMarks()[0]), 3);
+		TestEqual(TEXT("three members stand at the mark"), StandAt(MarkedEncounters[0]), 3);
 	}
 
 	FSolidWorldChartMark Second;
@@ -629,9 +631,10 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("two marks with one name"), Two->GetEncounterMarks().Num(), 2);
+	TArray<FSolidWorldChartMark> TwoEncounters;
+	TestEqual(TEXT("two marks with one name"), Two->CollectEncounterMarks(TwoEncounters), 2);
 	int32 Total = 0;
-	for (const FSolidWorldEncounterMark& Mark : Two->GetEncounterMarks())
+	for (const FSolidWorldChartMark& Mark : TwoEncounters)
 	{
 		Total += StandAt(Mark);
 	}
@@ -664,10 +667,11 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("one Dracorex mark"), RexLoaded->GetEncounterMarks().Num(), 1);
-	if (RexLoaded->GetEncounterMarks().Num() == 1)
+	TArray<FSolidWorldChartMark> RexEncounters;
+	TestEqual(TEXT("one Dracorex mark"), RexLoaded->CollectEncounterMarks(RexEncounters), 1);
+	if (RexEncounters.Num() == 1)
 	{
-		const FSolidWorldEncounterMark& Mark = RexLoaded->GetEncounterMarks()[0];
+		const FSolidWorldChartMark& Mark = RexEncounters[0];
 		TestEqual(TEXT("one Immense raptor stands at the mark"), StandAt(Mark), 1);
 		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
 		if (TestNotNull(TEXT("the mark names Dracorex"), Def))
@@ -717,9 +721,10 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("two marks named Dracorex"), TwoRex->GetEncounterMarks().Num(), 2);
+	TArray<FSolidWorldChartMark> TwoRexEncounters;
+	TestEqual(TEXT("two marks named Dracorex"), TwoRex->CollectEncounterMarks(TwoRexEncounters), 2);
 	int32 RexTotal = 0;
-	for (const FSolidWorldEncounterMark& Mark : TwoRex->GetEncounterMarks())
+	for (const FSolidWorldChartMark& Mark : TwoRexEncounters)
 	{
 		RexTotal += StandAt(Mark);
 	}
@@ -745,9 +750,10 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 	}
 	Chart->Init(ESolidBiome::Grassland);
 	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	TArray<FSolidWorldChartMark> GroundEncounters;
 	if (!TestTrue(TEXT("the mark places"), Chart->PlaceEncounterAt(CellPoint(Cell), TEXT("Iglin Bridge"), Error))
 		|| !TestTrue(TEXT("the chart loads"), WorldMap->LoadFromChart(Chart))
-		|| !TestEqual(TEXT("one mark"), WorldMap->GetEncounterMarks().Num(), 1))
+		|| !TestEqual(TEXT("one mark"), WorldMap->CollectEncounterMarks(GroundEncounters), 1))
 	{
 		return false;
 	}
@@ -759,7 +765,7 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const FIntPoint StoredPoint = WorldMap->GetEncounterMarks()[0].TerrainPoint;
+	const FIntPoint StoredPoint = GroundEncounters[0].TerrainPoint;
 	const USolidTerrainMap* Defaults = GetDefault<USolidTerrainMap>();
 	const FVector2D Stored(
 		Defaults->GetWorldMinXY().X + static_cast<float>(StoredPoint.X) * Defaults->PointSpacing,

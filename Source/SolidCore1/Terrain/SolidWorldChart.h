@@ -7,13 +7,6 @@
 #include "SolidTerrainTypes.h"
 #include "SolidWorldChart.generated.h"
 
-/** One encounter mark. The position is the mark's terrain point. */
-struct FSolidWorldEncounterMark
-{
-	FString Name;
-	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
-};
-
 /**
  * The shipped world. Cells hold the old squares. Points hold the biome of each
  * terrain point. Marks hold the towns, strongholds, and the other placed names.
@@ -34,13 +27,6 @@ public:
 	static constexpr int32 MapWidth = 128;
 	static constexpr int32 MapHeight = 64;
 
-	/**
-	 * One described cell. "! row,column = Town Name" is a location.
-	 * Stronghold, StrongholdSite, LairEntrance, and LairExit use the same coordinates.
-	 * Row and column count from 1 at the top-left of the grid.
-	 */
-	static constexpr TCHAR DeprecatedLocationMarker = TEXT('!');
-
 	/** Editor path of the shipped chart. */
 	static const TCHAR* ShippedPath();
 
@@ -49,34 +35,15 @@ public:
 
 	/**
 	 * Copy that chart's cells, marks, and terrain points onto this one, then solve the routes.
-	 * A chart saved as cells has no points yet. Solving copies the play biomes onto them.
-	 * A chart with no cells still loads when its terrain points cover the grid.
+	 * The solve needs the terrain points to cover the grid.
 	 * Copying this chart only solves.
 	 */
 	bool LoadFromChart(const USolidWorldChart* Chart);
 
-	/** Encounter marks. */
-	const TArray<FSolidWorldEncounterMark>& GetEncounterMarks() const { return EncounterMarks; }
+	/** Encounter marks on the chart. */
+	int32 CollectEncounterMarks(TArray<FSolidWorldChartMark>& OutMarks) const;
 
 	bool IsLoaded() const { return bIsLoaded; }
-
-	/**
-	 * Marker biome at map cell (clamped). The town marker is Town; the desert marker is Desert; M is Mountain.
-	 * The mark on this cell names the rest. A town mark is Town. A lair mouth keeps the paint.
-	 * A stronghold uses the shelf that stronghold names. One with no shelf keeps the marker biome.
-	 * A stronghold site keeps the marker biome. A ! with no mark is Grassland.
-	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
-	 */
-	ESolidBiome GetBiomeAtCell(int32 CellX, int32 CellY) const;
-
-	/**
-	 * Marker biome at a cell, before a named town or a stronghold shelf replaces it.
-	 * A ! is grassland. Swamp and road are not marker biomes.
-	 */
-	ESolidBiome GetMarkerBiomeAtCell(int32 CellX, int32 CellY) const;
-
-	/** Marker character at a cell, or 0 when the chart is not solved. Digits stay digits. */
-	TCHAR GetMarkerAtCell(int32 CellX, int32 CellY) const;
 
 	/**
 	 * Town under a world XY, or INDEX_NONE. The town is the painted town ground
@@ -93,10 +60,7 @@ public:
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/**
-	 * Biome of the terrain point under this cell, the point at the cell centre.
-	 * The cell's own biome is GetBiomeAtCell.
-	 */
+	/** Biome of the terrain point under this cell, the point at the cell centre. */
 	ESolidBiome GetPointBiomeAtCell(int32 CellX, int32 CellY) const;
 
 	/** Each road keeps the terrain points of its route. */
@@ -104,9 +68,6 @@ public:
 
 	/** True when the point lies within the routed road's width of its terrain points. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
-
-	/** True when this cell holds a town mark, or the town marker. A road strip is not a town. */
-	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** Tint for this biome. */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;
@@ -278,26 +239,20 @@ private:
 	bool EnsurePoints() const;
 	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
 	bool PlaceOn(FIntPoint TerrainPoint, const FSolidWorldChartMark& Mark, FString& OutError);
-	/** Solve when a query finds the chart unsolved. Points cover the map, or the cells do. */
+	/** Solve when a query finds the chart unsolved. The terrain points cover the map. */
 	bool EnsureQuery() const;
 	/**
 	 * AssignTownPoints claims each run of town points for the town mark that touches it.
 	 * BuildListedRoads routes each road in SolidRoads.h across the terrain points.
-	 * The cell grid is legacy. MarkerForChartBiome fills Markers from the point under
-	 * each cell. It fills them from the cells when the point grid does not cover the map.
-	 * CellAtTerrainPoint turns a mark into a cell, and RememberChartMark stamps that cell.
-	 * Those cell steps go when the cell grid goes.
 	 */
 	bool BuildQuery() const;
-	/** Drop the solved copy. The next query solves Cells and Marks again. */
+	/** Drop the solved routes. The next query solves the points and marks again. */
 	void InvalidateQuery();
 
 	TArray<FSnapshot> UndoStack;
 
 	/** Solved facts. Not saved with the asset. A paint, mark, or undo clears them. */
 	mutable bool bIsLoaded = false;
-	mutable TArray<uint8> Markers;
-	mutable TArray<FSolidWorldEncounterMark> EncounterMarks;
 
 	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
 	mutable TArray<int32> PointTowns;
@@ -314,7 +269,4 @@ protected:
 	void BuildListedRoads() const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
-	/** Record a town on this cell and mark the cell. A note, an encounter, and a bridge are skipped. */
-	bool RememberChartMark(const FSolidWorldChartMark& Mark, FIntPoint Cell) const;
-	static ESolidBiome MarkerToBiome(TCHAR Marker);
 };

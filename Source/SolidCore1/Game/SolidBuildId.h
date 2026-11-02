@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0933")
+#define SOLID_BUILD_ID TEXT("SC1-0934")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Forage places piles on terrain points by biome and density.")
+#define SOLID_BUILD_NOTE TEXT("The marker grid is gone, and the chart solves from the terrain points.")
 #endif

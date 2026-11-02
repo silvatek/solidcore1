@@ -39,27 +39,22 @@ bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 	FSolidWorldChartMark Iglin;
 	TestTrue(TEXT("Iglin has a mark"), Map->FindTownMarker(SolidTowns::Iglin, Iglin));
 
-	// Row 0 is all sea (north edge of the file).
+	// Row 0 is the north edge. Its centre point is sea.
 	TestEqual(
-		TEXT("north-west cell is sea"),
-		static_cast<uint8>(Map->GetBiomeAtCell(0, 0)),
+		TEXT("north-west point is sea"),
+		static_cast<uint8>(Map->GetPointBiomeAtCell(0, 0)),
 		static_cast<uint8>(ESolidBiome::Sea));
 
-	// Find a Z cell and confirm it maps to Town.
-	bool bFoundZTown = false;
-	for (int32 Y = 0; Y < USolidWorldChart::MapHeight && !bFoundZTown; ++Y)
+	bool bFoundTown = false;
+	for (const ESolidBiome Point : Map->Points)
 	{
-		for (int32 X = 0; X < USolidWorldChart::MapWidth; ++X)
+		if (Point == ESolidBiome::Town)
 		{
-			if (Map->GetBiomeAtCell(X, Y) == ESolidBiome::Town)
-			{
-				// Z and T both become Town; just confirm Town exists.
-				bFoundZTown = true;
-				break;
-			}
+			bFoundTown = true;
+			break;
 		}
 	}
-	TestTrue(TEXT("map contains Town biome cells"), bFoundZTown);
+	TestTrue(TEXT("map contains town ground"), bFoundTown);
 
 	const FLinearColor SeaColor = Map->GetBiomeColor(ESolidBiome::Sea);
 	TestTrue(TEXT("sea color is bluish"), SeaColor.B > SeaColor.R && SeaColor.B > SeaColor.G);

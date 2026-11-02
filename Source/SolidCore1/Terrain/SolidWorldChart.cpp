@@ -382,13 +382,11 @@ bool USolidWorldChart::Undo()
 
 bool USolidWorldChart::EnsureQuery() const
 {
-	if (bIsLoaded && Markers.Num() == MapWidth * MapHeight)
+	if (bIsLoaded)
 	{
 		return true;
 	}
-	const bool bPointsCover = Points.Num() == PointAxis * PointAxis;
-	const bool bCellsCover = Cells.Num() == MapWidth * MapHeight;
-	if (!bPointsCover && !bCellsCover)
+	if (Points.Num() != PointAxis * PointAxis)
 	{
 		return false;
 	}
@@ -398,49 +396,6 @@ bool USolidWorldChart::EnsureQuery() const
 void USolidWorldChart::InvalidateQuery()
 {
 	bIsLoaded = false;
-}
-
-namespace
-{
-	bool WorldMapMarkerMatches(const TCHAR Raw, const TCHAR Expected)
-	{
-		return Raw == Expected || FChar::ToUpper(Raw) == Expected;
-	}
-}
-
-ESolidBiome USolidWorldChart::MarkerToBiome(const TCHAR Marker)
-{
-	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Sea).Marker()))
-	{
-		return ESolidBiome::Sea;
-	}
-	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Grassland).Marker()))
-	{
-		return ESolidBiome::Grassland;
-	}
-	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Forest).Marker()))
-	{
-		return ESolidBiome::Forest;
-	}
-	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Town).Marker()))
-	{
-		return ESolidBiome::Town;
-	}
-	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::River).Marker()))
-	{
-		return ESolidBiome::River;
-	}
-	if (WorldMapMarkerMatches(Marker, SolidBiome::Of(ESolidBiome::Desert).Marker()))
-	{
-		return ESolidBiome::Desert;
-	}
-	if (WorldMapMarkerMatches(Marker, DeprecatedLocationMarker))
-	{
-		return ESolidBiome::Grassland;
-	}
-
-	// A named town, lair, or defined stronghold upgrades this in GetBiomeAtCell.
-	return FChar::ToUpper(Marker) == TEXT('M') ? ESolidBiome::Mountain : ESolidBiome::Grassland;
 }
 
 FLinearColor USolidWorldChart::DefaultColorForBiome(const ESolidBiome Biome)
@@ -470,67 +425,9 @@ bool USolidWorldChart::LoadDefault(const bool bForceReload)
 
 void USolidWorldChart::ResetLoad() const
 {
-	Markers.SetNum(MapWidth * MapHeight);
 	RoutedRoads.Reset();
-	EncounterMarks.Reset();
 	PointTowns.Reset();
 	bIsLoaded = false;
-}
-
-namespace
-{
-	/** Swamp and road are not marker biomes, so a chart cell of either loads as grassland. */
-	TCHAR MarkerForChartBiome(const ESolidBiome Biome)
-	{
-		const FSolidBiome& Ground = SolidBiome::Of(Biome);
-		return Ground.Paintable() ? Ground.Marker() : SolidBiome::Of(ESolidBiome::Grassland).Marker();
-	}
-}
-
-bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const FIntPoint Cell) const
-{
-	if (Cell.X < 0 || Cell.Y < 0 || Cell.X >= MapWidth || Cell.Y >= MapHeight)
-	{
-		return false;
-	}
-	const int32 Index = Cell.Y * MapWidth + Cell.X;
-	if (static_cast<TCHAR>(Markers[Index]) == DeprecatedLocationMarker)
-	{
-		return false;
-	}
-
-	switch (Mark.Kind)
-	{
-	case ESolidWorldChartMarkKind::Town:
-	{
-		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
-		if (!Town)
-		{
-			return false;
-		}
-		break;
-	}
-	case ESolidWorldChartMarkKind::Stronghold:
-	case ESolidWorldChartMarkKind::StrongholdSite:
-		break;
-	case ESolidWorldChartMarkKind::LairEntrance:
-	case ESolidWorldChartMarkKind::LairExit:
-		if (!SolidLair::FindByName(Mark.Name))
-		{
-			return false;
-		}
-		break;
-	case ESolidWorldChartMarkKind::Custom:
-	case ESolidWorldChartMarkKind::Encounter:
-	case ESolidWorldChartMarkKind::Bridge:
-		return false;
-	default:
-		return false;
-	}
-
-	// A town id and the text file both use !. The chart stored that cell as grassland.
-	Markers[Index] = static_cast<uint8>(DeprecatedLocationMarker);
-	return true;
 }
 
 bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
@@ -553,57 +450,14 @@ bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 
 bool USolidWorldChart::BuildQuery() const
 {
-	const bool bPointsCover = Points.Num() == PointAxis * PointAxis;
-	const bool bCellsCover = Cells.Num() == MapWidth * MapHeight;
-	if (!bPointsCover && !bCellsCover)
+	if (Points.Num() != PointAxis * PointAxis)
 	{
-		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
+		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %d point grid."), PointAxis);
 		return false;
 	}
 
 	ResetLoad();
-	if (bPointsCover)
-	{
-		for (int32 CellY = 0; CellY < MapHeight; ++CellY)
-		{
-			for (int32 CellX = 0; CellX < MapWidth; ++CellX)
-			{
-				int32 TerrainX = 0;
-				int32 TerrainY = 0;
-				PointUnderCell(CellX, CellY, TerrainX, TerrainY);
-				const int32 Slot = TerrainY * PointAxis + TerrainX;
-				const ESolidBiome Ground = Points.IsValidIndex(Slot) ? Points[Slot] : ESolidBiome::Grassland;
-				Markers[CellY * MapWidth + CellX] = static_cast<uint8>(MarkerForChartBiome(Ground));
-			}
-		}
-	}
-	else
-	{
-		for (int32 Index = 0; Index < Cells.Num(); ++Index)
-		{
-			Markers[Index] = static_cast<uint8>(MarkerForChartBiome(Cells[Index]));
-		}
-	}
-
-	// A mark position becomes a cell once. That conversion needs a loaded map.
 	bIsLoaded = true;
-
-	for (const FSolidWorldChartMark& Mark : Marks)
-	{
-		if (Mark.Kind == ESolidWorldChartMarkKind::Encounter)
-		{
-			FSolidWorldEncounterMark Found;
-			Found.Name = Mark.Name;
-			Found.TerrainPoint = Mark.TerrainPoint;
-			EncounterMarks.Add(Found);
-		}
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!CellAtTerrainPoint(Mark.TerrainPoint, Cell))
-		{
-			continue;
-		}
-		RememberChartMark(Mark, Cell);
-	}
 
 	AssignTownPoints();
 
@@ -616,63 +470,17 @@ bool USolidWorldChart::BuildQuery() const
 	return true;
 }
 
-ESolidBiome USolidWorldChart::GetMarkerBiomeAtCell(int32 CellX, int32 CellY) const
+int32 USolidWorldChart::CollectEncounterMarks(TArray<FSolidWorldChartMark>& OutMarks) const
 {
-	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
-	{
-		return ESolidBiome::Grassland;
-	}
-	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
-	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
-	return MarkerToBiome(static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]));
-}
-
-ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 CellX, int32 CellY) const
-{
-	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
-	{
-		return ESolidBiome::Grassland;
-	}
-	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
-	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
+	OutMarks.Reset();
 	for (const FSolidWorldChartMark& Mark : Marks)
 	{
-		FIntPoint Cell;
-		if (!CellAtTerrainPoint(Mark.TerrainPoint, Cell) || Cell.X != CellX || Cell.Y != CellY)
+		if (Mark.Kind == ESolidWorldChartMarkKind::Encounter)
 		{
-			continue;
+			OutMarks.Add(Mark);
 		}
-		if (Mark.Kind == ESolidWorldChartMarkKind::Town)
-		{
-			if (SolidTowns::FindByName(Mark.Name))
-			{
-				return ESolidBiome::Town;
-			}
-		}
-		else if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			ESolidStrongholdType HoldType = Mark.StrongholdType;
-			ESolidStrongholdSize HoldSize = Mark.StrongholdSize;
-			SolidStronghold::FromToken(Mark.Name, HoldType, HoldSize);
-			ESolidBiome Shelf = ESolidBiome::Grassland;
-			if (SolidStronghold::BiomeFor(FSolidStronghold(HoldType, HoldSize), Shelf))
-			{
-				return Shelf;
-			}
-		}
-		else if (Mark.Kind == ESolidWorldChartMarkKind::LairEntrance
-			|| Mark.Kind == ESolidWorldChartMarkKind::LairExit)
-		{
-			const int32 Index = CellY * MapWidth + CellX;
-			if (Cells.IsValidIndex(Index))
-			{
-				return Cells[Index];
-			}
-		}
-		break;
 	}
-	const TCHAR Marker = static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]);
-	return MarkerToBiome(Marker);
+	return OutMarks.Num();
 }
 
 bool USolidWorldChart::StrongholdAtCell(
@@ -756,17 +564,6 @@ bool USolidWorldChart::StrongholdSiteAtCell(const int32 CellX, const int32 CellY
 	return false;
 }
 
-TCHAR USolidWorldChart::GetMarkerAtCell(int32 CellX, int32 CellY) const
-{
-	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
-	{
-		return 0;
-	}
-	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
-	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
-	return static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]);
-}
-
 bool USolidWorldChart::WorldXYToCell(
 	const float WorldX,
 	const float WorldY,
@@ -819,27 +616,6 @@ bool USolidWorldChart::CellAtTerrainPoint(const FIntPoint TerrainPoint, FIntPoin
 	OutCell.X = FMath::Clamp(FMath::FloorToInt(UFromWest * static_cast<float>(MapWidth)), 0, MapWidth - 1);
 	OutCell.Y = FMath::Clamp(FMath::FloorToInt(VFromNorth * static_cast<float>(MapHeight)), 0, MapHeight - 1);
 	return true;
-}
-
-bool USolidWorldChart::IsMarkedTown(
-	const float WorldX,
-	const float WorldY,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY) const
-{
-	int32 CellX = 0;
-	int32 CellY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, CellX, CellY))
-	{
-		return false;
-	}
-
-	const int32 MarkIndex = MarkAtCell(FIntPoint(CellX, CellY));
-	if (Marks.IsValidIndex(MarkIndex) && Marks[MarkIndex].Kind == ESolidWorldChartMarkKind::Town)
-	{
-		return true;
-	}
-	return GetMarkerAtCell(CellX, CellY) == SolidBiome::Of(ESolidBiome::Town).Marker();
 }
 
 namespace

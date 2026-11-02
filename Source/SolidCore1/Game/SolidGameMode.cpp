@@ -2071,8 +2071,10 @@ int32 ASolidGameMode::PlaceEncounterMarks(const USolidTerrainMap* Map)
 	}
 
 	const USolidGameState* State = GetConfiguration();
+	TArray<FSolidWorldChartMark> EncounterMarks;
+	WorldMap->CollectEncounterMarks(EncounterMarks);
 	int32 Chosen = 0;
-	for (const FSolidWorldEncounterMark& Mark : WorldMap->GetEncounterMarks())
+	for (const FSolidWorldChartMark& Mark : EncounterMarks)
 	{
 		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
 		if (!Def)

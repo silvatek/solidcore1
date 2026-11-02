@@ -254,7 +254,7 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(
 		TEXT("the north face is grass"),
-		static_cast<uint8>(Map->GetBiomeAtCell(GrassCell.X, GrassCell.Y)),
+		static_cast<uint8>(Map->GetPointBiomeAtCell(GrassCell.X, GrassCell.Y)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
 	TArray<SolidLair::FEntrance> Entrances;
@@ -310,8 +310,8 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	for (const SolidLair::FEntrance& Entrance : ShippedMouths)
 	{
 		TestEqual(
-			TEXT("the mouth cell stays grassland"),
-			static_cast<uint8>(Shipped->GetBiomeAtCell(Entrance.Cell.X, Entrance.Cell.Y)),
+			TEXT("the mouth point stays grassland"),
+			static_cast<uint8>(Shipped->GetPointBiomeAtCell(Entrance.Cell.X, Entrance.Cell.Y)),
 			static_cast<uint8>(ESolidBiome::Grassland));
 		FVector2D World = FVector2D::ZeroVector;
 		TestTrue(TEXT("mouth cell projects"), Shipped->CellToWorldXY(Entrance.Cell, ShippedMin, ShippedMax, World));

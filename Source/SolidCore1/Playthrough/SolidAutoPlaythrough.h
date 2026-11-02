@@ -470,6 +470,10 @@ public:
 private:
 	/** Moves to the next row of Script. The list ending stops the script. */
 	void Advance();
+	/** Logs the current row once. A later row logs again. */
+	void NoteStepStart();
+	/** Logs the row NoteStepStart logged. A second call logs nothing. */
+	void NoteStepEnd();
 	void ResetWalk();
 	void NoteDistance(float DeltaSeconds, float DistanceCm);
 	bool BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
@@ -528,6 +532,8 @@ private:
 
 	bool bRunning = false;
 	int32 StepIndex = 0;
+	/** Row whose start has been logged. INDEX_NONE after its end is logged. */
+	int32 LoggedStep = INDEX_NONE;
 	bool bWalkReady = false;
 	/** The inventory page is open, so the next tick crafts. */
 	bool bPageOpen = false;

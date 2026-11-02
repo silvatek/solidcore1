@@ -1,6 +1,7 @@
 #include "SolidAutoPlaythrough.h"
 
 #include "SolidCharacter.h"
+#include "SolidCore1.h"
 #include "SolidClickMove.h"
 #include "SolidGameMode.h"
 #include "GameFramework/PlayerController.h"
@@ -750,13 +751,35 @@ void FSolidAutoPlaythrough::Start(USolidGameState& State)
 	StepIndex = 0;
 	bAimRavenHeld = false;
 	ResetWalk();
+	NoteStepStart();
 }
 
 void FSolidAutoPlaythrough::Stop()
 {
+	NoteStepEnd();
 	bRunning = false;
 	bAimRavenHeld = false;
 	ResetWalk();
+}
+
+void FSolidAutoPlaythrough::NoteStepStart()
+{
+	if (!bRunning || LoggedStep == StepIndex || StepIndex < 0 || StepIndex >= ScriptCount)
+	{
+		return;
+	}
+	LoggedStep = StepIndex;
+	UE_LOG(LogSolid, Warning, TEXT("Auto playthrough start %d: %s"), StepIndex + 1, Script[StepIndex].Name);
+}
+
+void FSolidAutoPlaythrough::NoteStepEnd()
+{
+	if (LoggedStep < 0 || LoggedStep >= ScriptCount)
+	{
+		return;
+	}
+	UE_LOG(LogSolid, Warning, TEXT("Auto playthrough end %d: %s"), LoggedStep + 1, Script[LoggedStep].Name);
+	LoggedStep = INDEX_NONE;
 }
 
 void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain)
@@ -829,12 +852,15 @@ bool FSolidAutoPlaythrough::TickCurrent(
 
 void FSolidAutoPlaythrough::Advance()
 {
+	NoteStepEnd();
 	++StepIndex;
 	ResetWalk();
 	if (StepIndex >= ScriptCount)
 	{
 		Stop();
+		return;
 	}
+	NoteStepStart();
 }
 
 void FSolidAutoPlaythrough::ResetWalk()

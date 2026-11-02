@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0941")
+#define SOLID_BUILD_ID TEXT("SC1-0942")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A mark is found on its terrain point, and chart mode rebuilds those points.")
+#define SOLID_BUILD_NOTE TEXT("A portal stands the squad on the town marker.")
 #endif

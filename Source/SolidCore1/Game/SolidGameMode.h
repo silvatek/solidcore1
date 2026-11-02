@@ -166,7 +166,7 @@ public:
 	bool SelectBattlePlanSlot(int32 SlotIndex);
 
 	/**
-	 * Move the captain onto one cell of TownId and shift companions by the same planar delta.
+	 * Move the captain onto the town marker's terrain point and shift companions by the same planar delta.
 	 * Arriving fires the enter-town event for that place.
 	 */
 	bool TeleportSquadToTown(int32 TownId);

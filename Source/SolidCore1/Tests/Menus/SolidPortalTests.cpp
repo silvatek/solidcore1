@@ -99,20 +99,19 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
 		const int32 TownId = Town.Id;
-		FIntPoint Cell;
-		if (!Map->TownCell(TownId, Cell))
+		FSolidWorldChartMark Mark;
+		if (!Map->FindTownMarker(TownId, Mark))
 		{
 			TestTrue(TEXT("only a wall gate may be missing from the map"),
 				Town.Type == SolidTowns::ETownType::WallGate);
 			continue;
 		}
 
-		FVector2D CellXY = FVector2D::ZeroVector;
-		TestTrue(TEXT("cell projects"), Map->CellToWorldXY(Cell, GameMin, GameMax, CellXY));
-		const FVector2D TownLanding = SolidPortal::LandingXY(CellXY, Plaza);
+		FVector2D TownXY = FVector2D::ZeroVector;
+		TestTrue(TEXT("the town mark projects"), Map->TerrainPointToWorld(Mark.TerrainPoint, GameMin, GameMax, TownXY));
 		TestEqual(
 			*FString::Printf(TEXT("town %d landing is that town"), TownId),
-			Map->SampleLocationId(TownLanding.X, TownLanding.Y, GameMin, GameMax),
+			Map->SampleLocationId(TownXY.X, TownXY.Y, GameMin, GameMax),
 			TownId);
 	}
 

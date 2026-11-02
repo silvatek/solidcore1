@@ -1556,42 +1556,34 @@ bool ASolidGameMode::TeleportSquadToTown(const int32 TownId)
 		return false;
 	}
 
-	FIntPoint Cell;
-	if (!WorldMap->TownCell(TownId, Cell))
+	FSolidWorldChartMark Mark;
+	if (!WorldMap->FindTownMarker(TownId, Mark))
 	{
 		return false;
 	}
 
-	FVector2D CellXY = FVector2D::ZeroVector;
-	if (!WorldMap->CellToWorldXY(Cell, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), CellXY))
+	FVector2D TownXY = FVector2D::ZeroVector;
+	if (!WorldMap->TerrainPointToWorld(Mark.TerrainPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), TownXY))
 	{
 		return false;
 	}
 
-	const FVector2D Landing = SolidPortal::LandingXY(CellXY, Streamer->StartTownPawnOffsetXY);
-	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), Landing);
-	const float LandZ = Streamer->GetHeightAt(FVector(Landing.X, Landing.Y, 0.f)) + Streamer->CollisionHeightBias;
+	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), TownXY);
+	const float LandZ = Streamer->GetHeightAt(FVector(TownXY.X, TownXY.Y, 0.f)) + Streamer->CollisionHeightBias;
 	float CapsuleHalf = 96.f;
 	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
 	{
 		CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
 	}
-	const FVector NewLoc(Landing.X, Landing.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
+	const FVector NewLoc(TownXY.X, TownXY.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
 
-	const FVector2D ToTown = CellXY - Landing;
-	float Yaw = Captain->GetActorRotation().Yaw;
-	if (!ToTown.IsNearlyZero())
-	{
-		Yaw = FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));
-	}
-
-	Captain->ArriveByPortal(NewLoc, Yaw);
+	Captain->ArriveByPortal(NewLoc, Captain->GetActorRotation().Yaw);
 	Streamer->RelocateCompanionsByDelta(Delta);
 	RefreshEvents();
 
 	UE_LOG(LogSolid, Warning,
 		TEXT("Portal to %s (%d) at (%.0f, %.0f) Z=%.1f"),
-		*SolidTowns::NameFor(TownId), TownId, Landing.X, Landing.Y, NewLoc.Z);
+		*SolidTowns::NameFor(TownId), TownId, TownXY.X, TownXY.Y, NewLoc.Z);
 	return true;
 }
 

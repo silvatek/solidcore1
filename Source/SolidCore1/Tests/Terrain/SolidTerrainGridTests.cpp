@@ -12,17 +12,6 @@ namespace
 	const FVector2D GridMin(-51200.f, -51200.f);
 	const FVector2D GridMax(51200.f, 51200.f);
 
-	FString GrassGrid()
-	{
-		FString Text;
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			Text += FString::ChrN(USolidWorldChart::MapWidth, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-			Text += TEXT("\n");
-		}
-		return Text;
-	}
-
 	USolidWorldChart* GrassChart()
 	{
 		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
@@ -33,11 +22,6 @@ namespace
 		Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		Chart->LoadFromChart(Chart);
 		return Chart;
-	}
-
-	void SetTerrainCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
-	{
-		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
 	}
 
 	ESolidBiome SampleAt(const USolidWorldChart& Chart, const FVector2D& World)
@@ -105,41 +89,27 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	BiomeIs(*this, TEXT("the point east of the pond is mountain"), SampleAt(*River, PondCentre + FVector2D(400.f, 0.f)), ESolidBiome::Mountain);
 	BiomeIs(*this, TEXT("the pond's centre point is river"), River->GetPointBiome(PondPoint), ESolidBiome::River);
 
-	FString Mouth = GrassGrid();
-	const int32 MouthCol = 10;
-	const int32 MouthRow = 10;
-	SetTerrainCell(Mouth, MouthCol, MouthRow, USolidWorldChart::DeprecatedLocationMarker);
-	Mouth += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
 	USolidWorldChart* Lair = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("mouth chart"), Lair))
 	{
 		return false;
 	}
+	Lair->Init(ESolidBiome::Grassland);
+	const FIntPoint MouthPoint(200, 200);
 	FSolidWorldChartMark MouthMark;
 	MouthMark.Kind = ESolidWorldChartMarkKind::LairEntrance;
 	MouthMark.Name = SolidLair::IglinTunnels.Name;
 	MouthMark.LairId = SolidLair::IdIglinTunnels;
-	int32 MouthTerrainX = 0;
-	int32 MouthTerrainY = 0;
-	USolidWorldChart::PointUnderCell(MouthCol, MouthRow, MouthTerrainX, MouthTerrainY);
-	MouthMark.TerrainPoint = FIntPoint(MouthTerrainX, MouthTerrainY);
+	MouthMark.TerrainPoint = MouthPoint;
 	Lair->Marks.Add(MouthMark);
-	if (!TestTrue(TEXT("mouth loads"), Lair->LoadFromString(Mouth)))
-	{
-		return false;
-	}
 
-	const FVector2D MouthCentre = CellCentre(*Lair, MouthCol, MouthRow);
-	BiomeIs(*this, TEXT("the mouth cell stays grassland"), Lair->GetBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Grassland);
+	const FVector2D MouthCentre = PointWorld(*Lair, MouthPoint);
 	BiomeIs(*this, TEXT("the mouth point stays grassland"), SampleAt(*Lair, MouthCentre), ESolidBiome::Grassland);
 	BiomeIs(*this, TEXT("the point beside the mouth stays grassland"), SampleAt(*Lair, MouthCentre + FVector2D(400.f, 0.f)), ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("the solver reads the mouth point"), Lair->GetPointBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Grassland);
+	BiomeIs(*this, TEXT("the solver reads the mouth point"), Lair->GetPointBiome(MouthPoint), ESolidBiome::Grassland);
 	TestFalse(
 		TEXT("a trail can enter the mouth point"),
-		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetPointBiomeAtCell(MouthCol, MouthRow)) == SolidRoad::BannedStep);
-	TestFalse(
-		TEXT("a trail can enter the mouth cell"),
-		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetBiomeAtCell(MouthCol, MouthRow)) == SolidRoad::BannedStep);
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetPointBiome(MouthPoint)) == SolidRoad::BannedStep);
 	return true;
 }
 

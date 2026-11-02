@@ -87,6 +87,29 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		FString(EncounterWalk.MarkName),
 		FString(TEXT("Iglin Bridge")));
 
+	const FSolidAutoPlaythrough::FStep* RelionWalk = nullptr;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		if (FCString::Strcmp(FSolidAutoPlaythrough::Script[Index].Name, TEXT("Walk to Relion")) == 0)
+		{
+			RelionWalk = &FSolidAutoPlaythrough::Script[Index];
+			break;
+		}
+	}
+	TestTrue(TEXT("the script walks to Relion"), RelionWalk != nullptr);
+	TestEqual(
+		TEXT("Relion is a marker walk"),
+		static_cast<uint8>(RelionWalk ? RelionWalk->Walk : FSolidAutoPlaythrough::EWalk::Town),
+		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Marker));
+	TestEqual(
+		TEXT("that mark is a town"),
+		static_cast<uint8>(RelionWalk ? RelionWalk->MarkKind : ESolidWorldChartMarkKind::Encounter),
+		static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(
+		TEXT("the mark is Relion"),
+		RelionWalk ? FString(RelionWalk->MarkName) : FString(),
+		FString(TEXT("Relion")));
+
 	int32 Search = 0;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
 	{
@@ -256,7 +279,6 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 			Rock));
 
 	const int32 TownIds[] = {
-		SolidTowns::Relion,
 		SolidTowns::Kanfold,
 		SolidTowns::Dragongate,
 	};
@@ -275,7 +297,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		}
 		++TownSteps;
 	}
-	TestEqual(TEXT("three town walks"), TownSteps, static_cast<int32>(UE_ARRAY_COUNT(TownIds)));
+	TestEqual(TEXT("two town walks"), TownSteps, static_cast<int32>(UE_ARRAY_COUNT(TownIds)));
 
 	TArray<SolidRoad::FSolidRoad> Roads;
 	{

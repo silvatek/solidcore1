@@ -66,7 +66,7 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::EnterLair(TEXT("Enter the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Entrance),
 	FStep::WalkTo(TEXT("Walk the Iglin tunnels"), EWalk::Lair, SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Exit),
-	FStep::WalkTo(TEXT("Walk to Relion"), EWalk::Town, SolidTowns::Relion),
+	FStep::WalkToMarker(TEXT("Walk to Relion"), ESolidWorldChartMarkKind::Town, TEXT("Relion")),
 	FStep::WalkTo(TEXT("Walk to Kanfold"), EWalk::Town, SolidTowns::Kanfold),
 	FStep::AimRaven(TEXT("Aim raven high behind the squad"), HighTrailPitchDeg, HighTrailArmCm),
 	FStep::SelectBattlePlan(TEXT("Form Line"), TEXT("Line")),

@@ -180,8 +180,8 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 		{
 			for (const FIntPoint& TerrainPoint : Solved.Points)
 			{
-				FIntPoint Cell = FIntPoint::ZeroValue;
-				if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell) && Cell == TownCell)
+				FIntPoint PointCell = FIntPoint::ZeroValue;
+				if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, PointCell) && PointCell == TownCell)
 				{
 					bTownOnARoad = true;
 					break;

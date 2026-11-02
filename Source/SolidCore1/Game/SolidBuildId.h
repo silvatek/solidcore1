@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0906")
+#define SOLID_BUILD_ID TEXT("SC1-0907")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Town buildings are a percentage of town points off roads and signs.")
+#define SOLID_BUILD_NOTE TEXT("Town buildings use fifteen percent of the open town points.")
 #endif

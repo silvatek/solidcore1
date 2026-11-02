@@ -34,7 +34,7 @@ namespace SolidTownBuildings
 	struct FScatterParams
 	{
 		/** Share of the open town points that receive a building [0, 1]. */
-		float Density = 0.35f;
+		float Density = 0.15f;
 		/** Extra gap between packing circles (cm). */
 		float MinSeparationCm = 100.f;
 		float MinFootprintCm = 180.f;

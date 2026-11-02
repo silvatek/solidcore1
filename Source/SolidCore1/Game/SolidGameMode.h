@@ -80,7 +80,7 @@ public:
 
 	/** Share of town points, after roads and signs, that receive a building [0, 1]. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float TownBuildingDensity = 0.35f;
+	float TownBuildingDensity = 0.15f;
 
 	/** Extra gap between building packing circles (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))

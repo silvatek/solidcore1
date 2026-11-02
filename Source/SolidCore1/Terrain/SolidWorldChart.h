@@ -172,13 +172,6 @@ public:
 	static constexpr int32 PointAxis = 513;
 
 	/**
-	 * Deprecated. The cell grid. The land is the terrain points.
-	 * Marker biome of each cell. Row-major. Row 0 is north, so a higher row is further south. Column 0 is west. A ! is grassland.
-	 */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	TArray<ESolidBiome> Cells;
-
-	/**
 	 * Biome of each terrain point. Row-major. Point row 0 is the south edge, so a
 	 * higher row is further north. Index 0 is the south-east corner. World +Y is
 	 * north, the same direction as a cell. A cell row counts the other way.
@@ -191,6 +184,13 @@ public:
 	TArray<FSolidWorldChartMark> Marks;
 
 private:
+	/**
+	 * Deprecated. The cell grid. The land is the terrain points.
+	 * Marker biome of each cell. Row-major. Row 0 is north, so a higher row is further south. Column 0 is west. A ! is grassland.
+	 */
+	UPROPERTY(EditAnywhere, Category = "WorldChart")
+	TArray<ESolidBiome> Cells;
+
 	/** Points and marks from before one edit. Not saved with the asset. */
 	struct FSnapshot
 	{

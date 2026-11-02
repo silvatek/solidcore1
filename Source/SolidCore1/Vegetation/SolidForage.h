@@ -5,7 +5,6 @@
 #include "SolidTerrainTypes.h"
 
 class USolidGameState;
-class USolidWorldChart;
 
 /**
  * Sticks and pitch lying on forest ground.
@@ -17,10 +16,8 @@ namespace SolidForage
 	inline constexpr int32 Seed = 43;
 	/** Fraction of treeless forest points that receive a pile. */
 	inline constexpr float Density = 0.05f;
-	/** Hard cap on the scattered piles. The Iglin forest guarantee is not part of this cap. */
+	/** Hard cap on the piles chosen from those points. */
 	inline constexpr int32 MaxPiles = 64;
-	/** Forest cells this close to Iglin each keep a stick and a pitch (cm). */
-	inline constexpr float IglinRadiusCm = 10000.f;
 	/** Captain ground distance that names a pile and allows a click to take it (cm). */
 	inline constexpr float ReachCm = 400.f;
 	/** Placeholder cube, on a side (cm). */
@@ -81,21 +78,6 @@ namespace SolidForage
 		int32 ChoiceSeed,
 		const FScatterParams& Params,
 		TArray<FChoice>& OutChoices);
-
-	/**
-	 * Append a stick and a pitch for each world-map forest cell within RadiusCm of TownXY,
-	 * when that cell does not already have one. Treeless forest points only. No jitter.
-	 * @return Number of piles appended.
-	 */
-	int32 GuaranteeForestCells(
-		const TArray<FSolidTerrainPoint>& Points,
-		const USolidWorldChart* WorldMap,
-		const FVector2D& WorldMinXY,
-		const FVector2D& WorldMaxXY,
-		const FVector2D& TownXY,
-		float RadiusCm,
-		const TArray<int32>& TreePointIndices,
-		TArray<FChoice>& InOutChoices);
 
 	/**
 	 * Choice indexes whose fog is now below full, that are not taken, and that have no pile yet.

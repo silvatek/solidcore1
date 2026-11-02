@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0932")
+#define SOLID_BUILD_ID TEXT("SC1-0933")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Markers follow the terrain points, and the cell road route is gone.")
+#define SOLID_BUILD_NOTE TEXT("Forage places piles on terrain points by biome and density.")
 #endif

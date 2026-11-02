@@ -1963,29 +1963,11 @@ void ASolidGameMode::ChooseForagePiles(const USolidTerrainMap* Map)
 	Piles.Density = SolidForage::Density;
 	Piles.MaxPiles = SolidForage::MaxPiles;
 	Piles.JitterCm = ForestTreeJitterCm;
-	const int32 Scattered = SolidForage::CollectChoices(
+	SolidForage::CollectChoices(
 		Map->GetPoints(), TreePoints, SolidForage::Seed, Piles, ForageChoices);
 
-	int32 NearIglin = 0;
-	FVector2D IglinXY = FVector2D::ZeroVector;
-	const USolidWorldChart* WorldMap = Map->GetWorldMap();
-	if (WorldMap && WorldMap->GetLocationWorldXY(
-		SolidTowns::Iglin, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), IglinXY))
-	{
-		NearIglin = SolidForage::GuaranteeForestCells(
-			Map->GetPoints(),
-			WorldMap,
-			Map->GetWorldMinXY(),
-			Map->GetWorldMaxXY(),
-			IglinXY,
-			SolidForage::IglinRadiusCm,
-			TreePoints,
-			ForageChoices);
-	}
-
 	bForageChosen = true;
-	UE_LOG(LogSolid, Warning, TEXT("Chose %d forage piles (%d scattered, %d near Iglin)"),
-		ForageChoices.Num(), Scattered, NearIglin);
+	UE_LOG(LogSolid, Warning, TEXT("Chose %d forage piles"), ForageChoices.Num());
 }
 
 void ASolidGameMode::SeedForagePiles()

@@ -1413,28 +1413,28 @@ void USolidWorldChart::AssignTownPoints() const
 
 	PointTowns.Init(INDEX_NONE, PointCount);
 	TArray<int32> Queue;
-	for (const FTownSeed& Seed : TownSeeds)
+	auto Claim = [this, &Queue](const int32 LocationId, const int32 TerrainX, const int32 TerrainY)
 	{
-		int32 Start = 0;
+		if (LocationId == INDEX_NONE
+			|| TerrainX < 0 || TerrainY < 0
+			|| TerrainX >= PointAxis || TerrainY >= PointAxis)
 		{
-			int32 TerrainX = 0;
-			int32 TerrainY = 0;
-			PointUnderCell(Seed.CellX, Seed.CellY, TerrainX, TerrainY);
-			Start = PointSlot(TerrainX, TerrainY);
+			return;
 		}
+		const int32 Start = PointSlot(TerrainX, TerrainY);
 		if (Points[Start] != ESolidBiome::Town || PointTowns[Start] != INDEX_NONE)
 		{
-			continue;
+			return;
 		}
 
-		PointTowns[Start] = Seed.LocationId;
+		PointTowns[Start] = LocationId;
 		Queue.Reset();
 		Queue.Add(Start);
 		for (int32 Index = 0; Index < Queue.Num(); ++Index)
 		{
 			const int32 Slot = Queue[Index];
-			const int32 TerrainX = Slot % PointAxis;
-			const int32 TerrainY = Slot / PointAxis;
+			const int32 OriginX = Slot % PointAxis;
+			const int32 OriginY = Slot / PointAxis;
 			const FIntPoint Steps[] = {
 				FIntPoint(1, 0),
 				FIntPoint(-1, 0),
@@ -1443,8 +1443,8 @@ void USolidWorldChart::AssignTownPoints() const
 			};
 			for (const FIntPoint& Step : Steps)
 			{
-				const int32 NextTerrainX = TerrainX + Step.X;
-				const int32 NextTerrainY = TerrainY + Step.Y;
+				const int32 NextTerrainX = OriginX + Step.X;
+				const int32 NextTerrainY = OriginY + Step.Y;
 				if (NextTerrainX < 0 || NextTerrainY < 0 || NextTerrainX >= PointAxis || NextTerrainY >= PointAxis)
 				{
 					continue;
@@ -1454,9 +1454,47 @@ void USolidWorldChart::AssignTownPoints() const
 				{
 					continue;
 				}
-				PointTowns[Next] = Seed.LocationId;
+				PointTowns[Next] = LocationId;
 				Queue.Add(Next);
 			}
+		}
+	};
+
+	if (Marks.Num() > 0)
+	{
+		for (const FSolidWorldChartMark& Mark : Marks)
+		{
+			if (Mark.Kind != ESolidWorldChartMarkKind::Town)
+			{
+				continue;
+			}
+			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
+			if (!Town)
+			{
+				continue;
+			}
+			Claim(Town->Id, Mark.TerrainPoint.X, Mark.TerrainPoint.Y);
+		}
+		return;
+	}
+
+	if (Markers.Num() != MapWidth * MapHeight || BangLocationIds.Num() != Markers.Num())
+	{
+		return;
+	}
+	for (int32 CellY = 0; CellY < MapHeight; ++CellY)
+	{
+		for (int32 CellX = 0; CellX < MapWidth; ++CellX)
+		{
+			const int32 Index = CellY * MapWidth + CellX;
+			if (static_cast<TCHAR>(Markers[Index]) != DeprecatedLocationMarker)
+			{
+				continue;
+			}
+			int32 TerrainX = 0;
+			int32 TerrainY = 0;
+			PointUnderCell(CellX, CellY, TerrainX, TerrainY);
+			Claim(BangLocationIds[Index], TerrainX, TerrainY);
 		}
 	}
 }

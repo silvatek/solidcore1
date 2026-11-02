@@ -307,7 +307,7 @@ private:
 	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
 	/** Write these terrain points. One undo step. A mark on a point does not change that paint. */
 	bool PaintPoints(const TArray<FIntPoint>& Covered, ESolidBiome Biome, FString& OutError);
-	/** Claim each run of town points for the first marker that touches it. */
+	/** Claim each run of town points for the first town mark that touches it. */
 	void AssignTownPoints() const;
 	bool EnsurePoints() const;
 	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;

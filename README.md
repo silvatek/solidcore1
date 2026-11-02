@@ -245,7 +245,6 @@ ASolidGameMode                      # World root. OpenLevel replaces it
   USolidWorldChart                  # /Game/World/WorldChart
     ESolidBiome[]                   # Marker biome of each cell
     FSolidWorldChartMark[]          # Towns, strongholds, sites, lair mouths, notes
-    FSolidWorldChartRoad[]          # Two end names and a type
   ASolidTerrainStreamer
     USolidTerrainMap
       FSolidTerrainPoint[]          # Height, biome, threat, and fog

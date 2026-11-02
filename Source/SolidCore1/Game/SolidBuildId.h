@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0892")
+#define SOLID_BUILD_ID TEXT("SC1-0893")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A chart letter comes from the biome.")
+#define SOLID_BUILD_NOTE TEXT("The chart stores no road of its own.")
 #endif

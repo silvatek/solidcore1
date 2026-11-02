@@ -7,32 +7,6 @@
 #include "SolidTerrainTypes.h"
 #include "SolidWorldChart.generated.h"
 
-/** How wide a chart road is. The route is solved when the chart is asked. */
-UENUM()
-enum class ESolidWorldChartRoadType : uint8
-{
-	Trail,
-	Track,
-	Road,
-	Highway,
-};
-
-/** A road definition on the chart. Two end names and a type. The solver runs when the chart is asked. */
-USTRUCT()
-struct FSolidWorldChartRoad
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	FString FromName;
-
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	FString ToName;
-
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	ESolidWorldChartRoadType Type = ESolidWorldChartRoadType::Trail;
-};
-
 /** One encounter mark. The position is the mark's terrain point. */
 struct FSolidWorldEncounterMark
 {
@@ -42,7 +16,7 @@ struct FSolidWorldEncounterMark
 
 /**
  * The shipped world. Cells hold the old squares. Points hold the biome of each
- * terrain point. Marks and roads hold the towns, strongholds, and roads.
+ * terrain point. Marks hold the towns, strongholds, and the other placed names.
  * The same object answers the map queries: biomes, towns, and solved routes.
  * Those solved routes are not saved with the asset.
  * The game builds the world from /Game/World/WorldChart.
@@ -82,7 +56,7 @@ public:
 	bool LoadFromString(const FString& Text);
 
 	/**
-	 * Copy that chart's cells, marks, roads, and terrain points onto this one, then solve the routes.
+	 * Copy that chart's cells, marks, and terrain points onto this one, then solve the routes.
 	 * A chart saved as cells has no points yet. Solving copies the play biomes onto them.
 	 * Copying this chart only solves.
 	 */
@@ -196,9 +170,7 @@ public:
 	static FLinearColor DefaultColorForBiome(ESolidBiome Biome);
 
 	/** Word the road line uses for this type: trail, track, road, or highway. */
-	static const TCHAR* RoadTypeName(ESolidWorldChartRoadType Type);
-
-	static ESolidWorldChartRoadType ChartRoadType(SolidRoad::EType Type);
+	static const TCHAR* RoadTypeName(SolidRoad::EType Type);
 
 	/**
 	 * Paint marker biomes. Swamp and road are rejected. Marks stay where they are.
@@ -283,23 +255,10 @@ public:
 	/** Remove the mark on this cell. */
 	bool DeleteMark(FIntPoint Cell, FString& OutError);
 
-	/**
-	 * Store a road from a town or stronghold to another.
-	 * A missing end is named in OutError, and the road is still stored.
-	 * The solver then leaves that route empty. A site is not an end.
-	 */
-	bool AddRoad(const FString& From, const FString& To, ESolidWorldChartRoadType Type, FString& OutError);
-
-	/** Empty when both ends are a placed town or stronghold. Otherwise the reason. */
-	FString RoadEndError(const FString& From, const FString& To) const;
-
-	/** Solved cells of one road, including both ends. Empty when an end is missing. */
-	bool RouteForRoad(int32 RoadIndex, TArray<FIntPoint>& OutCells) const;
-
 	/** Index of the mark on this cell, or INDEX_NONE. */
 	int32 MarkAtCell(FIntPoint Cell) const;
 
-	/** Put back the chart from before the last paint, mark, or road. */
+	/** Put back the chart from before the last paint or mark. */
 	bool Undo();
 
 	/** Terrain points on one side. The same count as the terrain map's default grid. */
@@ -322,17 +281,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<FSolidWorldChartMark> Marks;
 
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	TArray<FSolidWorldChartRoad> Roads;
-
 private:
-	/** Cells, marks, and roads from before one edit. Not saved with the asset. */
+	/** Cells and marks from before one edit. Not saved with the asset. */
 	struct FSnapshot
 	{
 		TArray<ESolidBiome> Cells;
 		TArray<ESolidBiome> Points;
 		TArray<FSolidWorldChartMark> Marks;
-		TArray<FSolidWorldChartRoad> Roads;
 	};
 
 	void PushUndo();
@@ -348,10 +303,10 @@ private:
 	bool EnsurePoints() const;
 	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
 	bool PlaceMark(FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError);
-	/** Solve from Cells, Marks, and Roads when a query finds the chart unsolved. */
+	/** Solve from Cells and Marks when a query finds the chart unsolved. */
 	bool EnsureQuery() const;
 	bool BuildQuery() const;
-	/** Drop the solved copy. The next query solves Cells, Marks, and Roads again. */
+	/** Drop the solved copy. The next query solves Cells and Marks again. */
 	void InvalidateQuery();
 
 	TArray<FSnapshot> UndoStack;

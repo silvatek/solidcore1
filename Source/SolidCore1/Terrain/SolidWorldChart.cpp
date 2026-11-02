@@ -61,7 +61,6 @@ void USolidWorldChart::PushUndo()
 	Snapshot.Cells = Cells;
 	Snapshot.Points = Points;
 	Snapshot.Marks = Marks;
-	Snapshot.Roads = Roads;
 	UndoStack.Add(MoveTemp(Snapshot));
 }
 
@@ -376,7 +375,6 @@ bool USolidWorldChart::Undo()
 	Cells = Snapshot.Cells;
 	Points = Snapshot.Points;
 	Marks = Snapshot.Marks;
-	Roads = Snapshot.Roads;
 	InvalidateQuery();
 	return true;
 }
@@ -877,7 +875,6 @@ bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 	{
 		Cells = Chart->Cells;
 		Marks = Chart->Marks;
-		Roads = Chart->Roads;
 		const int32 PointCount = PointAxis * PointAxis;
 		Points = Chart->Points.Num() == PointCount ? Chart->Points : TArray<ESolidBiome>();
 		UndoStack.Reset();
@@ -1932,120 +1929,20 @@ bool USolidWorldChart::GetLocationWorldXY(
 	return CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, OutWorldXY);
 }
 
-const TCHAR* USolidWorldChart::RoadTypeName(const ESolidWorldChartRoadType Type)
-{
-	switch (Type)
-	{
-	case ESolidWorldChartRoadType::Track:
-		return TEXT("track");
-	case ESolidWorldChartRoadType::Road:
-		return TEXT("road");
-	case ESolidWorldChartRoadType::Highway:
-		return TEXT("highway");
-	case ESolidWorldChartRoadType::Trail:
-	default:
-		return TEXT("trail");
-	}
-}
-
-ESolidWorldChartRoadType USolidWorldChart::ChartRoadType(const SolidRoad::EType Type)
+const TCHAR* USolidWorldChart::RoadTypeName(const SolidRoad::EType Type)
 {
 	switch (Type)
 	{
 	case SolidRoad::EType::Track:
-		return ESolidWorldChartRoadType::Track;
+		return TEXT("track");
 	case SolidRoad::EType::Road:
-		return ESolidWorldChartRoadType::Road;
+		return TEXT("road");
 	case SolidRoad::EType::Highway:
-		return ESolidWorldChartRoadType::Highway;
+		return TEXT("highway");
 	case SolidRoad::EType::Trail:
 	default:
-		return ESolidWorldChartRoadType::Trail;
+		return TEXT("trail");
 	}
-}
-
-FString USolidWorldChart::RoadEndError(const FString& From, const FString& To) const
-{
-	TArray<FString> Sentences;
-	const SolidRoad::EChartRoadEnd FromKind = SolidRoad::RoadEndKind(Marks, From);
-	const SolidRoad::EChartRoadEnd ToKind = SolidRoad::RoadEndKind(Marks, To);
-	if (FromKind == SolidRoad::EChartRoadEnd::Site || FromKind == SolidRoad::EChartRoadEnd::Missing)
-	{
-		Sentences.Add(SolidRoad::RoadEndSentence(FromKind, From));
-	}
-	if (ToKind == SolidRoad::EChartRoadEnd::Site || ToKind == SolidRoad::EChartRoadEnd::Missing)
-	{
-		Sentences.Add(SolidRoad::RoadEndSentence(ToKind, To));
-	}
-	return FString::Join(Sentences, TEXT(" "));
-}
-
-bool USolidWorldChart::AddRoad(
-	const FString& From,
-	const FString& To,
-	const ESolidWorldChartRoadType Type,
-	FString& OutError)
-{
-	OutError = RoadEndError(From, To);
-	if (From.TrimStartAndEnd().IsEmpty() || To.TrimStartAndEnd().IsEmpty())
-	{
-		OutError = TEXT("A road needs two names.");
-		return false;
-	}
-
-	PushUndo();
-	FSolidWorldChartRoad Road;
-	Road.FromName = From.TrimStartAndEnd();
-	Road.ToName = To.TrimStartAndEnd();
-	Road.Type = Type;
-	Roads.Add(Road);
-	InvalidateQuery();
-	return true;
-}
-
-bool USolidWorldChart::RouteForRoad(const int32 RoadIndex, TArray<FIntPoint>& OutCells) const
-{
-	OutCells.Reset();
-	if (!Roads.IsValidIndex(RoadIndex))
-	{
-		return false;
-	}
-	if (!EnsureQuery())
-	{
-		return false;
-	}
-
-	// A name that is not a town or a stronghold does not parse, so the strip is empty.
-	auto LineFor = [](const FSolidWorldChartRoad& Road)
-	{
-		return FString::Printf(
-			TEXT("Road: %s -> %s, %s"),
-			*Road.FromName,
-			*Road.ToName,
-			RoadTypeName(Road.Type));
-	};
-
-	SolidRoad::FDefinition ThisRoad;
-	if (!SolidRoad::Parse(LineFor(Roads[RoadIndex]), ThisRoad))
-	{
-		return true;
-	}
-
-	int32 ParsedIndex = 0;
-	for (int32 Index = 0; Index < RoadIndex; ++Index)
-	{
-		SolidRoad::FDefinition Earlier;
-		if (SolidRoad::Parse(LineFor(Roads[Index]), Earlier))
-		{
-			++ParsedIndex;
-		}
-	}
-
-	if (GetRoads().IsValidIndex(ParsedIndex))
-	{
-		OutCells = GetRoads()[ParsedIndex].Cells;
-	}
-	return true;
 }
 
 void USolidWorldChart::BuildListedRoads() const

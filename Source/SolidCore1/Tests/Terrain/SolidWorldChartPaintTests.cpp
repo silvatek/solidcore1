@@ -182,14 +182,6 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the mouth cell has no mark"), Chart->MarkAtCell(MouthCell), INDEX_NONE);
 	TestFalse(TEXT("delete again fails"), Chart->DeleteMark(MouthCell, Error));
 
-	TestTrue(TEXT("the road is stored"), Chart->AddRoad(TEXT("Iglin"), TEXT("Meagre Dungeon"), ESolidWorldChartRoadType::Track, Error));
-	TestTrue(TEXT("both ends are on the chart"), Error.IsEmpty());
-	TArray<FIntPoint> Route;
-	TestTrue(TEXT("the road solves"), Chart->RouteForRoad(Chart->Roads.Num() - 1, Route));
-	TestTrue(TEXT("the strip has cells"), Route.Num() > 1);
-	TestTrue(TEXT("the strip starts at a town or the cave"), Route.Contains(TownCell) || Route.Contains(HoldCell));
-	TestTrue(TEXT("the strip reaches the other end"), Route.Contains(TownCell) && Route.Contains(HoldCell));
-
 	USolidWorldChart* RoadSolved = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("a route cell reads"), RoadSolved && RoadSolved->LoadFromChart(Chart));
 	bool bTownOnARoad = false;
@@ -205,22 +197,6 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestTrue(TEXT("the road is named on the town cell"), bTownOnARoad);
-
-	const int32 RoadsBefore = Chart->Roads.Num();
-	TestTrue(TEXT("a missing end is still stored"), Chart->AddRoad(TEXT("Iglin"), TEXT("Nowhere"), ESolidWorldChartRoadType::Trail, Error));
-	TestTrue(TEXT("the tool names Nowhere"), Error.Contains(TEXT("Nowhere")));
-	TestEqual(TEXT("the missing road was stored"), Chart->Roads.Num(), RoadsBefore + 1);
-	TArray<FIntPoint> Missing;
-	TestTrue(TEXT("the missing road solves to nothing"), Chart->RouteForRoad(Chart->Roads.Num() - 1, Missing));
-	TestEqual(TEXT("a missing end has an empty strip"), Missing.Num(), 0);
-
-	TestTrue(TEXT("a site road is stored"), Chart->AddRoad(TEXT("Humble"), TEXT("Iglin"), ESolidWorldChartRoadType::Road, Error));
-	TestTrue(TEXT("a site is not a road end"), Error.Contains(TEXT("stronghold site")));
-	TArray<FIntPoint> SiteRoute;
-	Chart->RouteForRoad(Chart->Roads.Num() - 1, SiteRoute);
-	TestEqual(TEXT("a site road has an empty strip"), SiteRoute.Num(), 0);
-
-	TestTrue(TEXT("undo removes the site road"), Chart->Undo());
 
 	const FIntPoint NoteCell(90, 50);
 	const int32 NoteIndexOnMap = NoteCell.Y * USolidWorldChart::MapWidth + NoteCell.X;
@@ -248,9 +224,6 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Noted->GetBiomeAtCell(NoteCell.X, NoteCell.Y)),
 		PaintBefore);
 
-	TestTrue(TEXT("a note is not a road end"), Chart->AddRoad(TEXT("Bridge here"), TEXT("Iglin"), ESolidWorldChartRoadType::Trail, Error));
-	TestTrue(TEXT("the tool does not treat the note as a town"), Error.Contains(TEXT("not a town or stronghold")));
-	TestTrue(TEXT("undo removes the note road"), Chart->Undo());
 	TestTrue(TEXT("undo removes the note"), Chart->Undo());
 	TestEqual(TEXT("the cell has no mark"), Chart->MarkAtCell(NoteCell), static_cast<int32>(INDEX_NONE));
 	return true;

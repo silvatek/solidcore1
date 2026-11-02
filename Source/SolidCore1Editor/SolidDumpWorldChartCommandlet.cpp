@@ -195,18 +195,6 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	}
 	Root->SetArrayField(TEXT("marks"), Marks);
 
-	TArray<TSharedPtr<FJsonValue>> Roads;
-	Roads.Reserve(Chart->Roads.Num());
-	for (const FSolidWorldChartRoad& Road : Chart->Roads)
-	{
-		TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
-		Object->SetStringField(TEXT("from"), Road.FromName);
-		Object->SetStringField(TEXT("to"), Road.ToName);
-		Object->SetStringField(TEXT("type"), USolidWorldChart::RoadTypeName(Road.Type));
-		Roads.Add(MakeShared<FJsonValueObject>(Object));
-	}
-	Root->SetArrayField(TEXT("roads"), Roads);
-
 	FString Json;
 	const TSharedRef<TJsonWriter<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>> Writer =
 		TJsonWriterFactory<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>::Create(&Json);
@@ -223,9 +211,8 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	}
 
 	UE_LOG(LogSolidChartDump, Warning,
-		TEXT("World chart dump: %d marks, %d roads, %d point rows, %s"),
+		TEXT("World chart dump: %d marks, %d point rows, %s"),
 		Chart->Marks.Num(),
-		Chart->Roads.Num(),
 		PointRows.Num(),
 		*OutPath);
 	return 0;

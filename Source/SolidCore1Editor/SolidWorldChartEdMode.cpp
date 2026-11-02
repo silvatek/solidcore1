@@ -1865,7 +1865,7 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 				TEXT(" Road %s -> %s, %s."),
 				*Road.From.Name,
 				*Road.To.Name,
-				USolidWorldChart::RoadTypeName(USolidWorldChart::ChartRoadType(Road.Type)));
+				USolidWorldChart::RoadTypeName(Road.Type));
 		}
 	}
 	return Line;

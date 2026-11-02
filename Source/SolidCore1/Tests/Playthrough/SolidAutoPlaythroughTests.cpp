@@ -125,6 +125,29 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 			FString(TownMarks[TownIndex]));
 	}
 
+	const FSolidAutoPlaythrough::FStep* TunnelWalk = nullptr;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		if (FCString::Strcmp(FSolidAutoPlaythrough::Script[Index].Name, TEXT("Walk to the Iglin tunnels")) == 0)
+		{
+			TunnelWalk = &FSolidAutoPlaythrough::Script[Index];
+			break;
+		}
+	}
+	TestTrue(TEXT("the script walks to the Iglin tunnels"), TunnelWalk != nullptr);
+	TestEqual(
+		TEXT("the tunnels walk is a marker walk"),
+		static_cast<uint8>(TunnelWalk ? TunnelWalk->Walk : FSolidAutoPlaythrough::EWalk::LairEntrance),
+		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Marker));
+	TestEqual(
+		TEXT("that mark is a lair entrance"),
+		static_cast<uint8>(TunnelWalk ? TunnelWalk->MarkKind : ESolidWorldChartMarkKind::Town),
+		static_cast<uint8>(ESolidWorldChartMarkKind::LairEntrance));
+	TestEqual(
+		TEXT("the mark is Iglin tunnels"),
+		TunnelWalk ? FString(TunnelWalk->MarkName) : FString(),
+		FString(TEXT("Iglin tunnels")));
+
 	int32 Search = 0;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
 	{

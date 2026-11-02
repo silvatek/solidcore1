@@ -62,7 +62,7 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::ExitStronghold(TEXT("Leave the cave")),
 	FStep::WalkToMarker(TEXT("Walk to Iglin"), ESolidWorldChartMarkKind::Town, TEXT("Iglin")),
 	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage),
-	FStep::WalkTo(TEXT("Walk to the Iglin tunnels"), EWalk::LairEntrance),
+	FStep::WalkToMarker(TEXT("Walk to the Iglin tunnels"), ESolidWorldChartMarkKind::LairEntrance, TEXT("Iglin tunnels")),
 	FStep::EnterLair(TEXT("Enter the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Entrance),
 	FStep::MoveTo(TEXT("Move to the Iglin tunnels exit"), EWalk::Lair, SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Exit),

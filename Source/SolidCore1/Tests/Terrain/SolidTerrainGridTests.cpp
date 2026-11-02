@@ -283,8 +283,7 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Dragongate's east mark places"), Chart->PlaceTownAt(GridCellPoint(GateEast), TEXT("Dragongate"), Error));
 	TestTrue(TEXT("Dragongate's west mark places"), Chart->PlaceTownAt(GridCellPoint(GateWest), TEXT("Dragongate"), Error));
 	TArray<FIntPoint> GatePoints;
-	GatePoints.Add(GridCellPoint(GateEast));
-	GatePoints.Add(GridCellPoint(GateWest));
+	AddRow(GatePoints, GridCellPoint(GateEast), GridCellPoint(GateWest));
 	TestTrue(TEXT("Dragongate's points paint town"), Chart->PaintPoints(GatePoints, ESolidBiome::Town, Error));
 	TestEqual(
 		TEXT("the east mark is Dragongate"),

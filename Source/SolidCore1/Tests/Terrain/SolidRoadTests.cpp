@@ -609,8 +609,20 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	}
 
 	FSolidWorldChartMark CaveMark;
+	bool bCave = false;
+	for (const FSolidWorldChartMark& Mark : Map->Marks)
+	{
+		if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold
+			&& Mark.StrongholdSize == ESolidStrongholdSize::Meagre
+			&& Mark.StrongholdType == ESolidStrongholdType::Dungeon)
+		{
+			CaveMark = Mark;
+			bCave = true;
+			break;
+		}
+	}
 	TestTrue(TEXT("the trail starts at a stronghold"), Roads[0].From.Kind == ESolidWorldChartMarkKind::Stronghold);
-	TestTrue(TEXT("the cave is a marker"), Map->FindStrongholdMarker(SolidStronghold::StartingStrongholdName, CaveMark));
+	TestTrue(TEXT("the cave is a marker"), bCave);
 	TestEqual(TEXT("the trail starts at the cave"), Roads[0].From.TerrainPoint, CaveMark.TerrainPoint);
 	ESolidStrongholdType TrailType = ESolidStrongholdType::Fortress;
 	ESolidStrongholdSize TrailSize = ESolidStrongholdSize::Imperious;

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0918")
+#define SOLID_BUILD_ID TEXT("SC1-0919")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Walk to the Imperious site goes to the site mark.")
+#define SOLID_BUILD_NOTE TEXT("Choose stronghold uses the site mark within 4m, and unused walks are gone.")
 #endif

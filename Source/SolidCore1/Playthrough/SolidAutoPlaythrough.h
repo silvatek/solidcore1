@@ -3,18 +3,12 @@
 #include "CoreMinimal.h"
 #include "Inventory/SolidInventory.h"
 #include "Strongholds/SolidStronghold.h"
-#include "Terrain/SolidRoad.h"
+#include "Terrain/SolidWorldChartMark.h"
 
 class USolidGameState;
 class USolidSquad;
 class ASolidGameMode;
 class ASolidCharacter;
-class USolidWorldChart;
-
-namespace SolidStronghold
-{
-	class FSolidTower;
-}
 
 namespace SolidStorage
 {
@@ -53,18 +47,13 @@ public:
 		Custom,
 	};
 
-	/** The route a WalkTo row follows. */
+	/** The route a WalkTo or MoveTo row follows. */
 	enum class EWalk : uint8
 	{
 		/** The row names a chart mark. The chart's copy of that mark is the place. */
 		Marker,
 		Hexes,
-		TrailToIglin,
-		LairEntrance,
 		Lair,
-		Town,
-		StrongholdSite,
-		Tower,
 	};
 
 	/** A hold on a message, the inventory page, a camera aim, or a battle plan. */
@@ -93,8 +82,6 @@ public:
 		const TCHAR* LairId = nullptr;
 		/** The Iglin Tunnels Entrance or Exit. */
 		TCHAR EndMarker = 0;
-		/** Location id. A Town walk ends when OccupiedTown is this id. */
-		int32 TownId = INDEX_NONE;
 		/** True when this row closes the inventory page. */
 		bool bClosePage = false;
 		const TCHAR* MessageId = nullptr;
@@ -110,27 +97,16 @@ public:
 		float YawOffsetDeg = 0.f;
 		/** Which custom row this is. The custom switch matches it. */
 		int32 CustomId = INDEX_NONE;
-		/** Site size. StrongholdSite and ChooseStronghold read this. */
+		/** Site size. ChooseStronghold reads this. */
 		ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
 		/** Built type. ChooseStronghold reads this. */
 		ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;
 		/** Company companion name. BuildSquad reads this. */
 		const TCHAR* CompanionName = nullptr;
-		/** Story floor. 1 is the ground. Tower walks read this. */
-		int32 Floor = INDEX_NONE;
 		/** Kind of the chart mark this walk goes to. WalkToMarker sets it. */
 		ESolidWorldChartMarkKind MarkKind = ESolidWorldChartMarkKind::Town;
 		/** Name of that mark. The chart's mark of this kind and name supplies the place. */
 		const TCHAR* MarkName = nullptr;
-
-		static constexpr FStep WalkTo(const TCHAR* InName, const EWalk InWalk)
-		{
-			FStep Step;
-			Step.Type = EStepType::WalkTo;
-			Step.Name = InName;
-			Step.Walk = InWalk;
-			return Step;
-		}
 
 		/** A walk to the chart mark of this kind and name. Summary is the row label. */
 		static constexpr FStep WalkToMarker(
@@ -147,62 +123,7 @@ public:
 			return Step;
 		}
 
-		/** A town walk. InTown is the location id. */
-		static constexpr FStep WalkTo(const TCHAR* InName, const EWalk InWalk, const int32 InTown)
-		{
-			FStep Step;
-			Step.Type = EStepType::WalkTo;
-			Step.Name = InName;
-			Step.Walk = InWalk;
-			Step.TownId = InTown;
-			return Step;
-		}
-
-		/** A site walk. InSize is the site on the chart. */
-		static constexpr FStep WalkTo(
-			const TCHAR* InName,
-			const EWalk InWalk,
-			const ESolidStrongholdSize InSize)
-		{
-			FStep Step;
-			Step.Type = EStepType::WalkTo;
-			Step.Name = InName;
-			Step.Walk = InWalk;
-			Step.StrongholdSize = InSize;
-			return Step;
-		}
-
-		/** A lair walk. InEnd is the Iglin Tunnels Entrance or Exit. */
-		static constexpr FStep WalkTo(
-			const TCHAR* InName,
-			const EWalk InWalk,
-			const TCHAR* InLairId,
-			const TCHAR InEnd)
-		{
-			FStep Step;
-			Step.Type = EStepType::WalkTo;
-			Step.Name = InName;
-			Step.Walk = InWalk;
-			Step.LairId = InLairId;
-			Step.EndMarker = InEnd;
-			return Step;
-		}
-
-		static constexpr FStep WalkTo(
-			const TCHAR* InName,
-			const SolidStrongholdGrid::FCell* InCells,
-			const int32 InCount)
-		{
-			FStep Step;
-			Step.Type = EStepType::WalkTo;
-			Step.Name = InName;
-			Step.Walk = EWalk::Hexes;
-			Step.Cells = InCells;
-			Step.CellCount = InCount;
-			return Step;
-		}
-
-		/** An interior move along stronghold hexes. The same fields as that WalkTo. */
+		/** An interior move along stronghold hexes. */
 		static constexpr FStep MoveTo(
 			const TCHAR* InName,
 			const SolidStrongholdGrid::FCell* InCells,
@@ -217,7 +138,7 @@ public:
 			return Step;
 		}
 
-		/** An interior lair move. The same fields as that WalkTo. */
+		/** An interior lair move. */
 		static constexpr FStep MoveTo(
 			const TCHAR* InName,
 			const EWalk InWalk,
@@ -384,13 +305,6 @@ public:
 			Step.PauseSeconds = Seconds;
 			return Step;
 		}
-
-		constexpr FStep AtFloor(const int32 InFloor) const
-		{
-			FStep Step = *this;
-			Step.Floor = InFloor;
-			return Step;
-		}
 	};
 
 	/** The opening script, in order. A later story edits this list. */
@@ -407,11 +321,8 @@ public:
 	/** No progress toward the current point for this long stops the script. */
 	static constexpr float StallSeconds = 4.f;
 
-	/** Close enough to a road point to take the next one, in centimetres. */
+	/** Close enough to a point to take the next one, in centimetres. */
 	static constexpr float ArriveCm = 200.f;
-
-	/** Close enough to a stair point. Treads are closer than a road cell. */
-	static constexpr float TowerArriveCm = 80.f;
 
 	/**
 	 * One stick and one pitch become a torch in the pack. The leftovers go back to the chest.
@@ -427,21 +338,6 @@ public:
 	static bool LairCells(const TCHAR* LairId, TCHAR FromEnd, TCHAR ToEnd, TArray<FIntPoint>& OutCells);
 
 	/**
-	 * Terrain points along the routed roads from one town to another, including both ends.
-	 * The chain is the fewest roads. A stronghold end is left out. False when no chain exists.
-	 */
-	static bool TownRoads(
-		const TArray<SolidRoad::FSolidRoad>& Roads,
-		int32 FromTown,
-		int32 ToTown,
-		TArray<FIntPoint>& OutPoints);
-	/** The town a road walk starts from. A grass cell uses OccupiedTown. */
-	static int32 TownWalkFrom(const int32 CellTown, const int32 OccupiedTown)
-	{
-		return CellTown != INDEX_NONE ? CellTown : OccupiedTown;
-	}
-
-	/**
 	 * Yaw that looks along Movement, then adds the AimRaven offset.
 	 * False when Movement is zero; OutYaw stays.
 	 */
@@ -449,33 +345,6 @@ public:
 
 	/** The assigned key for that plan name. INDEX_NONE when it is not on a key. */
 	static int32 BattlePlanSlot(const USolidSquad& Squad, const TCHAR* PlanName);
-
-	/** Chart cell of that site size. False when the chart has none. */
-	static bool StrongholdSiteCell(
-		const USolidWorldChart& Chart,
-		ESolidStrongholdSize Size,
-		FIntPoint& OutCell);
-
-	/**
-	 * Ground point the script walks for that cell.
-	 * A wall-gate cell uses the 4 m opening, not the cell centre in the curtain.
-	 */
-	static bool WalkPointForCell(
-		const USolidWorldChart& Chart,
-		const FIntPoint& Cell,
-		const FVector2D& WorldMinXY,
-		const FVector2D& WorldMaxXY,
-		FVector2D& OutPoint);
-
-	/**
-	 * Local stair points from one story floor to another, including both ends.
-	 * Floor 1 is the door. Floor 10 is the top landing on an Imperious tower.
-	 */
-	static bool TowerWalkPoints(
-		const SolidStronghold::FSolidTower& Tower,
-		int32 FromFloor,
-		int32 ToFloor,
-		TArray<FVector2D>& OutPoints);
 
 	/** Move that item from a worn box, the pack, or the chest into the worn slot. */
 	static bool EquipItem(
@@ -512,12 +381,7 @@ private:
 	void NoteDistance(float DeltaSeconds, float DistanceCm);
 	bool BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
 	bool BuildHexWalk(const ASolidGameMode& Mode, const SolidStrongholdGrid::FCell* Cells, int32 Count);
-	bool BuildIglinTrail(const ASolidGameMode& Mode, const FVector& CaptainLocation);
-	bool BuildLairEntranceWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	bool BuildLairWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
-	bool BuildTownWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
-	bool BuildSiteWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
-	bool BuildTowerWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
 	/**
 	 * Steps along Points. True when OutTarget is the point to steer toward.
 	 * bOutFinished is set once the last point is within arrival and the stall clock is clear.
@@ -531,23 +395,16 @@ private:
 	/** True while true sight is dragging the view and holding W. Raven sight walks toward the point. */
 	bool Steer(
 		float DeltaSeconds,
-		const ASolidGameMode& Mode,
 		ASolidCharacter& Captain,
 		const FVector2D& Target,
 		bool bLast,
-		bool bAvoidRamps,
 		float ArriveRadiusCm = ArriveCm);
 	bool TickCurrent(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkTo(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	/** True while true sight is dragging the view and holding W. */
 	bool TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickHexWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickWalkToIglin(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
-	bool TickWalkToLairEntrance(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickWalkLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickWalkTown(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickWalkSite(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickWalkTower(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickEnterLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickExitLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickCustom(const FStep& Step);

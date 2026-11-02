@@ -7,7 +7,6 @@
 #include "GameFramework/PlayerController.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
-#include "SolidGroundMove.h"
 #include "Company/SolidCaptain.h"
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
@@ -21,19 +20,14 @@
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
-#include "Terrain/SolidBridge.h"
-#include "Terrain/SolidRoad.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldChart.h"
-#include "Towns/SolidTowns.h"
-#include "Towns/SolidWallgate.h"
 #include "Company/SolidSquad.h"
 #include "Company/SolidCompany.h"
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Menus/SolidSquadBuilder.h"
 #include "Strongholds/Sites/SolidStrongholdSite.h"
-#include "Strongholds/Tower/SolidTower.h"
 #include "Algo/Reverse.h"
 
 namespace
@@ -86,12 +80,9 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 namespace
 {
 	constexpr float ProgressCm = 1.f;
-	/** A step this far onto a ramp is refused. The walk stays on the grass. */
-	constexpr float RampProbeCm = 80.f;
 	/** Right-button drag, degrees per second. A hitch cannot spend more than one slice. */
 	constexpr float TurnDegreesPerSecond = 180.f;
 	constexpr float MaxTurnSliceSeconds = 0.05f;
-	constexpr float SegmentStepCm = 50.f;
 	/** Inside one tunnel cell. The next center, a full cell away, stays ahead. */
 	constexpr float LairArriveCm = SolidLair::CellCm * 0.45f;
 
@@ -137,150 +128,6 @@ namespace
 		Hit.Slot = Slot;
 		Hit.Index = SolidInventory::WornIndex(Slot);
 		return Hit;
-	}
-
-	bool IsMeagreDungeon(const FSolidWorldChartMark& Mark)
-	{
-		return Mark.Kind == ESolidWorldChartMarkKind::Stronghold
-			&& Mark.StrongholdSize == ESolidStrongholdSize::Meagre
-			&& Mark.StrongholdType == ESolidStrongholdType::Dungeon;
-	}
-
-	bool IsTown(const FSolidWorldChartMark& Mark, const int32 TownId)
-	{
-		if (Mark.Kind != ESolidWorldChartMarkKind::Town)
-		{
-			return false;
-		}
-		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
-		return Town && Town->Id == TownId;
-	}
-
-	bool IsIglin(const FSolidWorldChartMark& Mark)
-	{
-		return IsTown(Mark, SolidTowns::Iglin);
-	}
-
-	bool IsCaveTrail(const SolidRoad::FSolidRoad& Road)
-	{
-		if (Road.Type != SolidRoad::EType::Trail || Road.Points.Num() == 0)
-		{
-			return false;
-		}
-		const bool bFromCave = IsMeagreDungeon(Road.From) && IsIglin(Road.To);
-		const bool bToCave = IsMeagreDungeon(Road.To) && IsIglin(Road.From);
-		return bFromCave || bToCave;
-	}
-
-	const SolidRoad::FSolidRoad* FindCaveTrail(const USolidWorldChart& Chart)
-	{
-		for (const SolidRoad::FSolidRoad& Road : Chart.GetRoutedRoads())
-		{
-			if (IsCaveTrail(Road))
-			{
-				return &Road;
-			}
-		}
-		return nullptr;
-	}
-
-	bool WalkableCell(const USolidWorldChart& Chart, const FIntPoint Cell)
-	{
-		if (Cell.X < 0 || Cell.X >= USolidWorldChart::MapWidth
-			|| Cell.Y < 0 || Cell.Y >= USolidWorldChart::MapHeight)
-		{
-			return false;
-		}
-		const ESolidBiome Biome = Chart.GetBiomeAtCell(Cell.X, Cell.Y);
-		return Biome == ESolidBiome::Grassland || Biome == ESolidBiome::Town;
-	}
-
-	const SolidLair::FEntrance* FindLairEntrance(
-		const TArray<SolidLair::FEntrance>& Entrances,
-		const TCHAR EndMarker)
-	{
-		for (const SolidLair::FEntrance& Entrance : Entrances)
-		{
-			if (Entrance.EndMarker == EndMarker)
-			{
-				return &Entrance;
-			}
-		}
-		return nullptr;
-	}
-
-	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector2D& Point);
-
-	bool GrassPath(
-		const USolidWorldChart& Chart,
-		const FIntPoint From,
-		const FIntPoint To,
-		TArray<FIntPoint>& OutCells)
-	{
-		OutCells.Reset();
-		if (!WalkableCell(Chart, From) || !WalkableCell(Chart, To))
-		{
-			return false;
-		}
-		if (From == To)
-		{
-			OutCells.Add(To);
-			return true;
-		}
-
-		const int32 CellCount = USolidWorldChart::MapWidth * USolidWorldChart::MapHeight;
-		TArray<int32> CameFrom;
-		CameFrom.Init(INDEX_NONE, CellCount);
-		TArray<FIntPoint> Queue;
-		Queue.Reserve(CellCount);
-		const auto IndexOf = [](const FIntPoint Cell)
-		{
-			return Cell.X + Cell.Y * USolidWorldChart::MapWidth;
-		};
-		CameFrom[IndexOf(From)] = IndexOf(From);
-		Queue.Add(From);
-		int32 Head = 0;
-		const FIntPoint Steps[] = {
-			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
-		};
-		while (Head < Queue.Num())
-		{
-			const FIntPoint Here = Queue[Head++];
-			if (Here == To)
-			{
-				break;
-			}
-			for (const FIntPoint& Step : Steps)
-			{
-				const FIntPoint Next(Here.X + Step.X, Here.Y + Step.Y);
-				if (!WalkableCell(Chart, Next))
-				{
-					continue;
-				}
-				const int32 NextIndex = IndexOf(Next);
-				if (CameFrom[NextIndex] != INDEX_NONE)
-				{
-					continue;
-				}
-				CameFrom[NextIndex] = IndexOf(Here);
-				Queue.Add(Next);
-			}
-		}
-		if (CameFrom[IndexOf(To)] == INDEX_NONE)
-		{
-			return false;
-		}
-
-		FIntPoint Walk = To;
-		while (Walk != From)
-		{
-			OutCells.Add(Walk);
-			const int32 Previous = CameFrom[IndexOf(Walk)];
-			Walk = FIntPoint(Previous % USolidWorldChart::MapWidth, Previous / USolidWorldChart::MapWidth);
-		}
-		OutCells.Add(From);
-		Algo::Reverse(OutCells);
-		return OutCells.Num() > 0;
 	}
 
 	ASolidHUD* HudOf(const ASolidCharacter& Captain)
@@ -348,38 +195,6 @@ namespace
 			}
 		}
 		return nullptr;
-	}
-
-	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector2D& Point)
-	{
-		for (const TObjectPtr<ASolidBridge>& Actor : Mode.GetBridges())
-		{
-			const ASolidBridge* Bridge = Actor.Get();
-			if (!Bridge || !Bridge->HasBridge() || !Bridge->GetBridge().bIglinRelion)
-			{
-				continue;
-			}
-			if (SolidGroundMove::OnRamp(Bridge->GetBridge(), Point.X, Point.Y))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	bool SegmentOnIglinRamp(const ASolidGameMode& Mode, const FVector2D& From, const FVector2D& To)
-	{
-		const float Length = FVector2D::Distance(From, To);
-		const int32 Steps = FMath::Max(1, FMath::CeilToInt(Length / SegmentStepCm));
-		for (int32 Step = 0; Step <= Steps; ++Step)
-		{
-			const float T = static_cast<float>(Step) / static_cast<float>(Steps);
-			if (OnIglinRamp(Mode, FMath::Lerp(From, To, T)))
-			{
-				return true;
-			}
-		}
-		return false;
 	}
 
 	bool IsIglinTunnels(const TCHAR* LairId)
@@ -839,16 +654,14 @@ bool FSolidAutoPlaythrough::TickWalk(
 		return false;
 	}
 
-	return Steer(DeltaSeconds, Mode, Captain, Target, true, false);
+	return Steer(DeltaSeconds, Captain, Target, true);
 }
 
 bool FSolidAutoPlaythrough::Steer(
 	const float DeltaSeconds,
-	const ASolidGameMode& Mode,
 	ASolidCharacter& Captain,
 	const FVector2D& Target,
 	const bool bLast,
-	const bool bAvoidRamps,
 	const float ArriveRadiusCm)
 {
 	const FVector Location = Captain.GetActorLocation();
@@ -857,7 +670,7 @@ bool FSolidAutoPlaythrough::Steer(
 	{
 		const float SteerCm = bLast ? 1.f : ArriveRadiusCm;
 		const FVector2D Direction = SolidClickMove::PlanarDirection(Here, Target, SteerCm);
-		if (Direction.IsNearlyZero() || (bAvoidRamps && OnIglinRamp(Mode, Here + Direction * RampProbeCm)))
+		if (Direction.IsNearlyZero())
 		{
 			return false;
 		}
@@ -869,10 +682,6 @@ bool FSolidAutoPlaythrough::Steer(
 		return true;
 	}
 
-	if (bAvoidRamps && SegmentOnIglinRamp(Mode, Here, Target))
-	{
-		return false;
-	}
 	// A screen click can hit a tree in front of the point. Walk to the point.
 	Captain.SetClickMoveDestination(FVector(Target.X, Target.Y, Location.Z));
 	return false;
@@ -940,127 +749,6 @@ bool FSolidAutoPlaythrough::BuildHexWalk(
 		const FVector World = ActorXf.TransformPosition(FVector(Local.X, Local.Y, 0.f));
 		Points.Add(FVector2D(World.X, World.Y));
 	}
-	PointIndex = 0;
-	bWalkReady = Points.Num() > 0;
-	bHasBestDistance = false;
-	StallAccumulated = 0.f;
-	return bWalkReady;
-}
-
-bool FSolidAutoPlaythrough::BuildIglinTrail(const ASolidGameMode& Mode, const FVector& CaptainLocation)
-{
-	UWorld* World = Mode.GetWorld();
-	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
-	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!Chart || !Chart->IsLoaded())
-	{
-		return false;
-	}
-
-	const SolidRoad::FSolidRoad* Road = FindCaveTrail(*Chart);
-	if (!Road || Road->Points.Num() == 0)
-	{
-		return false;
-	}
-
-	TArray<FIntPoint> RoutePoints = Road->Points;
-	if (IsIglin(Road->From))
-	{
-		Algo::Reverse(RoutePoints);
-	}
-
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	const FVector2D Paint = SolidRoad::StripPaintOffset();
-	TArray<FVector2D> Centers;
-	Centers.Reserve(RoutePoints.Num());
-	for (const FIntPoint& TerrainPoint : RoutePoints)
-	{
-		FVector2D WorldXY = FVector2D::ZeroVector;
-		if (Chart->TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, WorldXY))
-		{
-			Centers.Add(WorldXY + Paint);
-		}
-	}
-	if (Centers.Num() == 0)
-	{
-		return false;
-	}
-
-	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
-	int32 Start = 0;
-	float Nearest = TNumericLimits<float>::Max();
-	for (int32 Index = 0; Index < Centers.Num(); ++Index)
-	{
-		const float Dist = FVector2D::DistSquared(Centers[Index], Here);
-		if (Dist < Nearest)
-		{
-			Nearest = Dist;
-			Start = Index;
-		}
-	}
-
-	Points.Reset();
-	Points.Reserve(Centers.Num() - Start);
-	for (int32 Index = Start; Index < Centers.Num(); ++Index)
-	{
-		Points.Add(Centers[Index]);
-	}
-	PointIndex = 0;
-	bWalkReady = Points.Num() > 0;
-	bHasBestDistance = false;
-	StallAccumulated = 0.f;
-	return bWalkReady;
-}
-
-bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
-	const ASolidGameMode& Mode,
-	const FVector& CaptainLocation)
-{
-	UWorld* World = Mode.GetWorld();
-	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
-	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!Chart || !Chart->IsLoaded())
-	{
-		return false;
-	}
-
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	TArray<SolidLair::FEntrance> Entrances;
-	SolidLair::CollectEntrances(Chart, WorldMin, WorldMax, Entrances);
-	const SolidLair::FEntrance* Mouth = FindLairEntrance(Entrances, SolidLair::Entrance);
-	if (!Mouth)
-	{
-		return false;
-	}
-
-	FIntPoint Start = FIntPoint::ZeroValue;
-	if (!Chart->CellAtWorld(CaptainLocation.X, CaptainLocation.Y, WorldMin, WorldMax, Start))
-	{
-		return false;
-	}
-
-	TArray<FIntPoint> Cells;
-	if (!GrassPath(*Chart, Start, Mouth->GrassCell, Cells))
-	{
-		Stop();
-		return false;
-	}
-
-	Points.Reset();
-	Points.Reserve(Cells.Num() + 1);
-	for (const FIntPoint& Cell : Cells)
-	{
-		FVector2D Center = FVector2D::ZeroVector;
-		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
-		{
-			Points.Add(Center);
-		}
-	}
-	Points.Add(Mouth->WorldXY);
 	PointIndex = 0;
 	bWalkReady = Points.Num() > 0;
 	bHasBestDistance = false;
@@ -1158,122 +846,6 @@ bool FSolidAutoPlaythrough::LairCells(
 	return LairCells(LairId, SolidLair::CellOf(FromEnd), SolidLair::CellOf(ToEnd), OutCells);
 }
 
-bool FSolidAutoPlaythrough::TownRoads(
-	const TArray<SolidRoad::FSolidRoad>& Roads,
-	const int32 FromTown,
-	const int32 ToTown,
-	TArray<FIntPoint>& OutPoints)
-{
-	OutPoints.Reset();
-	if (FromTown == INDEX_NONE || ToTown == INDEX_NONE || FromTown == ToTown)
-	{
-		return false;
-	}
-
-	const auto TownEnd = [](const FSolidWorldChartMark& Mark) -> int32
-	{
-		if (Mark.Kind != ESolidWorldChartMarkKind::Town)
-		{
-			return INDEX_NONE;
-		}
-		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
-		return Town ? Town->Id : INDEX_NONE;
-	};
-
-	struct FLink
-	{
-		int32 Town = INDEX_NONE;
-		int32 Route = INDEX_NONE;
-	};
-	TMap<int32, TArray<FLink>> Links;
-	for (int32 Index = 0; Index < Roads.Num(); ++Index)
-	{
-		const SolidRoad::FSolidRoad& Road = Roads[Index];
-		const int32 From = TownEnd(Road.From);
-		const int32 To = TownEnd(Road.To);
-		if (Road.Points.Num() == 0 || From == INDEX_NONE || To == INDEX_NONE || From == To)
-		{
-			continue;
-		}
-		FLink Forward;
-		Forward.Town = To;
-		Forward.Route = Index;
-		Links.FindOrAdd(From).Add(Forward);
-		FLink Back;
-		Back.Town = From;
-		Back.Route = Index;
-		Links.FindOrAdd(To).Add(Back);
-	}
-
-	TMap<int32, int32> CameTown;
-	TMap<int32, int32> CameRoute;
-	TArray<int32> Queue;
-	CameTown.Add(FromTown, FromTown);
-	Queue.Add(FromTown);
-	int32 Head = 0;
-	while (Head < Queue.Num() && !CameTown.Contains(ToTown))
-	{
-		const int32 Here = Queue[Head++];
-		const TArray<FLink>* Neighbors = Links.Find(Here);
-		if (!Neighbors)
-		{
-			continue;
-		}
-		for (const FLink& Link : *Neighbors)
-		{
-			if (CameTown.Contains(Link.Town))
-			{
-				continue;
-			}
-			CameTown.Add(Link.Town, Here);
-			CameRoute.Add(Link.Town, Link.Route);
-			Queue.Add(Link.Town);
-		}
-	}
-	if (!CameRoute.Contains(ToTown))
-	{
-		return false;
-	}
-
-	TArray<int32> Chain;
-	for (int32 Town = ToTown; Town != FromTown;)
-	{
-		const int32* Route = CameRoute.Find(Town);
-		const int32* Previous = CameTown.Find(Town);
-		if (!Route || !Previous || *Previous == Town)
-		{
-			return false;
-		}
-		Chain.Add(*Route);
-		Town = *Previous;
-	}
-	Algo::Reverse(Chain);
-
-	int32 Leave = FromTown;
-	for (const int32 RouteIndex : Chain)
-	{
-		const SolidRoad::FSolidRoad& Road = Roads[RouteIndex];
-		TArray<FIntPoint> RoadPoints = Road.Points;
-		const int32 From = TownEnd(Road.From);
-		const int32 To = TownEnd(Road.To);
-		if (From != Leave)
-		{
-			Algo::Reverse(RoadPoints);
-		}
-		int32 Start = 0;
-		if (OutPoints.Num() > 0 && RoadPoints.Num() > 0 && RoadPoints[0] == OutPoints.Last())
-		{
-			Start = 1;
-		}
-		for (int32 Index = Start; Index < RoadPoints.Num(); ++Index)
-		{
-			OutPoints.Add(RoadPoints[Index]);
-		}
-		Leave = From == Leave ? To : From;
-	}
-	return OutPoints.Num() > 0;
-}
-
 bool FSolidAutoPlaythrough::TrailYawDeg(
 	const FVector2D& Movement,
 	const float YawOffsetDeg,
@@ -1302,96 +874,6 @@ int32 FSolidAutoPlaythrough::BattlePlanSlot(const USolidSquad& Squad, const TCHA
 		}
 	}
 	return INDEX_NONE;
-}
-
-bool FSolidAutoPlaythrough::StrongholdSiteCell(
-	const USolidWorldChart& Chart,
-	const ESolidStrongholdSize Size,
-	FIntPoint& OutCell)
-{
-	FSolidWorldChartMark Mark;
-	if (!Chart.FindStrongholdSiteMarker(Size, Mark))
-	{
-		return false;
-	}
-	return USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
-}
-
-bool FSolidAutoPlaythrough::WalkPointForCell(
-	const USolidWorldChart& Chart,
-	const FIntPoint& Cell,
-	const FVector2D& WorldMinXY,
-	const FVector2D& WorldMaxXY,
-	FVector2D& OutPoint)
-{
-	const int32 TownId = Chart.GetLocationIdAtCell(Cell.X, Cell.Y);
-	if (TownId != INDEX_NONE
-		&& SolidWallgate::GateCenterXY(&Chart, TownId, WorldMinXY, WorldMaxXY, OutPoint))
-	{
-		return true;
-	}
-	return Chart.CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, OutPoint);
-}
-
-bool FSolidAutoPlaythrough::TowerWalkPoints(
-	const SolidStronghold::FSolidTower& Tower,
-	const int32 FromFloor,
-	const int32 ToFloor,
-	TArray<FVector2D>& OutPoints)
-{
-	OutPoints.Reset();
-	const int32 Floors = Tower.FloorCount();
-	if (FromFloor < 1 || ToFloor < 1 || FromFloor > Floors || ToFloor > Floors)
-	{
-		return false;
-	}
-
-	TArray<FVector2D> Up;
-	Up.Add(Tower.DoorHexCenter());
-	const SolidStronghold::FPlan& Plan = Tower.Plan();
-	for (int32 Code = 0; Code < Floors - 1; ++Code)
-	{
-		const SolidStronghold::FWedge Flight = SolidStronghold::FlightWedge(Plan, Code);
-		if (!Flight.bOpen)
-		{
-			continue;
-		}
-		const float Radius = Tower.InteriorRadiusCm(Tower.FloorZCm(Code)) - Plan.StairWidthCm * 0.5f;
-		if (Radius <= 0.f)
-		{
-			continue;
-		}
-		for (int32 Tread = 0; Tread < Plan.StairTreadCount; ++Tread)
-		{
-			const float Along =
-				(static_cast<float>(Tread) + 0.5f) / static_cast<float>(Plan.StairTreadCount);
-			const float Angle = Flight.StartRad + Along * Flight.SweepRad;
-			Up.Add(FVector2D(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius));
-		}
-		const SolidStronghold::FWedge Landing = SolidStronghold::LandingWedge(Plan, Code + 1);
-		if (Landing.bOpen)
-		{
-			const float LandingRadius =
-				Tower.InteriorRadiusCm(Tower.FloorZCm(Code + 1)) - Plan.StairWidthCm * 0.5f;
-			const float Angle = Landing.StartRad + Landing.SweepRad * 0.5f;
-			Up.Add(FVector2D(FMath::Cos(Angle) * LandingRadius, FMath::Sin(Angle) * LandingRadius));
-		}
-	}
-
-	if (Up.Num() == 0)
-	{
-		return false;
-	}
-	if (ToFloor >= FromFloor)
-	{
-		OutPoints = MoveTemp(Up);
-	}
-	else
-	{
-		Algo::Reverse(Up);
-		OutPoints = MoveTemp(Up);
-	}
-	return OutPoints.Num() > 0;
 }
 
 bool FSolidAutoPlaythrough::BuildLairWalk(
@@ -1442,149 +924,6 @@ bool FSolidAutoPlaythrough::BuildLairWalk(
 	return bWalkReady;
 }
 
-bool FSolidAutoPlaythrough::BuildTownWalk(
-	const ASolidGameMode& Mode,
-	const FVector& CaptainLocation,
-	const FStep& Step)
-{
-	if (!SolidTowns::Find(Step.TownId))
-	{
-		Stop();
-		return false;
-	}
-
-	UWorld* World = Mode.GetWorld();
-	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
-	if (Instance && Instance->WantsLairMouthSpawn())
-	{
-		return false;
-	}
-
-	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
-	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!Chart || !Chart->IsLoaded())
-	{
-		return false;
-	}
-
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	FIntPoint HereCell = FIntPoint::ZeroValue;
-	if (!Chart->CellAtWorld(CaptainLocation.X, CaptainLocation.Y, WorldMin, WorldMax, HereCell))
-	{
-		return false;
-	}
-
-	TArray<FIntPoint> Cells;
-	bool bPaint = false;
-	bool bOnRoad = false;
-	int32 OccupiedTown = INDEX_NONE;
-	if (USolidCompany* Company = Mode.GetCompany())
-	{
-		if (const USolidCaptain* Record = Company->GetCaptain())
-		{
-			OccupiedTown = Record->OccupiedTown;
-		}
-	}
-	const int32 HereTown = TownWalkFrom(
-		Chart->GetLocationIdAtCell(HereCell.X, HereCell.Y),
-		OccupiedTown);
-	if (HereTown != INDEX_NONE && HereTown != Step.TownId)
-	{
-		if (!TownRoads(Chart->GetRoutedRoads(), HereTown, Step.TownId, Cells))
-		{
-			Stop();
-			return false;
-		}
-		bPaint = true;
-		bOnRoad = true;
-		const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
-		int32 Start = 0;
-		float Nearest = TNumericLimits<float>::Max();
-		for (int32 Index = 0; Index < Cells.Num(); ++Index)
-		{
-			FVector2D WorldXY = FVector2D::ZeroVector;
-			if (!Chart->TerrainPointToWorld(Cells[Index], WorldMin, WorldMax, WorldXY))
-			{
-				continue;
-			}
-			const float Dist = FVector2D::DistSquared(WorldXY, Here);
-			if (Dist < Nearest)
-			{
-				Nearest = Dist;
-				Start = Index;
-			}
-		}
-		if (Start > 0)
-		{
-			Cells.RemoveAt(0, Start);
-		}
-	}
-	else
-	{
-		FIntPoint Cell;
-		if (!Chart->TownCell(Step.TownId, Cell))
-		{
-			Stop();
-			return false;
-		}
-		if (!GrassPath(*Chart, HereCell, Cell, Cells))
-		{
-			Stop();
-			return false;
-		}
-	}
-
-	const FVector2D Paint = bPaint ? SolidRoad::StripPaintOffset() : FVector2D::ZeroVector;
-	FVector2D Gate = FVector2D::ZeroVector;
-	const bool bGate = SolidWallgate::GateCenterXY(Chart, Step.TownId, WorldMin, WorldMax, Gate);
-	Points.Reset();
-	Points.Reserve(Cells.Num());
-	bool bAddedGate = false;
-	for (const FIntPoint& Cell : Cells)
-	{
-		if (bOnRoad)
-		{
-			FVector2D WorldXY = FVector2D::ZeroVector;
-			if (!Chart->TerrainPointToWorld(Cell, WorldMin, WorldMax, WorldXY))
-			{
-				continue;
-			}
-			if (bGate && Chart->SampleLocationId(WorldXY.X, WorldXY.Y, WorldMin, WorldMax) == Step.TownId)
-			{
-				if (!bAddedGate)
-				{
-					Points.Add(Gate);
-					bAddedGate = true;
-				}
-				continue;
-			}
-			Points.Add(WorldXY + Paint);
-			continue;
-		}
-		if (bGate && Chart->GetLocationIdAtCell(Cell.X, Cell.Y) == Step.TownId)
-		{
-			if (!bAddedGate)
-			{
-				Points.Add(Gate);
-				bAddedGate = true;
-			}
-			continue;
-		}
-		FVector2D Center = FVector2D::ZeroVector;
-		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
-		{
-			Points.Add(Center + Paint);
-		}
-	}
-	PointIndex = 0;
-	bWalkReady = Points.Num() > 0;
-	bHasBestDistance = false;
-	StallAccumulated = 0.f;
-	return bWalkReady;
-}
-
 bool FSolidAutoPlaythrough::TickWalkTo(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
@@ -1597,18 +936,8 @@ bool FSolidAutoPlaythrough::TickWalkTo(
 		return TickWalk(DeltaSeconds, Mode, Captain, Step);
 	case EWalk::Hexes:
 		return TickHexWalk(DeltaSeconds, Mode, Captain, Step);
-	case EWalk::TrailToIglin:
-		return TickWalkToIglin(DeltaSeconds, Mode, Captain);
-	case EWalk::LairEntrance:
-		return TickWalkToLairEntrance(DeltaSeconds, Mode, Captain);
 	case EWalk::Lair:
 		return TickWalkLair(DeltaSeconds, Mode, Captain, Step);
-	case EWalk::Town:
-		return TickWalkTown(DeltaSeconds, Mode, Captain, Step);
-	case EWalk::StrongholdSite:
-		return TickWalkSite(DeltaSeconds, Mode, Captain, Step);
-	case EWalk::Tower:
-		return TickWalkTower(DeltaSeconds, Mode, Captain, Step);
 	default:
 		Stop();
 		return false;
@@ -1631,7 +960,7 @@ bool FSolidAutoPlaythrough::TickHexWalk(
 	bool bFinished = false;
 	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
 	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+		return Steer(DeltaSeconds, Captain, Target, false);
 	}
 	if (bRunning && bFinished)
 	{
@@ -1799,60 +1128,6 @@ bool FSolidAutoPlaythrough::TickExit(
 	return false;
 }
 
-bool FSolidAutoPlaythrough::TickWalkToIglin(
-	const float DeltaSeconds,
-	ASolidGameMode& Mode,
-	ASolidCharacter& Captain)
-{
-	USolidCompany* Company = Mode.GetCompany();
-	const USolidCaptain* Record = Company ? Company->GetCaptain() : nullptr;
-	if (Record && Record->OccupiedTown == SolidTowns::Iglin)
-	{
-		Advance();
-		return false;
-	}
-
-	const FVector Location = Captain.GetActorLocation();
-	if (!bWalkReady && !BuildIglinTrail(Mode, Location))
-	{
-		return false;
-	}
-
-	const FVector2D Here(Location.X, Location.Y);
-	FVector2D Target = FVector2D::ZeroVector;
-	bool bFinished = false;
-	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
-	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
-	}
-	return false;
-}
-
-bool FSolidAutoPlaythrough::TickWalkToLairEntrance(
-	const float DeltaSeconds,
-	ASolidGameMode& Mode,
-	ASolidCharacter& Captain)
-{
-	const FVector Location = Captain.GetActorLocation();
-	if (!bWalkReady && !BuildLairEntranceWalk(Mode, Location))
-	{
-		return false;
-	}
-
-	const FVector2D Here(Location.X, Location.Y);
-	FVector2D Target = FVector2D::ZeroVector;
-	bool bFinished = false;
-	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
-	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
-	}
-	if (bRunning && bFinished)
-	{
-		Advance();
-	}
-	return false;
-}
-
 bool FSolidAutoPlaythrough::TickWalkLair(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
@@ -1870,41 +1145,11 @@ bool FSolidAutoPlaythrough::TickWalkLair(
 	bool bFinished = false;
 	if (FollowPoints(DeltaSeconds, Here, Target, bFinished, LairArriveCm))
 	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false, LairArriveCm);
+		return Steer(DeltaSeconds, Captain, Target, false, LairArriveCm);
 	}
 	if (bRunning && bFinished)
 	{
 		Advance();
-	}
-	return false;
-}
-
-bool FSolidAutoPlaythrough::TickWalkTown(
-	const float DeltaSeconds,
-	ASolidGameMode& Mode,
-	ASolidCharacter& Captain,
-	const FStep& Step)
-{
-	USolidCompany* Company = Mode.GetCompany();
-	const USolidCaptain* Record = Company ? Company->GetCaptain() : nullptr;
-	if (Step.TownId != INDEX_NONE && Record && Record->OccupiedTown == Step.TownId)
-	{
-		Advance();
-		return false;
-	}
-
-	const FVector Location = Captain.GetActorLocation();
-	if (!bWalkReady && !BuildTownWalk(Mode, Location, Step))
-	{
-		return false;
-	}
-
-	const FVector2D Here(Location.X, Location.Y);
-	FVector2D Target = FVector2D::ZeroVector;
-	bool bFinished = false;
-	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
-	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
 	}
 	return false;
 }
@@ -2074,203 +1319,6 @@ void FSolidAutoPlaythrough::ApplyAimRaven(const float DeltaSeconds, ASolidCharac
 	Captain.AimRaven(RavenPitchDeg, YawDeg, RavenArmCm);
 }
 
-bool FSolidAutoPlaythrough::BuildSiteWalk(
-	const ASolidGameMode& Mode,
-	const FVector& CaptainLocation,
-	const FStep& Step)
-{
-	UWorld* World = Mode.GetWorld();
-	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
-	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!Chart || !Chart->IsLoaded())
-	{
-		return false;
-	}
-
-	FIntPoint Site = FIntPoint::ZeroValue;
-	if (!StrongholdSiteCell(*Chart, Step.StrongholdSize, Site))
-	{
-		Stop();
-		return false;
-	}
-
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	FIntPoint HereCell = FIntPoint::ZeroValue;
-	if (!Chart->CellAtWorld(CaptainLocation.X, CaptainLocation.Y, WorldMin, WorldMax, HereCell))
-	{
-		return false;
-	}
-
-	TArray<FIntPoint> Cells;
-	if (!GrassPath(*Chart, HereCell, Site, Cells))
-	{
-		Stop();
-		return false;
-	}
-
-	Points.Reset();
-	Points.Reserve(Cells.Num());
-	for (const FIntPoint& Cell : Cells)
-	{
-		FVector2D Point = FVector2D::ZeroVector;
-		if (!WalkPointForCell(*Chart, Cell, WorldMin, WorldMax, Point))
-		{
-			continue;
-		}
-		if (Points.Num() > 0 && Points.Last().Equals(Point, 1.f))
-		{
-			continue;
-		}
-		Points.Add(Point);
-	}
-
-	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
-	int32 Start = 0;
-	float Nearest = TNumericLimits<float>::Max();
-	for (int32 Index = 0; Index < Points.Num(); ++Index)
-	{
-		const float Dist = FVector2D::DistSquared(Points[Index], Here);
-		if (Dist < Nearest)
-		{
-			Nearest = Dist;
-			Start = Index;
-		}
-	}
-	if (Start > 0)
-	{
-		Points.RemoveAt(0, Start);
-	}
-
-	PointIndex = 0;
-	bWalkReady = Points.Num() > 0;
-	bHasBestDistance = false;
-	StallAccumulated = 0.f;
-	return bWalkReady;
-}
-
-bool FSolidAutoPlaythrough::BuildTowerWalk(
-	const ASolidGameMode& Mode,
-	const FVector& CaptainLocation,
-	const FStep& Step)
-{
-	if (Step.Floor < 1)
-	{
-		Stop();
-		return false;
-	}
-	if (!Mode.IsInStronghold() || !Mode.HasPlacedCaptainInStronghold())
-	{
-		return false;
-	}
-
-	USolidCompany* Company = Mode.GetCompany();
-	const FSolidStronghold* Hold = Company ? Company->GetStronghold() : nullptr;
-	if (!Hold || Hold->Type != ESolidStrongholdType::Tower)
-	{
-		return false;
-	}
-	const SolidStronghold::FSolidTower& Tower = static_cast<const SolidStronghold::FSolidTower&>(*Hold);
-	ASolidStrongholdInterior* Interior = FindInterior(Mode.GetWorld());
-	if (!Interior)
-	{
-		return false;
-	}
-
-	TArray<FVector2D> Local;
-	const int32 FromFloor = Step.Floor > 1 ? 1 : Tower.FloorCount();
-	if (!TowerWalkPoints(Tower, FromFloor, Step.Floor, Local))
-	{
-		Stop();
-		return false;
-	}
-
-	Points.Reset();
-	Points.Reserve(Local.Num());
-	const FTransform& ActorXf = Interior->GetActorTransform();
-	for (const FVector2D& Point : Local)
-	{
-		const FVector World = ActorXf.TransformPosition(FVector(Point.X, Point.Y, 0.f));
-		Points.Add(FVector2D(World.X, World.Y));
-	}
-
-	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
-	int32 Start = 0;
-	float Nearest = TNumericLimits<float>::Max();
-	for (int32 Index = 0; Index < Points.Num(); ++Index)
-	{
-		const float Dist = FVector2D::DistSquared(Points[Index], Here);
-		if (Dist < Nearest)
-		{
-			Nearest = Dist;
-			Start = Index;
-		}
-	}
-	if (Start > 0)
-	{
-		Points.RemoveAt(0, Start);
-	}
-
-	PointIndex = 0;
-	bWalkReady = Points.Num() > 0;
-	bHasBestDistance = false;
-	StallAccumulated = 0.f;
-	return bWalkReady;
-}
-
-bool FSolidAutoPlaythrough::TickWalkSite(
-	const float DeltaSeconds,
-	ASolidGameMode& Mode,
-	ASolidCharacter& Captain,
-	const FStep& Step)
-{
-	const FVector Location = Captain.GetActorLocation();
-	if (!bWalkReady && !BuildSiteWalk(Mode, Location, Step))
-	{
-		return false;
-	}
-
-	const FVector2D Here(Location.X, Location.Y);
-	FVector2D Target = FVector2D::ZeroVector;
-	bool bFinished = false;
-	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
-	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
-	}
-	if (bRunning && bFinished)
-	{
-		Advance();
-	}
-	return false;
-}
-
-bool FSolidAutoPlaythrough::TickWalkTower(
-	const float DeltaSeconds,
-	ASolidGameMode& Mode,
-	ASolidCharacter& Captain,
-	const FStep& Step)
-{
-	const FVector Location = Captain.GetActorLocation();
-	if (!bWalkReady && !BuildTowerWalk(Mode, Location, Step))
-	{
-		return false;
-	}
-
-	const FVector2D Here(Location.X, Location.Y);
-	FVector2D Target = FVector2D::ZeroVector;
-	bool bFinished = false;
-	if (FollowPoints(DeltaSeconds, Here, Target, bFinished, TowerArriveCm))
-	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false, TowerArriveCm);
-	}
-	if (bRunning && bFinished)
-	{
-		Advance();
-	}
-	return false;
-}
-
 bool FSolidAutoPlaythrough::TickChooseStronghold(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
@@ -2289,20 +1337,52 @@ bool FSolidAutoPlaythrough::TickChooseStronghold(
 		ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
 		USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 		USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
-		FIntPoint SiteCell = FIntPoint::ZeroValue;
-		if (!Chart || !StrongholdSiteCell(*Chart, Step.StrongholdSize, SiteCell))
+		const FVector2D Here(Captain.GetActorLocation().X, Captain.GetActorLocation().Y);
+		const FSolidWorldChartMark* SiteMark = nullptr;
+		FVector2D SiteXY = FVector2D::ZeroVector;
+		float Best = TNumericLimits<float>::Max();
+		constexpr float SiteRangeCm = 400.f;
+		if (Chart && Chart->IsLoaded())
 		{
-			Stop();
+			const FVector2D WorldMin = Terrain->GetWorldMinXY();
+			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+			for (const FSolidWorldChartMark& Mark : Chart->Marks)
+			{
+				if (Mark.Kind != ESolidWorldChartMarkKind::StrongholdSite)
+				{
+					continue;
+				}
+				FVector2D WorldXY = FVector2D::ZeroVector;
+				if (!Chart->TerrainPointToWorld(Mark.TerrainPoint, WorldMin, WorldMax, WorldXY))
+				{
+					continue;
+				}
+				const float Dist = FVector2D::Distance(Here, WorldXY);
+				if (Dist <= SiteRangeCm && Dist < Best)
+				{
+					Best = Dist;
+					SiteMark = &Mark;
+					SiteXY = WorldXY;
+				}
+			}
+		}
+		if (!SiteMark)
+		{
+			UE_LOG(LogSolid, Error, TEXT("Auto playthrough: no stronghold site within 4m of the captain."));
+			Stop(TEXT("no stronghold site within 4m"));
 			return false;
 		}
 
 		ASolidStrongholdSite* Site = nullptr;
+		float BestActor = TNumericLimits<float>::Max();
 		for (TActorIterator<ASolidStrongholdSite> It(World); It; ++It)
 		{
-			if (It->GetCell() == SiteCell)
+			const FVector Loc = It->GetActorLocation();
+			const float Dist = FVector2D::DistSquared(FVector2D(Loc.X, Loc.Y), SiteXY);
+			if (Dist < BestActor)
 			{
+				BestActor = Dist;
 				Site = *It;
-				break;
 			}
 		}
 		if (!Site)

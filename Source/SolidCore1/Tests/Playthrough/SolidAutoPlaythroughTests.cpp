@@ -9,13 +9,10 @@
 #include "Events/SolidEncounters.h"
 #include "Lairs/SolidLair.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
-#include "SolidWorldChart.h"
 #include "SolidCharacter.h"
 #include "SolidGameState.h"
 #include "Towns/SolidTowns.h"
-#include "Towns/SolidWallgate.h"
 #include "Strongholds/SolidStronghold.h"
-#include "Strongholds/Tower/SolidTower.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -113,7 +110,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the script walks to that town"), TownWalk != nullptr);
 		TestEqual(
 			TEXT("the town walk is a marker walk"),
-			static_cast<uint8>(TownWalk ? TownWalk->Walk : FSolidAutoPlaythrough::EWalk::Town),
+			static_cast<uint8>(TownWalk ? TownWalk->Walk : FSolidAutoPlaythrough::EWalk::Hexes),
 			static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Marker));
 		TestEqual(
 			TEXT("that mark is a town"),
@@ -137,7 +134,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the script walks to the Iglin tunnels"), TunnelWalk != nullptr);
 	TestEqual(
 		TEXT("the tunnels walk is a marker walk"),
-		static_cast<uint8>(TunnelWalk ? TunnelWalk->Walk : FSolidAutoPlaythrough::EWalk::LairEntrance),
+		static_cast<uint8>(TunnelWalk ? TunnelWalk->Walk : FSolidAutoPlaythrough::EWalk::Hexes),
 		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Marker));
 	TestEqual(
 		TEXT("that mark is a lair entrance"),
@@ -316,98 +313,6 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 			MouthY,
 			Rock));
 
-	int32 TownSteps = 0;
-	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
-	{
-		const FSolidAutoPlaythrough::FStep& Step = FSolidAutoPlaythrough::Script[Index];
-		if (Step.Type == FSolidAutoPlaythrough::EStepType::WalkTo
-			&& Step.Walk == FSolidAutoPlaythrough::EWalk::Town)
-		{
-			++TownSteps;
-		}
-	}
-	TestEqual(TEXT("no town walks"), TownSteps, 0);
-
-	TArray<SolidRoad::FSolidRoad> Roads;
-	{
-		SolidRoad::FSolidRoad Highway(
-			SolidRoad::TownMark(SolidTowns::Relion),
-			SolidRoad::TownMark(SolidTowns::Kanfold),
-			SolidRoad::EType::Highway);
-		Highway.Points = { FIntPoint(1, 1), FIntPoint(1, 2), FIntPoint(1, 3) };
-		Roads.Add(Highway);
-
-		SolidRoad::FSolidRoad Road(
-			SolidRoad::TownMark(SolidTowns::Relion),
-			SolidRoad::TownMark(SolidTowns::Dragongate),
-			SolidRoad::EType::Road);
-		Road.Points = { FIntPoint(1, 1), FIntPoint(2, 1), FIntPoint(3, 1) };
-		Roads.Add(Road);
-
-		SolidRoad::FSolidRoad Track(
-			SolidRoad::TownMark(SolidTowns::Iglin),
-			SolidRoad::TownMark(SolidTowns::Relion),
-			SolidRoad::EType::Track);
-		Track.Points = { FIntPoint(0, 0), FIntPoint(1, 1) };
-		Roads.Add(Track);
-
-		SolidRoad::FSolidRoad Hold(
-			SolidRoad::StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon),
-			SolidRoad::TownMark(SolidTowns::Dragongate),
-			SolidRoad::EType::Trail);
-		Hold.Points = { FIntPoint(9, 9), FIntPoint(3, 1) };
-		Roads.Add(Hold);
-	}
-
-	const auto ExpectCells = [this](const TArray<FIntPoint>& Cells, const FIntPoint* Expected, const int32 Count)
-	{
-		TestEqual(TEXT("chain length"), Cells.Num(), Count);
-		if (Cells.Num() != Count)
-		{
-			return;
-		}
-		for (int32 Index = 0; Index < Count; ++Index)
-		{
-			TestEqual(TEXT("chain column"), Cells[Index].X, Expected[Index].X);
-			TestEqual(TEXT("chain row"), Cells[Index].Y, Expected[Index].Y);
-		}
-	};
-
-	TArray<FIntPoint> ToKanfold;
-	const FIntPoint KanfoldCells[] = { FIntPoint(1, 1), FIntPoint(1, 2), FIntPoint(1, 3) };
-	TestTrue(
-		TEXT("Relion reaches Kanfold"),
-		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Relion, SolidTowns::Kanfold, ToKanfold));
-	ExpectCells(ToKanfold, KanfoldCells, UE_ARRAY_COUNT(KanfoldCells));
-
-	TArray<FIntPoint> ToGate;
-	const FIntPoint GateCells[] = {
-		FIntPoint(1, 3), FIntPoint(1, 2), FIntPoint(1, 1), FIntPoint(2, 1), FIntPoint(3, 1),
-	};
-	TestTrue(
-		TEXT("Kanfold reaches Dragongate through Relion"),
-		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Kanfold, SolidTowns::Dragongate, ToGate));
-	ExpectCells(ToGate, GateCells, UE_ARRAY_COUNT(GateCells));
-
-	TArray<FIntPoint> SameTown;
-	TestFalse(
-		TEXT("a town does not road to itself"),
-		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Relion, SolidTowns::Relion, SameTown));
-	TestEqual(TEXT("that path is empty"), SameTown.Num(), 0);
-
-	TArray<FIntPoint> MissingTown;
-	TestFalse(
-		TEXT("Visolar has no chain to Dragongate"),
-		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Visolar, SolidTowns::Dragongate, MissingTown));
-	TestEqual(TEXT("the missing chain is empty"), MissingTown.Num(), 0);
-	TestEqual(
-		TEXT("a Relion cell starts from Relion"),
-		FSolidAutoPlaythrough::TownWalkFrom(SolidTowns::Relion, SolidTowns::Relion),
-		SolidTowns::Relion);
-	TestEqual(
-		TEXT("grass west of Relion still starts from Relion"),
-		FSolidAutoPlaythrough::TownWalkFrom(INDEX_NONE, SolidTowns::Relion),
-		SolidTowns::Relion);
 	return true;
 }
 
@@ -954,105 +859,6 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 			Index < 2 ? !Place->bClosePage : Place->bClosePage);
 	}
 	TestEqual(TEXT("Quinn is the last row"), Search, FSolidAutoPlaythrough::ScriptCount);
-
-	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("world chart"), Chart);
-	TestTrue(TEXT("the shipped chart loads"), Chart && Chart->LoadDefault());
-	if (Chart && Chart->IsLoaded())
-	{
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		TestTrue(
-			TEXT("the chart has an Imperious site"),
-			FSolidAutoPlaythrough::StrongholdSiteCell(
-				*Chart,
-				ESolidStrongholdSize::Imperious,
-				Cell));
-		ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
-		TestTrue(TEXT("that cell is a site"), Chart->StrongholdSiteAtCell(Cell.X, Cell.Y, SiteSize));
-		TestEqual(
-			TEXT("that site is Imperious"),
-			static_cast<uint8>(SiteSize),
-			static_cast<uint8>(ESolidStrongholdSize::Imperious));
-		FIntPoint Missing = FIntPoint::ZeroValue;
-		TestFalse(
-			TEXT("Meagre is not a site"),
-			FSolidAutoPlaythrough::StrongholdSiteCell(
-				*Chart,
-				ESolidStrongholdSize::Meagre,
-				Missing));
-
-		FIntPoint GateCell;
-		TestTrue(TEXT("Dragongate is on the chart"), Chart->TownCell(SolidTowns::Dragongate, GateCell));
-		{
-			const FVector2D WorldMin(0.f, 0.f);
-			const FVector2D WorldMax(102400.f, 102400.f);
-			FVector2D Opening = FVector2D::ZeroVector;
-			FVector2D Walk = FVector2D::ZeroVector;
-			FVector2D Center = FVector2D::ZeroVector;
-			TestTrue(
-				TEXT("the gate has an opening"),
-				SolidWallgate::GateCenterXY(
-					Chart,
-					SolidTowns::Dragongate,
-					WorldMin,
-					WorldMax,
-					Opening));
-			TestTrue(
-				TEXT("a Dragongate cell walks the opening"),
-				FSolidAutoPlaythrough::WalkPointForCell(
-					*Chart,
-					GateCell,
-					WorldMin,
-					WorldMax,
-					Walk));
-			TestTrue(TEXT("that walk is the opening"), Walk.Equals(Opening, 0.1f));
-			TestTrue(
-				TEXT("grass at the site keeps its centre"),
-				FSolidAutoPlaythrough::WalkPointForCell(*Chart, Cell, WorldMin, WorldMax, Walk));
-			TestTrue(
-				TEXT("the site centre is not the gate"),
-				Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center)
-				&& Walk.Equals(Center, 0.1f));
-		}
-	}
-
-	SolidStronghold::FSolidTower Tower;
-	Tower.Size = ESolidStrongholdSize::Imperious;
-	Tower.BindPlan();
-	TestEqual(TEXT("Imperious has ten floors"), Tower.FloorCount(), 10);
-
-	TArray<FVector2D> Up;
-	TArray<FVector2D> Down;
-	TestTrue(
-		TEXT("the climb walks floor 1 to 10"),
-		FSolidAutoPlaythrough::TowerWalkPoints(Tower, 1, 10, Up));
-	TestTrue(
-		TEXT("the descent walks floor 10 to 1"),
-		FSolidAutoPlaythrough::TowerWalkPoints(Tower, 10, 1, Down));
-	TestTrue(TEXT("the climb has more than one flight"), Up.Num() > Tower.Plan().StairTreadCount);
-	TestEqual(TEXT("the way down is the same length"), Down.Num(), Up.Num());
-	if (Up.Num() > 0)
-	{
-		TestTrue(
-			TEXT("the climb starts at the door"),
-			Up[0].Equals(Tower.DoorHexCenter(), 0.1f));
-	}
-	if (Up.Num() == Down.Num())
-	{
-		for (int32 Index = 0; Index < Up.Num(); ++Index)
-		{
-			TestTrue(
-				TEXT("the descent is the climb reversed"),
-				Down[Index].Equals(Up[Up.Num() - 1 - Index], 0.1f));
-		}
-	}
-
-	TArray<FVector2D> Bad;
-	TestFalse(TEXT("floor 0 is not a story floor"), FSolidAutoPlaythrough::TowerWalkPoints(Tower, 0, 10, Bad));
-	TestFalse(TEXT("floor 11 is past the cap"), FSolidAutoPlaythrough::TowerWalkPoints(Tower, 1, 11, Bad));
-	TestTrue(
-		TEXT("a stair point is closer than a road cell"),
-		FSolidAutoPlaythrough::TowerArriveCm < FSolidAutoPlaythrough::ArriveCm);
 	return true;
 }
 

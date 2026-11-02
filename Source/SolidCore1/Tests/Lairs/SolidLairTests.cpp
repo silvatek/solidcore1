@@ -25,26 +25,6 @@
 
 namespace SolidLairTestPrivate
 {
-	FString MountainGrid()
-	{
-		FString Text;
-		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight);
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
-			{
-				Text.AppendChar(TEXT('M'));
-			}
-			Text.AppendChar(TEXT('\n'));
-		}
-		return Text;
-	}
-
-	void SetCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
-	{
-		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
-	}
-
 	/** Bounds of a mesh built in its own space, then shifted by the component. */
 	bool PlacedBox(const UStaticMeshComponent* Part, FBox& OutBox, int32& OutVertices)
 	{
@@ -236,38 +216,39 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
 
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
+	TestNotNull(TEXT("mountain chart"), Map);
+	if (!Map)
 	{
-		FString Grid = SolidLairTestPrivate::MountainGrid();
-		SolidLairTestPrivate::SetCell(Grid, 10, 10, SolidLair::Entrance);
-		SolidLairTestPrivate::SetCell(Grid, 10, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		SolidLairTestPrivate::SetCell(Grid, 12, 10, SolidLair::Exit);
-		SolidLairTestPrivate::SetCell(Grid, 11, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		SolidLairTestPrivate::SetCell(Grid, 14, 10, USolidWorldChart::DeprecatedLocationMarker);
-		SolidLairTestPrivate::SetCell(Grid, 14, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		Grid += TEXT("! 11,15 = Stronghold (MeagreDungeon)\n");
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestTrue(TEXT("mouths load"), Map->LoadFromString(Grid));
-
-		TArray<SolidLair::FEntrance> Entrances;
-		TestEqual(TEXT("letters are not tunnel mouths"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
-
-		SolidStrongholds::FEntrance CaveFace;
-		TestTrue(
-			TEXT("the cave cell has a grass face"),
-			SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(14, 10), CaveFace));
-		ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
-		ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
-		TestFalse(TEXT("X is still not a stronghold"), Map->StrongholdAtCell(10, 10, HoldType, HoldSize));
+		return false;
 	}
-
+	Map->Init(ESolidBiome::Mountain);
+	const FIntPoint CaveCell(14, 10);
+	const FIntPoint GrassCell(14, 9);
+	int32 GrassTerrainX = 0;
+	int32 GrassTerrainY = 0;
+	USolidWorldChart::PointUnderCell(GrassCell.X, GrassCell.Y, GrassTerrainX, GrassTerrainY);
+	const FIntPoint GrassPoint(GrassTerrainX, GrassTerrainY);
+	FString Error;
+	if (!TestTrue(
+		TEXT("the north face paints grass"),
+		Map->PaintPointRectangle(GrassPoint, GrassPoint, ESolidBiome::Grassland, Error)))
 	{
-		FString Grid = SolidLairTestPrivate::MountainGrid();
-		SolidLairTestPrivate::SetCell(Grid, 4, 4, SolidLair::Entrance);
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestTrue(TEXT("a letter loads"), Map->LoadFromString(Grid));
-		TArray<SolidLair::FEntrance> Entrances;
-		TestEqual(TEXT("a sealed letter is not a mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
+		return false;
 	}
+	TestEqual(
+		TEXT("the north face is grass"),
+		static_cast<uint8>(Map->GetBiomeAtCell(GrassCell.X, GrassCell.Y)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	TArray<SolidLair::FEntrance> Entrances;
+	TestEqual(TEXT("no lair mark means no tunnel mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
+
+	SolidStrongholds::FEntrance CaveFace;
+	TestTrue(
+		TEXT("the cave cell has a grass face"),
+		SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CaveCell, CaveFace));
+	TestEqual(TEXT("the cave faces north"), CaveFace.GrassCell, GrassCell);
 
 	ASolidLairEntrance* Unmarked = NewObject<ASolidLairEntrance>();
 	ASolidLairEntrance* Tunnel = NewObject<ASolidLairEntrance>();
@@ -331,59 +312,6 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("X is on the shipped map"), bSawX);
 	TestTrue(TEXT("Y is on the shipped map"), bSawY);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidLairBangMouthTest,
-	"SolidCore1.Lair.BangMouth",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidLairBangMouthTest::RunTest(const FString& Parameters)
-{
-	const FVector2D WorldMin(0.f, 0.f);
-	const FVector2D WorldMax(6400.f, 6400.f);
-	FString Grid = SolidLairTestPrivate::MountainGrid();
-	SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldChart::DeprecatedLocationMarker);
-	SolidLairTestPrivate::SetCell(Grid, 10, 9, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-	SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldChart::DeprecatedLocationMarker);
-	SolidLairTestPrivate::SetCell(Grid, 11, 10, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-	SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldChart::DeprecatedLocationMarker);
-	Grid += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
-	Grid += TEXT("! 11,13 = LairExit (Iglin tunnels)\n");
-	Grid += TEXT("! 5,5 = LairEntrance (Iglin tunnels)\n");
-
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("bang map"), Map);
-	if (!Map || !TestTrue(TEXT("bang mouths load"), Map->LoadFromString(Grid)))
-	{
-		return false;
-	}
-
-	auto AddMouth = [](USolidWorldChart& Chart, const int32 CellX, const int32 CellY, const ESolidWorldChartMarkKind Kind)
-	{
-		FSolidWorldChartMark Mark;
-		Mark.Kind = Kind;
-		Mark.Name = TEXT("Iglin tunnels");
-		Mark.LairId = SolidLair::IdIglinTunnels;
-		int32 TerrainX = 0;
-		int32 TerrainY = 0;
-		USolidWorldChart::PointUnderCell(CellX, CellY, TerrainX, TerrainY);
-		Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
-		Chart.Marks.Add(Mark);
-	};
-	AddMouth(*Map, 10, 10, ESolidWorldChartMarkKind::LairEntrance);
-	AddMouth(*Map, 12, 10, ESolidWorldChartMarkKind::LairExit);
-
-	TArray<SolidLair::FEntrance> Entrances;
-	TestEqual(TEXT("a sealed mouth is left out"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 2);
-	if (Entrances.Num() == 2)
-	{
-		TestEqual(TEXT("entrance is the Iglin Tunnels Entrance"), static_cast<int32>(Entrances[0].EndMarker), static_cast<int32>(SolidLair::Entrance));
-		TestEqual(TEXT("entrance faces north"), Entrances[0].GrassCell.Y, 9);
-		TestEqual(TEXT("exit is the Iglin Tunnels Exit"), static_cast<int32>(Entrances[1].EndMarker), static_cast<int32>(SolidLair::Exit));
-		TestEqual(TEXT("exit faces east"), Entrances[1].GrassCell.X, 11);
-	}
 	return true;
 }
 

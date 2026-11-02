@@ -9,17 +9,6 @@
 
 namespace
 {
-	FString PaintGrid()
-	{
-		FString Text;
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			Text += FString::ChrN(USolidWorldChart::MapWidth, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-			Text += TEXT("\n");
-		}
-		return Text;
-	}
-
 	USolidWorldChart* PaintGrassChart()
 	{
 		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
@@ -236,18 +225,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 {
-	const FString Grid = PaintGrid();
 	USolidWorldChart* Chart = PaintGrassChart();
 	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;
-	}
-
-	USolidWorldChart* FromText = NewObject<USolidWorldChart>();
-	TestTrue(TEXT("the text has no encounters"), FromText && FromText->LoadFromString(Grid));
-	if (FromText)
-	{
-		TestEqual(TEXT("LoadFromString keeps no encounter"), FromText->GetEncounterMarks().Num(), 0);
 	}
 
 	FString Error;

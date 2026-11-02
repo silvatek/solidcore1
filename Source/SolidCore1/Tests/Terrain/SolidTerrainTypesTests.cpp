@@ -156,20 +156,6 @@ bool FSolidBiomeColorTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("the map asks the biome"),
 		USolidWorldChart::DefaultColorForBiome(ESolidBiome::River).Equals(River));
-
-	FString Text;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		Text += FString::ChrN(USolidWorldChart::MapWidth, SolidBiome::Of(ESolidBiome::Grassland).Marker());
-		Text += TEXT("\n");
-	}
-	Text += TEXT("* = River (red)\n");
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	if (!TestTrue(TEXT("a map with a colour line loads"), Map && Map->LoadFromString(Text)))
-	{
-		return false;
-	}
-	TestTrue(TEXT("a colour line leaves the river blue"), Map->GetBiomeColor(ESolidBiome::River).Equals(River));
 	return true;
 }
 

@@ -254,6 +254,7 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the Iglin mark remains"), Chart->FindTownMarker(SolidTowns::Iglin, IglinMark));
 	TestEqual(TEXT("the mark stays on its point"), IglinMark.TerrainPoint, GridCellPoint(Iglin));
 
+	const FIntPoint Far(20, 20);
 	const FIntPoint FarPoint = GridCellPoint(Far);
 	TArray<FIntPoint> FarPoints;
 	FarPoints.Add(FarPoint);

@@ -26,7 +26,18 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 	}
 
 	const FIntPoint Cave = SolidStronghold::StartingCell();
-	const int32 CaveMark = DefaultMap->MarkAtCell(Cave);
+	int32 CaveX = 0;
+	int32 CaveY = 0;
+	USolidWorldChart::PointUnderCell(Cave.X, Cave.Y, CaveX, CaveY);
+	int32 CaveMark = INDEX_NONE;
+	for (int32 Index = 0; Index < DefaultMap->Marks.Num(); ++Index)
+	{
+		if (DefaultMap->Marks[Index].TerrainPoint == FIntPoint(CaveX, CaveY))
+		{
+			CaveMark = Index;
+			break;
+		}
+	}
 	TestTrue(TEXT("the cave is the Meagre Dungeon mark"), CaveMark != INDEX_NONE);
 	if (CaveMark != INDEX_NONE)
 	{

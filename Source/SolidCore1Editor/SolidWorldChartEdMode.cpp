@@ -175,6 +175,24 @@ namespace
 		OutPositions.Add(World - FVector2D(0.f, 1.f));
 		OutPositions.Add(World - FVector2D(1.f, 1.f));
 	}
+
+	void ProbeTerrainPoints(
+		const USolidWorldChart& Chart,
+		const USolidTerrainMap& Terrain,
+		const TArray<FIntPoint>& TerrainPoints,
+		TArray<FVector2D>& OutPositions)
+	{
+		const FVector2D WorldMin = Terrain.GetWorldMinXY();
+		const FVector2D WorldMax = Terrain.GetWorldMaxXY();
+		for (const FIntPoint& TerrainPoint : TerrainPoints)
+		{
+			FVector2D World = FVector2D::ZeroVector;
+			if (Chart.TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, World))
+			{
+				ChunkProbes(World, OutPositions);
+			}
+		}
+	}
 }
 
 class FSolidWorldChartToolkit : public FModeToolkit
@@ -1052,18 +1070,31 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	Note(FString::Printf(TEXT("Placed %s."), MarkKindName(MarkKind)));
 	if (Streamer)
 	{
-		TArray<FIntPoint> Cells;
-		Cells.Add(CurrentCell);
+		TArray<FIntPoint> Touched;
+		Touched.Add(CurrentTerrainPoint);
 		for (const FIntPoint& TerrainPoint : Before)
 		{
-			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell)
-				&& Chart->MarkAtCell(Cell) == INDEX_NONE)
+			bool bMarked = false;
+			for (const FSolidWorldChartMark& Mark : Chart->Marks)
 			{
-				Cells.AddUnique(Cell);
+				if (Mark.TerrainPoint == TerrainPoint)
+				{
+					bMarked = true;
+					break;
+				}
+			}
+			if (!bMarked)
+			{
+				Touched.AddUnique(TerrainPoint);
 			}
 		}
-		Streamer->RebuildChartView(Chart, Cells);
+		const USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		TArray<FVector2D> Positions;
+		if (Terrain)
+		{
+			ProbeTerrainPoints(*Chart, *Terrain, Touched, Positions);
+		}
+		Streamer->RebuildChartPoints(Chart, Positions);
 	}
 	RebuildSigns();
 	RefreshPanel();
@@ -1085,7 +1116,13 @@ void FSolidWorldChartEdMode::DeleteCurrentMark()
 	Note(TEXT("Deleted the mark."));
 	if (Streamer)
 	{
-		Streamer->RebuildChartView(Chart, { CurrentCell });
+		const USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		TArray<FVector2D> Positions;
+		if (Terrain)
+		{
+			ProbeTerrainPoints(*Chart, *Terrain, { CurrentTerrainPoint }, Positions);
+		}
+		Streamer->RebuildChartPoints(Chart, Positions);
 	}
 	RebuildSigns();
 	Hover = bHasPoint ? DescribePoint(CurrentTerrainPoint) : FString();

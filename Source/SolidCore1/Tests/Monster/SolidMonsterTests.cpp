@@ -653,7 +653,15 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	const int32 RexMark = Rex->MarkAtCell(RexCell);
+	int32 RexMark = INDEX_NONE;
+	for (int32 Index = 0; Index < Rex->Marks.Num(); ++Index)
+	{
+		if (Rex->Marks[Index].TerrainPoint == CellPoint(RexCell))
+		{
+			RexMark = Index;
+			break;
+		}
+	}
 	if (!TestTrue(TEXT("Dracorex is on the cell"), RexMark != INDEX_NONE))
 	{
 		return false;

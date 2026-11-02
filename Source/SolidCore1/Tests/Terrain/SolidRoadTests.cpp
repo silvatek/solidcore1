@@ -39,6 +39,18 @@ namespace
 		return FIntPoint(X, Y);
 	}
 
+	int32 MarkOnPoint(const USolidWorldChart& Chart, const FIntPoint& TerrainPoint)
+	{
+		for (int32 Index = 0; Index < Chart.Marks.Num(); ++Index)
+		{
+			if (Chart.Marks[Index].TerrainPoint == TerrainPoint)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
 	FVector2D RoadTestCenter(const USolidWorldChart& Map, const int32 Col, const int32 Row)
 	{
 		FVector2D Center = FVector2D::ZeroVector;
@@ -493,10 +505,10 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("forest on the track uses the road texture"),
 		static_cast<uint8>(Track->SampleBiome(Forest.X, Forest.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Road));
-	const int32 GrassMark = Track->MarkAtCell(FIntPoint(6, 12));
+	const int32 GrassMark = MarkOnPoint(*Track, RoadCellPoint(FIntPoint(6, 12)));
 	TestFalse(TEXT("grass under a track is not a town"),
 		Track->Marks.IsValidIndex(GrassMark) && Track->Marks[GrassMark].Kind == ESolidWorldChartMarkKind::Town);
-	const int32 IglinMark = Track->MarkAtCell(FIntPoint(4, 12));
+	const int32 IglinMark = MarkOnPoint(*Track, RoadCellPoint(FIntPoint(4, 12)));
 	TestTrue(TEXT("Iglin is a town"),
 		Track->Marks.IsValidIndex(IglinMark) && Track->Marks[IglinMark].Kind == ESolidWorldChartMarkKind::Town);
 
@@ -525,7 +537,7 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the cave keeps its shelf"),
 		static_cast<uint8>(Cave->SampleBiome(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(CaveShelf));
-	const int32 CaveMark = Cave->MarkAtCell(FIntPoint(4, 8));
+	const int32 CaveMark = MarkOnPoint(*Cave, RoadCellPoint(FIntPoint(4, 8)));
 	TestFalse(TEXT("the cave is not a town"),
 		Cave->Marks.IsValidIndex(CaveMark) && Cave->Marks[CaveMark].Kind == ESolidWorldChartMarkKind::Town);
 

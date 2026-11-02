@@ -183,9 +183,6 @@ public:
 	/** Remove the mark on this terrain point. */
 	bool DeleteMarkAt(FIntPoint TerrainPoint, FString& OutError);
 
-	/** Deprecated. Index of the mark on this cell, or INDEX_NONE. */
-	int32 MarkAtCell(FIntPoint Cell) const;
-
 	/** Put back the chart from before the last paint or mark. */
 	bool Undo();
 

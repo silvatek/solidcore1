@@ -268,26 +268,6 @@ bool USolidWorldChart::DeleteMarkAt(const FIntPoint TerrainPoint, FString& OutEr
 	return true;
 }
 
-int32 USolidWorldChart::MarkAtCell(const FIntPoint Cell) const
-{
-	if (Cell.X < 0 || Cell.Y < 0 || Cell.X >= MapWidth || Cell.Y >= MapHeight)
-	{
-		return INDEX_NONE;
-	}
-	int32 TerrainX = 0;
-	int32 TerrainY = 0;
-	PointUnderCell(Cell.X, Cell.Y, TerrainX, TerrainY);
-	const FIntPoint TerrainPoint(TerrainX, TerrainY);
-	for (int32 Index = 0; Index < Marks.Num(); ++Index)
-	{
-		if (Marks[Index].TerrainPoint == TerrainPoint)
-		{
-			return Index;
-		}
-	}
-	return INDEX_NONE;
-}
-
 bool USolidWorldChart::Undo()
 {
 	if (UndoStack.Num() == 0)

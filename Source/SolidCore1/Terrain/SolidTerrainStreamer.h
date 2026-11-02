@@ -85,9 +85,6 @@ public:
 	 */
 	void BuildChartView(const USolidWorldChart* Chart);
 
-	/** Rebuild the chart ground, and only the chunks that contain these cells. */
-	void RebuildChartView(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells);
-
 	/** Rebuild the chart ground, and only the chunks that contain these world positions. */
 	void RebuildChartPoints(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions);
 
@@ -283,7 +280,7 @@ protected:
 	/** Quads and FogQuads below 1 use QuadsPerSide and FogQuadsPerSide. */
 	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord, int32 Quads = -1, int32 FogQuads = -1);
 	/** Rebuild the chart ground. Cells and positions name the chunks to build again. */
-	void RebuildChartGround(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells, const TArray<FVector2D>& Positions);
+	void RebuildChartGround(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions);
 	void UpdateTerrainFog(float DeltaSeconds);
 	float SampleViewFogAmount() const;
 	void UpdateStreaming();

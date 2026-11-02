@@ -146,10 +146,7 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 			}
 			CaveCells.Add(Cell);
 			TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Named, CaveShelf));
-			const int32 CaveMark = Map->MarkAtCell(Cell);
-			TestTrue(TEXT("cave is not a town"),
-				Map->Marks.IsValidIndex(CaveMark)
-				&& Map->Marks[CaveMark].Kind != ESolidWorldChartMarkKind::Town);
+			TestTrue(TEXT("cave is not a town"), Mark.Kind != ESolidWorldChartMarkKind::Town);
 	}
 	TestTrue(TEXT("the shipped map has a cave"), CaveCells.Num() > 0);
 
@@ -298,7 +295,18 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	if (Map)
 	{
 		const FIntPoint Cell = SolidStronghold::StartingCell();
-		const int32 CaveMark = Map->MarkAtCell(Cell);
+		int32 CaveX = 0;
+		int32 CaveY = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, CaveX, CaveY);
+		int32 CaveMark = INDEX_NONE;
+		for (int32 Index = 0; Index < Map->Marks.Num(); ++Index)
+		{
+			if (Map->Marks[Index].TerrainPoint == FIntPoint(CaveX, CaveY))
+			{
+				CaveMark = Index;
+				break;
+			}
+		}
 		TestTrue(TEXT("the starting cell is described"), CaveMark != INDEX_NONE);
 		if (CaveMark != INDEX_NONE)
 		{

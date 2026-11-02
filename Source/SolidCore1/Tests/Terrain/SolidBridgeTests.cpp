@@ -456,7 +456,8 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 		SolidBridge::FromMarkers(*Chart, Height, None, WorldMin, WorldMax), 0);
 
 	FString Error;
-	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridgeAt(BridgeCellPoint(FIntPoint(11, 16)), TEXT("Iglin Bridge"), Error));
+	const FIntPoint BridgePoint = BridgeCellPoint(FIntPoint(11, 16));
+	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridgeAt(BridgePoint, TEXT("Iglin Bridge"), Error));
 
 	int32 RiverTerrainX = 0;
 	int32 RiverTerrainY = 0;
@@ -468,7 +469,15 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the river paints"),
 			Chart->SetPointRectangle(FIntPoint(RiverTerrainPoint.X, 0), FIntPoint(RiverTerrainPoint.X, LastPoint), ESolidBiome::River));
 	}
-	const int32 MarkIndex = Chart->MarkAtCell(FIntPoint(11, 16));
+	int32 MarkIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < Chart->Marks.Num(); ++Index)
+	{
+		if (Chart->Marks[Index].TerrainPoint == BridgePoint)
+		{
+			MarkIndex = Index;
+			break;
+		}
+	}
 	if (TestTrue(TEXT("the mark is stored"), MarkIndex != INDEX_NONE))
 	{
 		SolidBridge::FBridge OverWater;

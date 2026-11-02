@@ -150,11 +150,6 @@ bool USolidWorldChart::PlaceOn(const FIntPoint TerrainPoint, const FSolidWorldCh
 		OutError = TEXT("That point is off the map.");
 		return false;
 	}
-	if (Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
-	{
-		OutError = TEXT("The chart does not cover the map.");
-		return false;
-	}
 	if (!EnsurePoints())
 	{
 		OutError = TEXT("The chart does not cover the map.");

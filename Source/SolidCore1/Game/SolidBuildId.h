@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0926")
+#define SOLID_BUILD_ID TEXT("SC1-0927")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The cell place and delete calls are gone.")
+#define SOLID_BUILD_NOTE TEXT("A mark places without the cell grid.")
 #endif

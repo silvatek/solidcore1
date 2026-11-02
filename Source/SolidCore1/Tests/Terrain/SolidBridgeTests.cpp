@@ -223,7 +223,7 @@ bool FSolidBridgeBanksTest::RunTest(const FString& Parameters)
 	}
 
 	FVector2D River = FVector2D::ZeroVector;
-	TestTrue(TEXT("river cell"), Map->CellToWorldXY(FIntPoint(12, 16), BridgeTestMin, BridgeTestMax, River));
+	TestTrue(TEXT("river cell"), Map->TerrainPointToWorld(BridgeCellPoint(FIntPoint(12, 16)), BridgeTestMin, BridgeTestMax, River));
 	const auto Height = [River](float X, float)
 	{
 		return X > River.X ? 400.f : 100.f;

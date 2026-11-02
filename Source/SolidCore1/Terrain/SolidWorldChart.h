@@ -87,12 +87,6 @@ public:
 	/** True when the mark on this terrain point is a stronghold. A site is not one. */
 	bool StrongholdAtTerrain(int32 TerrainX, int32 TerrainY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
 
-	/** Deprecated. World XY of this town's cell. Same world rectangle as SampleBiome. */
-	bool GetLocationWorldXY(int32 Id, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
-
-	/** Deprecated. World XY of one map cell center. Same rectangle as SampleBiome. */
-	bool CellToWorldXY(FIntPoint Cell, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
-
 	/** Deprecated. Map cell under a world XY. Column 0 is west, row 0 is north. */
 	bool CellAtWorld(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutCell) const;
 
@@ -250,7 +244,5 @@ protected:
 	void BuildRoad(SolidRoad::FSolidRoad* Road) const;
 	/** Build each listed road and solve it. */
 	void BuildListedRoads() const;
-	/** Deprecated. Mean world centre of these cells. Same rectangle as SampleBiome. */
-	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
 };

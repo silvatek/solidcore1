@@ -171,10 +171,10 @@ int32 SolidWallgate::CollectPieces(
 			continue;
 		}
 
-		FIntPoint Cell = FIntPoint::ZeroValue;
+		FSolidWorldChartMark Mark;
 		FVector2D Marker = FVector2D::ZeroVector;
-		if (!MarkerCell(WorldMap, Info.Id, Cell)
-			|| !WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, Marker))
+		if (!WorldMap->FindTownMarker(Info.Id, Mark)
+			|| !WorldMap->TerrainPointToWorld(Mark.TerrainPoint, WorldMinXY, WorldMaxXY, Marker))
 		{
 			continue;
 		}
@@ -191,10 +191,14 @@ bool SolidWallgate::GateCenterXY(
 	FVector2D& OutCenter)
 {
 	OutCenter = FVector2D::ZeroVector;
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (!MarkerCell(WorldMap, TownId, Cell))
+	if (!WorldMap || !SolidTowns::IsWallGate(TownId))
 	{
 		return false;
 	}
-	return WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, OutCenter);
+	FSolidWorldChartMark Mark;
+	if (!WorldMap->FindTownMarker(TownId, Mark))
+	{
+		return false;
+	}
+	return WorldMap->TerrainPointToWorld(Mark.TerrainPoint, WorldMinXY, WorldMaxXY, OutCenter);
 }

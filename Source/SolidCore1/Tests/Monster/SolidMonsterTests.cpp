@@ -784,7 +784,11 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 		WorldMap->TerrainPointToWorld(StoredPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Ground));
 	FVector2D CellGround = FVector2D::ZeroVector;
 	TestTrue(TEXT("the cell has a ground centre"),
-		WorldMap->CellToWorldXY(Cell, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), CellGround));
+		WorldMap->TerrainPointToWorld(
+			SolidMonsterTestPrivate::CellPoint(Cell),
+			Terrain->GetWorldMinXY(),
+			Terrain->GetWorldMaxXY(),
+			CellGround));
 	TestTrue(TEXT("play uses the centred terrain"), Ground.Equals(CellGround, 1.f));
 	TestFalse(TEXT("the class-default position is not that ground point"), Stored.Equals(Ground, 1.f));
 

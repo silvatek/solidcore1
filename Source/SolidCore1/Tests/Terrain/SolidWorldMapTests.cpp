@@ -22,6 +22,19 @@ namespace
 		}
 		return Chart->TerrainPointToWorld(Mark.TerrainPoint, WorldMin, WorldMax, OutXY);
 	}
+
+	bool WorldMapCellWorld(
+		const USolidWorldChart& Chart,
+		const FIntPoint Cell,
+		const FVector2D& WorldMin,
+		const FVector2D& WorldMax,
+		FVector2D& OutXY)
+	{
+		int32 X = 0;
+		int32 Y = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
+		return Chart.TerrainPointToWorld(FIntPoint(X, Y), WorldMin, WorldMax, OutXY);
+	}
 }
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -235,9 +248,9 @@ bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
 	FVector2D EastCell = FVector2D::ZeroVector;
 	FVector2D NextColumn = FVector2D::ZeroVector;
 	FVector2D NextRow = FVector2D::ZeroVector;
-	TestTrue(TEXT("first cell projects"), WorldMap->CellToWorldXY(FIntPoint(0, 0), WorldMin, WorldMax, EastCell));
-	TestTrue(TEXT("next column projects"), WorldMap->CellToWorldXY(FIntPoint(1, 0), WorldMin, WorldMax, NextColumn));
-	TestTrue(TEXT("next row projects"), WorldMap->CellToWorldXY(FIntPoint(0, 1), WorldMin, WorldMax, NextRow));
+	TestTrue(TEXT("first cell projects"), WorldMapCellWorld(*WorldMap, FIntPoint(0, 0), WorldMin, WorldMax, EastCell));
+	TestTrue(TEXT("next column projects"), WorldMapCellWorld(*WorldMap, FIntPoint(1, 0), WorldMin, WorldMax, NextColumn));
+	TestTrue(TEXT("next row projects"), WorldMapCellWorld(*WorldMap, FIntPoint(0, 1), WorldMin, WorldMax, NextRow));
 	TestTrue(TEXT("column step follows the map width"),
 		FMath::IsNearlyEqual(EastCell.X - NextColumn.X, CellEastCm, 1.f));
 	TestTrue(TEXT("row step follows the map height"),

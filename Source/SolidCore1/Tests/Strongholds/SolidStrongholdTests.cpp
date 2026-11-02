@@ -9,6 +9,22 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+namespace
+{
+	bool StrongholdTestCellWorld(
+		const USolidWorldChart& Chart,
+		const FIntPoint Cell,
+		const FVector2D& WorldMin,
+		const FVector2D& WorldMax,
+		FVector2D& OutWorld)
+	{
+		int32 X = 0;
+		int32 Y = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
+		return Chart.TerrainPointToWorld(FIntPoint(X, Y), WorldMin, WorldMax, OutWorld);
+	}
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStrongholdCatalogTest,
 	"SolidCore1.Stronghold.Catalog",
@@ -121,7 +137,7 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("world map"), Map);
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
 
-	TArray<FIntPoint> CaveCells;
+	TArray<FIntPoint> CavePoints;
 	ESolidBiome CaveShelf = ESolidBiome::Grassland;
 	for (const FSolidWorldChartMark& Mark : Map->Marks)
 	{
@@ -129,50 +145,44 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 		{
 			continue;
 		}
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
-		{
-			continue;
-		}
 		ESolidStrongholdType NamedType = Mark.StrongholdType;
 		ESolidStrongholdSize NamedSize = Mark.StrongholdSize;
 		SolidStronghold::FromToken(Mark.Name, NamedType, NamedSize);
 		const FSolidStronghold Named(NamedType, NamedSize);
-			if (Named.Type != ESolidStrongholdType::Dungeon || Named.Size != ESolidStrongholdSize::Meagre)
-			{
-				ESolidBiome Expected = ESolidBiome::Grassland;
-				TestTrue(TEXT("a shipped stronghold names its shelf"), SolidStronghold::BiomeFor(Named, Expected));
-				continue;
-			}
-			CaveCells.Add(Cell);
-			TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Named, CaveShelf));
-			TestTrue(TEXT("cave is not a town"), Mark.Kind != ESolidWorldChartMarkKind::Town);
+		if (Named.Type != ESolidStrongholdType::Dungeon || Named.Size != ESolidStrongholdSize::Meagre)
+		{
+			ESolidBiome Expected = ESolidBiome::Grassland;
+			TestTrue(TEXT("a shipped stronghold names its shelf"), SolidStronghold::BiomeFor(Named, Expected));
+			continue;
+		}
+		CavePoints.Add(Mark.TerrainPoint);
+		TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Named, CaveShelf));
+		TestTrue(TEXT("cave is not a town"), Mark.Kind != ESolidWorldChartMarkKind::Town);
 	}
-	TestTrue(TEXT("the shipped map has a cave"), CaveCells.Num() > 0);
+	TestTrue(TEXT("the shipped map has a cave"), CavePoints.Num() > 0);
 
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
-	const bool bMountainCave = CaveCells.Num() > 0 && CaveShelf == ESolidBiome::Mountain;
+	const bool bMountainCave = CavePoints.Num() > 0 && CaveShelf == ESolidBiome::Mountain;
 	if (bMountainCave)
 	{
 		int32 CaveMouths = 0;
-		for (const FIntPoint& CaveCell : CaveCells)
+		for (const FIntPoint& CavePoint : CavePoints)
 		{
 			SolidStrongholds::FEntrance Entrance;
 			TestTrue(
-				TEXT("the cave cell has a grass face"),
-				SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CaveCell, Entrance));
+				TEXT("the cave marker has a grass face"),
+				SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CavePoint, Entrance));
 			++CaveMouths;
-			TestEqual(TEXT("entrance cell"), Entrance.Cell, CaveCell);
-			const FIntPoint North(Entrance.Cell.X, Entrance.Cell.Y - 1);
-			TestEqual(TEXT("grass column"), Entrance.GrassCell.X, North.X);
-			TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, North.Y);
+			TestEqual(TEXT("entrance point"), Entrance.TerrainPoint, CavePoint);
+			const FIntPoint North(CavePoint.X, CavePoint.Y + 1);
+			TestEqual(TEXT("grass point is the next point north"), Entrance.GrassPoint, North);
 			TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
 
 			FVector2D CaveXY = FVector2D::ZeroVector;
 			FVector2D GrassXY = FVector2D::ZeroVector;
-			TestTrue(TEXT("cave projects"), Map->CellToWorldXY(Entrance.Cell, WorldMin, WorldMax, CaveXY));
-			TestTrue(TEXT("grass projects"), Map->CellToWorldXY(North, WorldMin, WorldMax, GrassXY));
+			TestTrue(TEXT("cave projects"), Map->TerrainPointToWorld(Entrance.TerrainPoint, WorldMin, WorldMax, CaveXY));
+			TestTrue(TEXT("grass projects"), Map->TerrainPointToWorld(North, WorldMin, WorldMax, GrassXY));
 			const FVector2D Edge = (CaveXY + GrassXY) * 0.5f;
 			TestTrue(TEXT("edge is the shared boundary"), Entrance.EdgeXY.Equals(Edge, 0.1f));
 			TestTrue(TEXT("spawn is north of the edge"), Entrance.WorldXY.Y > Entrance.EdgeXY.Y);
@@ -180,7 +190,7 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 				TEXT("spawn inset matches the grass-side offset"),
 				FMath::IsNearlyEqual(FVector2D::Distance(Entrance.WorldXY, Entrance.EdgeXY), SolidStrongholds::FaceInsetCm, 0.1f));
 		}
-		TestEqual(TEXT("one cliff mouth per cave cell"), CaveMouths, CaveCells.Num());
+		TestEqual(TEXT("one cliff mouth per cave marker"), CaveMouths, CavePoints.Num());
 	}
 
 	SolidStrongholds::FEntrance Nowhere;
@@ -266,7 +276,8 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		FVector2D Projected = FVector2D::ZeroVector;
 		TestTrue(
 			TEXT("the starting cell projects"),
-			Map && Map->CellToWorldXY(
+			Map && StrongholdTestCellWorld(
+				*Map,
 				SolidStronghold::StartingCell(),
 				Terrain->GetWorldMinXY(),
 				Terrain->GetWorldMaxXY(),

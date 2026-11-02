@@ -116,10 +116,10 @@ void ASolidStrongholdSite::Spawn(
 		}
 
 		FVector2D SiteXY = FVector2D::ZeroVector;
-			if (!Map->CellToWorldXY(SiteCell, WorldMin, WorldMax, SiteXY))
-			{
-				continue;
-			}
+		if (!Map->TerrainPointToWorld(Mark.TerrainPoint, WorldMin, WorldMax, SiteXY))
+		{
+			continue;
+		}
 
 			const FSolidStronghold* Owned = nullptr;
 			for (const FSolidStronghold* Stronghold : Company)

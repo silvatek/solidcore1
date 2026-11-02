@@ -38,14 +38,16 @@ int32 SolidTownSigns::CollectPlacements(
 
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
+		FSolidWorldChartMark Mark;
 		FIntPoint Cell;
-		if (!WorldMap->TownCell(Town.Id, Cell))
+		if (!WorldMap->FindTownMarker(Town.Id, Mark)
+			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
 		{
 			continue;
 		}
 
 		FVector2D Anchor = FVector2D::ZeroVector;
-		if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, Anchor))
+		if (!WorldMap->TerrainPointToWorld(Mark.TerrainPoint, WorldMinXY, WorldMaxXY, Anchor))
 		{
 			continue;
 		}

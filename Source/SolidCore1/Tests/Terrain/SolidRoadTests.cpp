@@ -54,7 +54,7 @@ namespace
 	FVector2D RoadTestCenter(const USolidWorldChart& Map, const int32 Col, const int32 Row)
 	{
 		FVector2D Center = FVector2D::ZeroVector;
-		Map.CellToWorldXY(FIntPoint(Col, Row), RoadTestMin, RoadTestMax, Center);
+		Map.TerrainPointToWorld(RoadCellPoint(FIntPoint(Col, Row)), RoadTestMin, RoadTestMax, Center);
 		return Center;
 	}
 

@@ -221,19 +221,11 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(SolidPortal::YawTowardMouth(Mouth->FacingYawDeg), -90.f, 0.1f));
 
 	FVector2D GrassXY = FVector2D::ZeroVector;
-	FVector2D CliffXY = FVector2D::ZeroVector;
-	TestTrue(TEXT("grass cell projects"), Map->CellToWorldXY(Mouth->GrassCell, GameMin, GameMax, GrassXY));
-	TestTrue(TEXT("cliff cell projects"), Map->CellToWorldXY(Mouth->Cell, GameMin, GameMax, CliffXY));
-	const float CellEastCm = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
-	const float CellNorthCm = (GameMax.Y - GameMin.Y) / static_cast<float>(USolidWorldChart::MapHeight);
-	TestTrue(
-		TEXT("landing stays on the grass cell"),
-		FMath::Abs(Landing.X - GrassXY.X) < CellEastCm * 0.5f
-			&& FMath::Abs(Landing.Y - GrassXY.Y) < CellNorthCm * 0.5f);
-	TestTrue(
-		TEXT("landing stays off the cliff"),
-		FMath::Abs(Landing.X - CliffXY.X) >= CellEastCm * 0.5f
-			|| FMath::Abs(Landing.Y - CliffXY.Y) >= CellNorthCm * 0.5f);
+	FVector2D MarkerXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("grass point projects"), Map->TerrainPointToWorld(Mouth->GrassPoint, GameMin, GameMax, GrassXY));
+	TestTrue(TEXT("marker point projects"), Map->TerrainPointToWorld(Mouth->TerrainPoint, GameMin, GameMax, MarkerXY));
+	TestTrue(TEXT("landing is north of the grass point"), Landing.Y > GrassXY.Y);
+	TestTrue(TEXT("landing is north of the marker"), Landing.Y > MarkerXY.Y);
 	TestEqual(
 		TEXT("landing is not a town"),
 		Map->SampleLocationId(Landing.X, Landing.Y, GameMin, GameMax),

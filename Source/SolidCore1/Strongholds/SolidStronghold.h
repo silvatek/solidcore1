@@ -653,10 +653,10 @@ namespace SolidStrongholds
 
 	struct FEntrance
 	{
-		/** Stronghold map cell. */
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		/** Adjacent grassland the mouth faces. */
-		FIntPoint GrassCell = FIntPoint::ZeroValue;
+		/** Stronghold marker. */
+		FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+		/** The next terrain point north, which the mouth faces. */
+		FIntPoint GrassPoint = FIntPoint::ZeroValue;
 		/** Midpoint of the shared edge. */
 		FVector2D EdgeXY = FVector2D::ZeroVector;
 		/** Spawn point on the grass side of that edge. */
@@ -666,16 +666,16 @@ namespace SolidStrongholds
 	};
 
 	/**
-	 * North face of one cell. The door faces north.
+	 * North face of one stronghold marker. The door faces north.
 	 * The working door is the company's active stronghold.
 	 * A previous stronghold uses the same face for its exterior mesh.
-	 * False when the north neighbor is off the map or the world points fail.
+	 * False when the north point is off the grid or the world points fail.
 	 */
 	bool MakeEntrance(
 		const USolidWorldChart* WorldMap,
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
-		FIntPoint Cell,
+		FIntPoint TerrainPoint,
 		FEntrance& OutEntrance);
 
 	/** The cell north of one map cell. The door faces that way. */

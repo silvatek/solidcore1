@@ -909,35 +909,6 @@ FLinearColor USolidWorldChart::GetBiomeColor(const ESolidBiome Biome) const
 	return DefaultColorForBiome(Biome);
 }
 
-bool USolidWorldChart::CellsToWorldXY(
-	const TArray<FIntPoint>& InCells,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY,
-	FVector2D& OutWorldXY) const
-{
-	if (InCells.Num() == 0)
-	{
-		return false;
-	}
-
-	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
-	const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-	const float CellW = ExtentX / static_cast<float>(MapWidth);
-	const float CellH = ExtentY / static_cast<float>(MapHeight);
-
-	FVector2D Sum = FVector2D::ZeroVector;
-	for (const FIntPoint& Cell : InCells)
-	{
-		// Column 0 = west = max X (matches SampleBiome).
-		const float X = WorldMaxXY.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
-		// Row 0 = north = max Y.
-		const float Y = WorldMaxXY.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;
-		Sum += FVector2D(X, Y);
-	}
-	OutWorldXY = Sum / static_cast<float>(InCells.Num());
-	return true;
-}
-
 bool USolidWorldChart::FindTownMarker(const int32 TownId, FSolidWorldChartMark& OutMark) const
 {
 	const SolidTowns::FTownInfo* Town = SolidTowns::Find(TownId);
@@ -1034,16 +1005,6 @@ bool USolidWorldChart::TownCell(const int32 TownId, FIntPoint& OutCell) const
 	return CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
 }
 
-bool USolidWorldChart::CellToWorldXY(
-	const FIntPoint Cell,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY,
-	FVector2D& OutWorldXY) const
-{
-	const TArray<FIntPoint> OneCell = { Cell };
-	return CellsToWorldXY(OneCell, WorldMinXY, WorldMaxXY, OutWorldXY);
-}
-
 bool USolidWorldChart::CellAtWorld(
 	const float WorldX,
 	const float WorldY,
@@ -1059,20 +1020,6 @@ bool USolidWorldChart::CellAtWorld(
 	}
 	OutCell = FIntPoint(CellX, CellY);
 	return true;
-}
-
-bool USolidWorldChart::GetLocationWorldXY(
-	const int32 Id,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY,
-	FVector2D& OutWorldXY) const
-{
-	FIntPoint Cell;
-	if (!TownCell(Id, Cell))
-	{
-		return false;
-	}
-	return CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, OutWorldXY);
 }
 
 const TCHAR* USolidWorldChart::RoadTypeName(const SolidRoad::EType Type)

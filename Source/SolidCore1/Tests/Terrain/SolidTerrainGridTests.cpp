@@ -57,7 +57,7 @@ namespace
 	FVector2D CellCentre(const USolidWorldChart& Chart, const int32 Col, const int32 Row)
 	{
 		FVector2D Centre = FVector2D::ZeroVector;
-		Chart.CellToWorldXY(FIntPoint(Col, Row), GridMin, GridMax, Centre);
+		Chart.TerrainPointToWorld(GridCellPoint(FIntPoint(Col, Row)), GridMin, GridMax, Centre);
 		return Centre;
 	}
 

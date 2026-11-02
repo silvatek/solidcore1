@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0942")
+#define SOLID_BUILD_ID TEXT("SC1-0943")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A portal stands the squad on the town marker.")
+#define SOLID_BUILD_NOTE TEXT("A mouth starts from its marker, and the cell centre projection is gone.")
 #endif

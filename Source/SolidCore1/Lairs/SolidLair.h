@@ -274,17 +274,18 @@ namespace SolidLair
 	}
 
 	/**
-	 * One stone mouth where a lair cell meets grassland.
-	 * The entrance tries north, east, south, then west. The exit tries west first,
-	 * then north, east, and south. The first grassland wins.
+	 * One stone mouth on a lair marker. The mouth faces the next terrain point
+	 * in the marker's orientation.
 	 * A LairEntrance ! for these tunnels is the Iglin Tunnels Entrance, and a
 	 * LairExit ! is the Iglin Tunnels Exit.
 	 */
 	struct FEntrance
 	{
 		TCHAR EndMarker = 0;
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		FIntPoint GrassCell = FIntPoint::ZeroValue;
+		/** Lair marker. */
+		FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+		/** The next terrain point in the facing direction. */
+		FIntPoint GrassPoint = FIntPoint::ZeroValue;
 		FVector2D EdgeXY = FVector2D::ZeroVector;
 		FVector2D WorldXY = FVector2D::ZeroVector;
 		float FacingYawDeg = 0.f;

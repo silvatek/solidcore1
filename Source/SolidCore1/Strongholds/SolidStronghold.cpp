@@ -211,35 +211,33 @@ bool SolidStrongholds::MakeEntrance(
 	const USolidWorldChart* WorldMap,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
-	const FIntPoint Cell,
+	const FIntPoint TerrainPoint,
 	FEntrance& OutEntrance)
 {
 	OutEntrance = FEntrance();
-	if (!WorldMap || !WorldMap->IsLoaded() || !InBounds(Cell.X, Cell.Y))
-	{
-		return false;
-	}
-
-	const FIntPoint GrassCell(Cell.X + NorthStep.X, Cell.Y + NorthStep.Y);
-	if (!InBounds(GrassCell.X, GrassCell.Y))
+	const FIntPoint GrassPoint(TerrainPoint.X, TerrainPoint.Y + 1);
+	const bool bOnGrid = TerrainPoint.X >= 0 && TerrainPoint.Y >= 0
+		&& GrassPoint.X < USolidWorldChart::PointAxis
+		&& GrassPoint.Y < USolidWorldChart::PointAxis;
+	if (!WorldMap || !WorldMap->IsLoaded() || !bOnGrid)
 	{
 		return false;
 	}
 
 	FVector2D CaveXY = FVector2D::ZeroVector;
 	FVector2D GrassXY = FVector2D::ZeroVector;
-	if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, CaveXY)
-		|| !WorldMap->CellToWorldXY(GrassCell, WorldMinXY, WorldMaxXY, GrassXY))
+	if (!WorldMap->TerrainPointToWorld(TerrainPoint, WorldMinXY, WorldMaxXY, CaveXY)
+		|| !WorldMap->TerrainPointToWorld(GrassPoint, WorldMinXY, WorldMaxXY, GrassXY))
 	{
 		return false;
 	}
 
-	OutEntrance.Cell = Cell;
-	OutEntrance.GrassCell = GrassCell;
+	OutEntrance.TerrainPoint = TerrainPoint;
+	OutEntrance.GrassPoint = GrassPoint;
 	OutEntrance.EdgeXY = (CaveXY + GrassXY) * 0.5f;
 	const FVector2D TowardGrass = (GrassXY - CaveXY).GetSafeNormal();
 	OutEntrance.WorldXY = OutEntrance.EdgeXY + TowardGrass * FaceInsetCm;
-	OutEntrance.FacingYawDeg = YawFacingGrass(NorthStep);
+	OutEntrance.FacingYawDeg = FMath::RadiansToDegrees(FMath::Atan2(TowardGrass.Y, TowardGrass.X));
 	return true;
 }
 

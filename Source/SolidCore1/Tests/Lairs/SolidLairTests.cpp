@@ -264,11 +264,15 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	TArray<SolidLair::FEntrance> Entrances;
 	TestEqual(TEXT("no lair mark means no tunnel mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
 
+	int32 CaveTerrainX = 0;
+	int32 CaveTerrainY = 0;
+	USolidWorldChart::PointUnderCell(CaveCell.X, CaveCell.Y, CaveTerrainX, CaveTerrainY);
+	const FIntPoint CavePoint(CaveTerrainX, CaveTerrainY);
 	SolidStrongholds::FEntrance CaveFace;
 	TestTrue(
-		TEXT("the cave cell has a grass face"),
-		SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CaveCell, CaveFace));
-	TestEqual(TEXT("the cave faces north"), CaveFace.GrassCell, GrassCell);
+		TEXT("the cave marker has a grass face"),
+		SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CavePoint, CaveFace));
+	TestEqual(TEXT("the cave faces the next point north"), CaveFace.GrassPoint, CavePoint + FIntPoint(0, 1));
 
 	ASolidLairEntrance* Unmarked = NewObject<ASolidLairEntrance>();
 	ASolidLairEntrance* Tunnel = NewObject<ASolidLairEntrance>();
@@ -307,18 +311,25 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 
 	FVector2D IglinXY = FVector2D::ZeroVector;
 	FVector2D RelionXY = FVector2D::ZeroVector;
-	TestTrue(TEXT("Iglin"), Shipped->GetLocationWorldXY(SolidTowns::Iglin, ShippedMin, ShippedMax, IglinXY));
-	TestTrue(TEXT("Relion"), Shipped->GetLocationWorldXY(SolidTowns::Relion, ShippedMin, ShippedMax, RelionXY));
+	FSolidWorldChartMark IglinMark;
+	FSolidWorldChartMark RelionMark;
+	TestTrue(TEXT("Iglin"),
+		Shipped->FindTownMarker(SolidTowns::Iglin, IglinMark)
+			&& Shipped->TerrainPointToWorld(IglinMark.TerrainPoint, ShippedMin, ShippedMax, IglinXY));
+	TestTrue(TEXT("Relion"),
+		Shipped->FindTownMarker(SolidTowns::Relion, RelionMark)
+			&& Shipped->TerrainPointToWorld(RelionMark.TerrainPoint, ShippedMin, ShippedMax, RelionXY));
 	bool bSawX = false;
 	bool bSawY = false;
 	for (const SolidLair::FEntrance& Entrance : ShippedMouths)
 	{
 		TestEqual(
 			TEXT("the mouth point stays grassland"),
-			static_cast<uint8>(Shipped->GetPointBiome(SolidLairTestPrivate::CellPoint(Entrance.Cell))),
+			static_cast<uint8>(Shipped->GetPointBiome(Entrance.TerrainPoint)),
 			static_cast<uint8>(ESolidBiome::Grassland));
 		FVector2D World = FVector2D::ZeroVector;
-		TestTrue(TEXT("mouth cell projects"), Shipped->CellToWorldXY(Entrance.Cell, ShippedMin, ShippedMax, World));
+		TestTrue(TEXT("mouth point projects"),
+			Shipped->TerrainPointToWorld(Entrance.TerrainPoint, ShippedMin, ShippedMax, World));
 		if (Entrance.EndMarker == SolidLair::Entrance)
 		{
 			bSawX = true;
@@ -537,15 +548,15 @@ bool FSolidLairMouthFacingTest::RunTest(const FString& Parameters)
 {
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	FString Error;
-	const FIntPoint Exit(12, 10);
-	const FIntPoint Entrance(4, 4);
+	const FIntPoint ExitPoint = SolidLairTestPrivate::CellPoint(FIntPoint(12, 10));
+	const FIntPoint EntrancePoint = SolidLairTestPrivate::CellPoint(FIntPoint(4, 4));
 	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;
 	}
 	Chart->Init(ESolidBiome::Grassland);
-	if (!TestTrue(TEXT("the exit places"), Chart->PlaceLairMouthAt(SolidLairTestPrivate::CellPoint(Exit), SolidLair::IglinTunnels.Name, false, Error))
-		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouthAt(SolidLairTestPrivate::CellPoint(Entrance), SolidLair::IglinTunnels.Name, true, Error))
+	if (!TestTrue(TEXT("the exit places"), Chart->PlaceLairMouthAt(ExitPoint, SolidLair::IglinTunnels.Name, false, Error))
+		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouthAt(EntrancePoint, SolidLair::IglinTunnels.Name, true, Error))
 		|| !TestTrue(TEXT("the chart loads"), Chart->LoadFromChart(Chart)))
 	{
 		return false;
@@ -564,13 +575,13 @@ bool FSolidLairMouthFacingTest::RunTest(const FString& Parameters)
 		if (Mouth.EndMarker == SolidLair::Exit)
 		{
 			bSawExit = true;
-			TestEqual(TEXT("the exit faces east"), Mouth.GrassCell, Exit + FIntPoint(1, 0));
+			TestEqual(TEXT("the exit faces the next point east"), Mouth.GrassPoint, ExitPoint + FIntPoint(-1, 0));
 			TestTrue(TEXT("east yaw"), FMath::IsNearlyEqual(Mouth.FacingYawDeg, 180.f, 0.1f));
 		}
 		if (Mouth.EndMarker == SolidLair::Entrance)
 		{
 			bSawEntrance = true;
-			TestEqual(TEXT("the entrance faces north"), Mouth.GrassCell, Entrance + FIntPoint(0, -1));
+			TestEqual(TEXT("the entrance faces the next point north"), Mouth.GrassPoint, EntrancePoint + FIntPoint(0, 1));
 			TestTrue(TEXT("north yaw"), FMath::IsNearlyEqual(Mouth.FacingYawDeg, 90.f, 0.1f));
 		}
 	}

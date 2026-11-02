@@ -14,6 +14,19 @@ namespace
 
 	const FIntPoint WallgateMarkerCell(40, 30);
 
+	bool WallgateCellWorld(
+		const USolidWorldChart& Chart,
+		const FIntPoint Cell,
+		const FVector2D& WorldMin,
+		const FVector2D& WorldMax,
+		FVector2D& OutWorld)
+	{
+		int32 X = 0;
+		int32 Y = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
+		return Chart.TerrainPointToWorld(FIntPoint(X, Y), WorldMin, WorldMax, OutWorld);
+	}
+
 	void WallgatePointsUnderCells(const TArray<FIntPoint>& Cells, TArray<FIntPoint>& OutPoints)
 	{
 		OutPoints.Reset();
@@ -301,7 +314,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	{
 		FVector2D Marker = FVector2D::ZeroVector;
 		TestTrue(TEXT("marker projects"),
-			GrassRun->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+			WallgateCellWorld(*GrassRun, WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
 		const FIntPoint Origin = WallgatePoint(*GrassRun, Marker);
 		// The town cell is painted town. Paint the open points back to grassland: M..!..M.
 		const int32 GrassSteps[] = { 1, 2, -1, -2 };
@@ -322,7 +335,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	{
 		FVector2D Marker = FVector2D::ZeroVector;
 		TestTrue(TEXT("town marker projects"),
-			TownRun->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+			WallgateCellWorld(*TownRun, WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
 		const FIntPoint Origin = WallgatePoint(*TownRun, Marker);
 		const int32 TownSteps[] = { 1, 2, -1, -2 };
 		for (const int32 Step : TownSteps)
@@ -342,7 +355,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	{
 		FVector2D Marker = FVector2D::ZeroVector;
 		TestTrue(TEXT("mixed marker projects"),
-			Mixed->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+			WallgateCellWorld(*Mixed, WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
 		const FIntPoint Origin = WallgatePoint(*Mixed, Marker);
 		// M.o!o..M. Step 2 is grassland. Step 3 is mountain.
 		WallgatePaint(*this, *Mixed, Origin, 1, ESolidBiome::Town);
@@ -361,7 +374,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	{
 		FVector2D Marker = FVector2D::ZeroVector;
 		TestTrue(TEXT("narrow marker projects"),
-			Narrow->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+			WallgateCellWorld(*Narrow, WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
 		const FIntPoint Origin = WallgatePoint(*Narrow, Marker);
 		// M.!.M. One open point on a side is narrower than the gate.
 		WallgatePaint(*this, *Narrow, Origin, 1, ESolidBiome::Grassland);
@@ -379,7 +392,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	{
 		FVector2D Marker = FVector2D::ZeroVector;
 		TestTrue(TEXT("one-sided marker projects"),
-			OneSide->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+			WallgateCellWorld(*OneSide, WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
 		const FIntPoint Origin = WallgatePoint(*OneSide, Marker);
 		WallgatePaint(*this, *OneSide, Origin, 3, ESolidBiome::Mountain);
 		WallgatePaint(*this, *OneSide, Origin, -3, ESolidBiome::Forest);
@@ -401,7 +414,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		FVector2D CellXY = FVector2D::ZeroVector;
 		FVector2D Opening = FVector2D::ZeroVector;
 		TestTrue(TEXT("the marker projects"),
-			Shipped->CellToWorldXY(Cell, WallgateTestMin, WallgateTestMax, CellXY));
+			WallgateCellWorld(*Shipped, Cell, WallgateTestMin, WallgateTestMax, CellXY));
 		TestTrue(TEXT("the shipped gate has an opening"),
 			SolidWallgate::GateCenterXY(Shipped, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
 		TestTrue(TEXT("the shipped opening is that cell"), Opening.Equals(CellXY, 0.5f));
@@ -431,8 +444,8 @@ bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 
 	FVector2D East = FVector2D::ZeroVector;
 	FVector2D West = FVector2D::ZeroVector;
-	TestTrue(TEXT("east marker projects"), Map->CellToWorldXY(EastCell, WallgateTestMin, WallgateTestMax, East));
-	TestTrue(TEXT("west marker projects"), Map->CellToWorldXY(WestCell, WallgateTestMin, WallgateTestMax, West));
+	TestTrue(TEXT("east marker projects"), WallgateCellWorld(*Map, EastCell, WallgateTestMin, WallgateTestMax, East));
+	TestTrue(TEXT("west marker projects"), WallgateCellWorld(*Map, WestCell, WallgateTestMin, WallgateTestMax, West));
 
 	TArray<SolidTownSigns::FPlacement> Signs;
 	TestEqual(TEXT("one Dragongate sign"),

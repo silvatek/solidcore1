@@ -10,10 +10,22 @@ namespace SolidLairMouth
 
 	float YawFacingGrass(const FIntPoint& Step)
 	{
-		// Column +1 is world -X. Row +1 is world -Y. Matches the cave mouth.
+		// Column +1 is world -X, which is east. Row +1 is world -Y, which is south.
 		const float WorldX = -static_cast<float>(Step.X);
 		const float WorldY = -static_cast<float>(Step.Y);
 		return FMath::RadiansToDegrees(FMath::Atan2(WorldY, WorldX));
+	}
+
+	FIntPoint StepFor(const SolidLair::EOrientation Orientation)
+	{
+		switch (Orientation)
+		{
+		case SolidLair::EOrientation::North: return FIntPoint(0, -1);
+		case SolidLair::EOrientation::East: return FIntPoint(1, 0);
+		case SolidLair::EOrientation::South: return FIntPoint(0, 1);
+		case SolidLair::EOrientation::West: return FIntPoint(-1, 0);
+		default: return FIntPoint(0, -1);
+		}
 	}
 
 	bool AlreadyPlaced(const TArray<SolidLair::FEntrance>& Entrances, const int32 Col, const int32 Row)
@@ -35,6 +47,7 @@ namespace SolidLairMouth
 		const int32 Col,
 		const int32 Row,
 		const TCHAR EndMarker,
+		const SolidLair::EOrientation Orientation,
 		TArray<SolidLair::FEntrance>& OutEntrances)
 	{
 		if (EndMarker == 0 || AlreadyPlaced(OutEntrances, Col, Row))
@@ -42,35 +55,9 @@ namespace SolidLairMouth
 			return false;
 		}
 
-		// Column +1 is west. Row +1 is south. The exit tries west first.
-		const bool bExit = FChar::ToUpper(EndMarker) == SolidLair::Exit;
-		const FIntPoint Steps[] = {
-			bExit ? FIntPoint(1, 0) : FIntPoint(0, -1),
-			bExit ? FIntPoint(0, -1) : FIntPoint(-1, 0),
-			bExit ? FIntPoint(-1, 0) : FIntPoint(0, 1),
-			bExit ? FIntPoint(0, 1) : FIntPoint(1, 0),
-		};
-		bool bChosen = false;
-		FIntPoint ChosenStep = FIntPoint::ZeroValue;
-		FIntPoint GrassCell = FIntPoint::ZeroValue;
-		for (const FIntPoint& Step : Steps)
-		{
-			const int32 NextX = Col + Step.X;
-			const int32 NextY = Row + Step.Y;
-			if (!InBounds(NextX, NextY))
-			{
-				continue;
-			}
-			if (WorldMap.GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
-			{
-				continue;
-			}
-			bChosen = true;
-			ChosenStep = Step;
-			GrassCell = FIntPoint(NextX, NextY);
-			break;
-		}
-		if (!bChosen)
+		const FIntPoint ChosenStep = StepFor(Orientation);
+		const FIntPoint GrassCell(Col + ChosenStep.X, Row + ChosenStep.Y);
+		if (!InBounds(GrassCell.X, GrassCell.Y))
 		{
 			return false;
 		}
@@ -108,18 +95,20 @@ int32 SolidLair::CollectEntrances(
 		return 0;
 	}
 
-	auto AddMouth = [&](const ESolidWorldChartMarkKind Kind, const TCHAR End)
+	const SolidLair::FDefinition& Lair = SolidLair::IglinTunnels;
+	auto AddMouth = [&](const ESolidWorldChartMarkKind Kind, const TCHAR End, const SolidLair::EOrientation Orientation)
 	{
 		FSolidWorldChartMark Mark;
 		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!WorldMap->FindLairMarker(SolidLair::IdIglinTunnels, Kind, Mark)
+		if (!WorldMap->FindLairMarker(Lair.Id, Kind, Mark)
 			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
 		{
 			return;
 		}
-		SolidLairMouth::TryAdd(*WorldMap, WorldMinXY, WorldMaxXY, Cell.X, Cell.Y, End, OutEntrances);
+		SolidLairMouth::TryAdd(
+			*WorldMap, WorldMinXY, WorldMaxXY, Cell.X, Cell.Y, End, Orientation, OutEntrances);
 	};
-	AddMouth(ESolidWorldChartMarkKind::LairEntrance, SolidLair::Entrance);
-	AddMouth(ESolidWorldChartMarkKind::LairExit, SolidLair::Exit);
+	AddMouth(ESolidWorldChartMarkKind::LairEntrance, SolidLair::Entrance, Lair.EntranceOrientation);
+	AddMouth(ESolidWorldChartMarkKind::LairExit, SolidLair::Exit, Lair.ExitOrientation);
 	return OutEntrances.Num();
 }

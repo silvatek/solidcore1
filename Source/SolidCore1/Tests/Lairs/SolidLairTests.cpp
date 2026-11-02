@@ -525,11 +525,11 @@ bool FSolidLairEntranceVisualsTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidLairExitFacesWestTest,
-	"SolidCore1.Lair.ExitFacesWest",
+	FSolidLairMouthFacingTest,
+	"SolidCore1.Lair.MouthFacing",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
+bool FSolidLairMouthFacingTest::RunTest(const FString& Parameters)
 {
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	FString Error;
@@ -540,6 +540,8 @@ bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	Chart->Cells[Exit.Y * USolidWorldChart::MapWidth + Exit.X + 1] = ESolidBiome::Mountain;
+	Chart->Cells[(Entrance.Y - 1) * USolidWorldChart::MapWidth + Entrance.X] = ESolidBiome::Mountain;
 	if (!TestTrue(TEXT("the exit places"), Chart->PlaceLairMouthAt(SolidLairTestPrivate::CellPoint(Exit), SolidLair::IglinTunnels.Name, false, Error))
 		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouthAt(SolidLairTestPrivate::CellPoint(Entrance), SolidLair::IglinTunnels.Name, true, Error))
 		|| !TestTrue(TEXT("the chart loads"), Chart->LoadFromChart(Chart)))

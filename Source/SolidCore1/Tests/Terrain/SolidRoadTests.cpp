@@ -543,7 +543,7 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("a road needs both ends"), Lone->GetRoads().Num(), 0);
+	TestEqual(TEXT("a road needs both ends"), Lone->GetRoutedRoads().Num(), 0);
 	return true;
 }
 
@@ -568,7 +568,7 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	const TArray<SolidRoad::FRoute>& Roads = Map->GetRoads();
+	const TArray<SolidRoad::FSolidRoad>& Roads = Map->GetRoutedRoads();
 	TestEqual(TEXT("located roads"), Roads.Num(), Located.Num());
 	if (Roads.Num() != Located.Num())
 	{
@@ -578,26 +578,33 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	for (int32 Index = 0; Index < Roads.Num(); ++Index)
 	{
 		const SolidRoad::FDefinition Ends = Located[Index].ToDefinition();
+		const SolidRoad::FDefinition Solved = Roads[Index].ToDefinition();
 		const bool bBridge = Located[Index].From.Kind == ESolidWorldChartMarkKind::Bridge
 			|| Located[Index].To.Kind == ESolidWorldChartMarkKind::Bridge;
-		TestEqual(TEXT("road type"), static_cast<uint8>(Roads[Index].Definition.Type), static_cast<uint8>(Located[Index].Type));
-		TestEqual(TEXT("road starts where the line says"), Roads[Index].Definition.From.LocationId, Ends.From.LocationId);
-		TestEqual(TEXT("road ends where the line says"), Roads[Index].Definition.To.LocationId, Ends.To.LocationId);
+		TestEqual(TEXT("road type"), static_cast<uint8>(Solved.Type), static_cast<uint8>(Located[Index].Type));
+		TestEqual(TEXT("road starts where the line says"), Solved.From.LocationId, Ends.From.LocationId);
+		TestEqual(TEXT("road ends where the line says"), Solved.To.LocationId, Ends.To.LocationId);
 		if (bBridge)
 		{
 			continue;
 		}
-		TestTrue(TEXT("route has cells"), Roads[Index].Cells.Num() >= 2);
-		RoadTestOrthogonal(*this, Roads[Index].Cells);
+		TestTrue(TEXT("route has points"), Roads[Index].Points.Num() >= 2);
+		RoadTestOrthogonal(*this, Roads[Index].Points);
 	}
 
-	TestTrue(TEXT("the trail starts at a stronghold"), Roads[0].Definition.From.bStronghold);
-	TestEqual(TEXT("the trail starts at 9,17"), Roads[0].Definition.From.Cell, FIntPoint(16, 8));
+	FIntPoint CaveCell = FIntPoint::ZeroValue;
+	FIntPoint StartCell = FIntPoint::ZeroValue;
+	FIntPoint EndCell = FIntPoint::ZeroValue;
+	TestTrue(TEXT("the trail starts at a stronghold"), Roads[0].From.Kind == ESolidWorldChartMarkKind::Stronghold);
+	TestTrue(TEXT("the trail start is a point"), USolidWorldChart::CellAtTerrainPoint(Roads[0].From.TerrainPoint, CaveCell));
+	TestEqual(TEXT("the trail starts at 9,17"), CaveCell, FIntPoint(16, 8));
+	TestTrue(TEXT("the trail's first point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points[0], StartCell));
 	TestEqual(
 		TEXT("the trail starts on the cave"),
-		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),
+		Map->GetMarkerAtCell(StartCell.X, StartCell.Y),
 		USolidWorldChart::DeprecatedLocationMarker);
-	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
+	TestTrue(TEXT("the trail's last point is a cell"), USolidWorldChart::CellAtTerrainPoint(Roads[0].Points.Last(), EndCell));
+	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(EndCell.X, EndCell.Y), 0);
 	return true;
 }
 
@@ -754,23 +761,6 @@ bool FSolidRoadRoutedTest::RunTest(const FString& Parameters)
 
 	const TArray<SolidRoad::FSolidRoad>& Routed = Loaded->GetRoutedRoads();
 	TestTrue(TEXT("the chart keeps a routed road"), Routed.Num() > 0);
-	for (const SolidRoad::FRoute& Route : Loaded->GetRoads())
-	{
-		if (Route.Points.Num() <= 1)
-		{
-			continue;
-		}
-		bool bKept = false;
-		for (const SolidRoad::FSolidRoad& Road : Routed)
-		{
-			if (Road.Points == Route.Points)
-			{
-				bKept = true;
-				break;
-			}
-		}
-		TestTrue(TEXT("a point route stays on its road"), bKept);
-	}
 	for (const SolidRoad::FSolidRoad& Road : Routed)
 	{
 		TestTrue(TEXT("a routed road keeps its points"), Road.Points.Num() > 1);

@@ -66,9 +66,6 @@ namespace SolidRoad
 		 */
 		bool FindRoute(const USolidWorldChart& Map);
 
-		/** Copy this road's route points into OutPoints. */
-		void CopyPoints(TArray<FIntPoint>& OutPoints) const;
-
 		FSolidWorldChartMark From;
 		FSolidWorldChartMark To;
 		EType Type = EType::Trail;
@@ -163,9 +160,6 @@ namespace SolidRoad
 	/** Town name, or the stronghold name, for this end. */
 	FString ChartRoadEndName(const FEndpoint& End);
 
-	/** Copy the stronghold mark's cell onto this end when the name matches. */
-	void LocateStrongholdEnd(const USolidWorldChart& Chart, FEndpoint& End);
-
 	struct FDefinition
 	{
 		FEndpoint From;
@@ -201,15 +195,6 @@ namespace SolidRoad
 		FillEnd(To, Result.To);
 		return Result;
 	}
-
-	struct FRoute
-	{
-		FDefinition Definition;
-		/** Cell centres the strip follows, including both ends. Empty when an end is missing. */
-		TArray<FIntPoint> Cells;
-		/** Terrain points on the straight line. Empty when the route fails. */
-		TArray<FIntPoint> Points;
-	};
 
 	/** One painted segment. FromCell and ToCell are map cells. A point span uses the same cell twice. */
 	struct FSpan

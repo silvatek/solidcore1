@@ -475,7 +475,6 @@ void USolidWorldChart::ResetLoad() const
 {
 	Markers.SetNum(MapWidth * MapHeight);
 	StartTownCells.Reset();
-	SolvedRoads.Reset();
 	RoutedRoads.Reset();
 	bHasStartTown = false;
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
@@ -643,7 +642,7 @@ bool USolidWorldChart::BuildQuery() const
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
 		TEXT("WorldChart loaded: %dx%d startTownCells=%d roads=%d"),
-		MapWidth, MapHeight, StartTownCells.Num(), SolvedRoads.Num());
+		MapWidth, MapHeight, StartTownCells.Num(), RoutedRoads.Num());
 	return true;
 }
 
@@ -1742,38 +1741,7 @@ void USolidWorldChart::BuildListedRoads() const
 
 void USolidWorldChart::ResetRoads() const
 {
-	SolvedRoads.Reset();
 	RoutedRoads.Reset();
-}
-
-namespace
-{
-	bool CellsForPoints(
-		const USolidWorldChart& Map,
-		const TArray<FIntPoint>& Points,
-		TArray<FIntPoint>& OutCells)
-	{
-		OutCells.Reset();
-		for (const FIntPoint& TerrainPoint : Points)
-		{
-			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (!USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell))
-			{
-				OutCells.Reset();
-				return false;
-			}
-			const ESolidBiome CellBiome = Map.GetBiomeAtCell(Cell.X, Cell.Y);
-			if (CellBiome == ESolidBiome::Mountain || CellBiome == ESolidBiome::Sea)
-			{
-				continue;
-			}
-			if (OutCells.Num() == 0 || OutCells.Last() != Cell)
-			{
-				OutCells.Add(Cell);
-			}
-		}
-		return true;
-	}
 }
 
 void USolidWorldChart::BuildRoad(SolidRoad::FSolidRoad* Road) const
@@ -1791,36 +1759,13 @@ void USolidWorldChart::BuildRoad(SolidRoad::FSolidRoad* Road) const
 		return;
 	}
 
-	SolidRoad::FRoute Route;
-	if (Road->FindRoute(*this))
-	{
-		Road->CopyPoints(Route.Points);
-		if (!CellsForPoints(*this, Route.Points, Route.Cells) || Route.Cells.Num() == 0)
-		{
-			Route.Cells.Reset();
-			Route.Points.Reset();
-		}
-	}
-	if (Route.Cells.Num() == 0)
+	if (!Road->FindRoute(*this) || Road->Points.Num() <= 1)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *Road->From.Name, *Road->To.Name);
+		return;
 	}
 
-	SolidRoad::FDefinition Definition = Road->ToDefinition();
-	if (Road->From.Kind == ESolidWorldChartMarkKind::Stronghold)
-	{
-		SolidRoad::LocateStrongholdEnd(*this, Definition.From);
-	}
-	if (Road->To.Kind == ESolidWorldChartMarkKind::Stronghold)
-	{
-		SolidRoad::LocateStrongholdEnd(*this, Definition.To);
-	}
-	Route.Definition = Definition;
-	SolvedRoads.Add(Route);
-	if (Road->Points.Num() > 1)
-	{
-		RoutedRoads.Add(*Road);
-	}
+	RoutedRoads.Add(*Road);
 }
 
 bool USolidWorldChart::IsOnRoad(

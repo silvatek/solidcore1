@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0900")
+#define SOLID_BUILD_ID TEXT("SC1-0901")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The world chart drops the unused road spans and town seeds.")
+#define SOLID_BUILD_NOTE TEXT("The chart drops the solved cell routes.")
 #endif

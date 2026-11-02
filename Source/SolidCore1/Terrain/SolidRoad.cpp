@@ -872,11 +872,6 @@ namespace SolidRoad
 		return Points.Num() > 1;
 	}
 
-	void FSolidRoad::CopyPoints(TArray<FIntPoint>& OutPoints) const
-	{
-		OutPoints = Points;
-	}
-
 	bool Parse(const FString& Line, FDefinition& Out)
 	{
 		const FString Trimmed = Line.TrimStartAndEnd();
@@ -926,23 +921,6 @@ namespace SolidRoad
 			return End.StrongholdName;
 		}
 		return SolidTowns::NameFor(End.LocationId);
-	}
-
-	void LocateStrongholdEnd(const USolidWorldChart& Chart, FEndpoint& End)
-	{
-		if (!End.bStronghold)
-		{
-			return;
-		}
-		FSolidWorldChartMark Mark;
-		FIntPoint Cell;
-		if (!Chart.FindStrongholdMarker(End.StrongholdName, Mark)
-			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
-		{
-			return;
-		}
-		End.Cell = Cell;
-		End.bLocated = true;
 	}
 }
 

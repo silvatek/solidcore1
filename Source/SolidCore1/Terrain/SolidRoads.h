@@ -20,7 +20,4 @@ namespace SolidRoad
 	};
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Roads);
-
-	/** Write the stronghold cell onto this end when the loaded marks name it. */
-	void LocateStrongholdEnd(const USolidWorldChart& Chart, FEndpoint& End);
 }

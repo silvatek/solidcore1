@@ -101,10 +101,7 @@ public:
 	 */
 	ESolidBiome GetPointBiomeAtCell(int32 CellX, int32 CellY) const;
 
-	/** Deprecated. Prefer GetRoutedRoads. Solved routes, in file order. A route with no cells had a missing end. */
-	const TArray<SolidRoad::FRoute>& GetRoads() const { return SolvedRoads; }
-
-	/** Preferred road data. Each road keeps the terrain points of its route. */
+	/** Each road keeps the terrain points of its route. */
 	const TArray<SolidRoad::FSolidRoad>& GetRoutedRoads() const { return RoutedRoads; }
 
 	/** True when the point lies within the routed road's width of its terrain points. */
@@ -331,9 +328,7 @@ private:
 
 	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
 	mutable TArray<int32> PointTowns;
-	/** Deprecated. Prefer RoutedRoads. One solved route per listed road, including an empty route. */
-	mutable TArray<SolidRoad::FRoute> SolvedRoads;
-	/** Preferred road data. Listed roads that found a route. Empty until the chart loads. */
+	/** Listed roads that found a route. Empty until the chart loads. */
 	mutable TArray<SolidRoad::FSolidRoad> RoutedRoads;
 
 protected:

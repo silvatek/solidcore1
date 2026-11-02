@@ -176,11 +176,19 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	bool bTownOnARoad = false;
 	if (RoadSolved)
 	{
-		for (const SolidRoad::FRoute& Solved : RoadSolved->GetRoads())
+		for (const SolidRoad::FSolidRoad& Solved : RoadSolved->GetRoutedRoads())
 		{
-			if (Solved.Cells.Contains(TownCell))
+			for (const FIntPoint& TerrainPoint : Solved.Points)
 			{
-				bTownOnARoad = true;
+				FIntPoint Cell = FIntPoint::ZeroValue;
+				if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell) && Cell == TownCell)
+				{
+					bTownOnARoad = true;
+					break;
+				}
+			}
+			if (bTownOnARoad)
+			{
 				break;
 			}
 		}

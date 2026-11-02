@@ -19,6 +19,7 @@ namespace
 		{
 			return nullptr;
 		}
+		Chart->Init(ESolidBiome::Grassland);
 		Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		Chart->LoadFromChart(Chart);
 		return Chart;

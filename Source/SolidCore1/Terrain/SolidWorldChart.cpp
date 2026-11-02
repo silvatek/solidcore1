@@ -6,9 +6,7 @@
 #include "SolidLair.h"
 #include "Events/SolidEncounters.h"
 #include "SolidStronghold.h"
-#include "SolidTerrainMap.h"
 #include "SolidTowns.h"
-#include "SolidRiver.h"
 #include "Game/SolidGameMode.h"
 
 const TCHAR* USolidWorldChart::ShippedPath()
@@ -617,7 +615,6 @@ bool USolidWorldChart::BuildQuery() const
 		RememberChartMark(Mark, Cell);
 	}
 
-	CopyPlayOntoPoints(false);
 	AssignTownPoints();
 
 	BuildListedRoads();
@@ -834,59 +831,6 @@ bool USolidWorldChart::CellAtTerrainPoint(const FIntPoint TerrainPoint, FIntPoin
 	return true;
 }
 
-namespace
-{
-	bool WorldMapMarkerInCell(const USolidWorldChart& Map, const int32 CellX, const int32 CellY, TCHAR& OutMarker)
-	{
-		if (CellX < 0 || CellY < 0 || CellX >= USolidWorldChart::MapWidth || CellY >= USolidWorldChart::MapHeight)
-		{
-			return false;
-		}
-		OutMarker = Map.GetMarkerAtCell(CellX, CellY);
-		return OutMarker != 0;
-	}
-
-	/** File column 0 is west, file row 0 is north. */
-	FIntPoint WorldMapRiverSideStep(const SolidRiver::ESide Side)
-	{
-		switch (Side)
-		{
-		case SolidRiver::ESide::North: return FIntPoint(0, -1);
-		case SolidRiver::ESide::East: return FIntPoint(1, 0);
-		case SolidRiver::ESide::South: return FIntPoint(0, 1);
-		case SolidRiver::ESide::West: return FIntPoint(-1, 0);
-		default: return FIntPoint(0, -1);
-		}
-	}
-
-	ESolidBiome WorldMapRiverBank(const USolidWorldChart& Map, const int32 CellX, const int32 CellY, const SolidRiver::ESide Preferred)
-	{
-		const int32 First = static_cast<int32>(Preferred);
-		const int32 Order[4] = { First, (First + 1) & 3, (First + 3) & 3, (First + 2) & 3 };
-		for (const int32 Index : Order)
-		{
-			const FIntPoint Step = WorldMapRiverSideStep(static_cast<SolidRiver::ESide>(Index));
-			const int32 NextX = CellX + Step.X;
-			const int32 NextY = CellY + Step.Y;
-			TCHAR Marker = 0;
-			if (!WorldMapMarkerInCell(Map, NextX, NextY, Marker))
-			{
-				continue;
-			}
-			const ESolidBiome Biome = Map.GetBiomeAtCell(NextX, NextY);
-			// The channel is already water. Another river square is the next
-			// length of that channel, so a bend's dry corner takes the other bank.
-			// Sea is a real neighbor: a mouth uses it, and a land bank stays land.
-			if (Biome == ESolidBiome::River)
-			{
-				continue;
-			}
-			return Biome;
-		}
-		return ESolidBiome::Grassland;
-	}
-}
-
 bool USolidWorldChart::IsMarkedTown(
 	const float WorldX,
 	const float WorldY,
@@ -1015,62 +959,6 @@ namespace
 	}
 }
 
-ESolidBiome USolidWorldChart::SampleCellPlay(const int32 TerrainX, const int32 TerrainY) const
-{
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (!CellAtTerrainPoint(FIntPoint(TerrainX, TerrainY), Cell))
-	{
-		return ESolidBiome::Grassland;
-	}
-	const int32 CellX = Cell.X;
-	const int32 CellY = Cell.Y;
-
-	TCHAR Marker = 0;
-	if (!WorldMapMarkerInCell(*this, CellX, CellY, Marker) || Marker != SolidBiome::Of(ESolidBiome::River).Marker())
-	{
-		return GetBiomeAtCell(CellX, CellY);
-	}
-
-	int32 CentreX = 0;
-	int32 CentreY = 0;
-	PointUnderCell(CellX, CellY, CentreX, CentreY);
-	const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
-	const float Spacing = Terrain ? Terrain->PointSpacing : 200.f;
-	const float CellW = Spacing * static_cast<float>(PointAxis - 1) / static_cast<float>(MapWidth);
-	const float CellH = Spacing * static_cast<float>(PointAxis - 1) / static_cast<float>(MapHeight);
-	const FVector2D Local(
-		static_cast<float>(TerrainX - CentreX) * Spacing,
-		static_cast<float>(TerrainY - CentreY) * Spacing);
-	SolidRiver::FLinks Links;
-	TCHAR Neighbor = 0;
-	Links.bNorth = WorldMapMarkerInCell(*this, CellX, CellY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bEast = WorldMapMarkerInCell(*this, CellX + 1, CellY, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bSouth = WorldMapMarkerInCell(*this, CellX, CellY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bWest = WorldMapMarkerInCell(*this, CellX - 1, CellY, Neighbor) && SolidRiver::Joins(Neighbor);
-	if (SolidRiver::IsWater(Local, CellW, CellH, Links))
-	{
-		return ESolidBiome::River;
-	}
-	return WorldMapRiverBank(*this, CellX, CellY, SolidRiver::Side(Local, CellW, CellH, Links));
-}
-
-void USolidWorldChart::CopyPlayOntoPoints(const bool bForce) const
-{
-	if (!bForce && Points.Num() == PointCount)
-	{
-		return;
-	}
-
-	Points.SetNum(PointCount);
-	for (int32 TerrainY = 0; TerrainY < PointAxis; ++TerrainY)
-	{
-		for (int32 TerrainX = 0; TerrainX < PointAxis; ++TerrainX)
-		{
-			Points[PointSlot(TerrainX, TerrainY)] = SampleCellPlay(TerrainX, TerrainY);
-		}
-	}
-}
-
 void USolidWorldChart::AssignTownPoints() const
 {
 	PointTowns.Reset();
@@ -1145,19 +1033,6 @@ void USolidWorldChart::AssignTownPoints() const
 
 bool USolidWorldChart::EnsurePoints() const
 {
-	if (Points.Num() == PointCount)
-	{
-		return true;
-	}
-	if (!EnsureQuery())
-	{
-		return false;
-	}
-	if (Points.Num() == PointCount)
-	{
-		return true;
-	}
-	CopyPlayOntoPoints(true);
 	return Points.Num() == PointCount;
 }
 
@@ -1391,7 +1266,7 @@ ESolidBiome USolidWorldChart::GetPointBiomeAtCell(int32 CellX, int32 CellY) cons
 {
 	if (!EnsurePoints())
 	{
-		return GetBiomeAtCell(CellX, CellY);
+		return ESolidBiome::Grassland;
 	}
 
 	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);

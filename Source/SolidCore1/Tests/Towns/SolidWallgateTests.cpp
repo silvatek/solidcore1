@@ -21,6 +21,7 @@ namespace
 		{
 			return nullptr;
 		}
+		Map->Init(ESolidBiome::Grassland);
 		Map->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		for (const FIntPoint& Cell : TownCells)
 		{
@@ -32,6 +33,11 @@ namespace
 			USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, TerrainX, TerrainY);
 			Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
 			Map->Marks.Add(Mark);
+		}
+		if (TownCells.Num() > 0)
+		{
+			FString Error;
+			Map->PaintRun(TownCells, ESolidBiome::Town, Error);
 		}
 		return Map;
 	}
@@ -279,7 +285,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("marker projects"),
 			GrassRun->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
 		const FIntPoint Origin = WallgatePoint(*GrassRun, Marker);
-		// The town cell copies as town. Paint the open points back to grassland: M..!..M.
+		// The town cell is painted town. Paint the open points back to grassland: M..!..M.
 		const int32 GrassSteps[] = { 1, 2, -1, -2 };
 		for (const int32 Step : GrassSteps)
 		{

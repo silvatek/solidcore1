@@ -252,8 +252,7 @@ public:
 	 * Biome of each terrain point. Row-major. Point row 0 is the south edge, so a
 	 * higher row is further north. Index 0 is the south-east corner. World +Y is
 	 * north, the same direction as a cell. A cell row counts the other way.
-	 * Empty on a chart saved as cells; loading copies those cells onto the points.
-	 * Mutable because solving a const chart fills it.
+	 * Mutable because a const helper writes a point.
 	 */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	mutable TArray<ESolidBiome> Points;
@@ -271,10 +270,6 @@ private:
 	};
 
 	void PushUndo();
-	/** Copy each cell's play biome onto the points. The road strip is not copied. A mark does not change a point. */
-	void CopyPlayOntoPoints(bool bForce) const;
-	/** The biome a cell shows in play at this terrain point, without the road strip. */
-	ESolidBiome SampleCellPlay(int32 TerrainX, int32 TerrainY) const;
 	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
 	/** Write these terrain points. One undo step. A mark on a point does not change that paint. */
 	bool PaintPoints(const TArray<FIntPoint>& Covered, ESolidBiome Biome, FString& OutError);
@@ -291,7 +286,6 @@ private:
 	 * The cell grid is legacy. MarkerForChartBiome still fills Markers from the cells,
 	 * or from the point under each cell when the cells are empty. CellAtTerrainPoint
 	 * turns a mark into a cell, and RememberChartMark stamps that cell.
-	 * CopyPlayOntoPoints copies each cell's play biome onto the points.
 	 * Those cell steps go when the cell grid goes.
 	 */
 	bool BuildQuery() const;

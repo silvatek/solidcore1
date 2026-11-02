@@ -11,6 +11,7 @@ namespace
 		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 		if (Chart)
 		{
+			Chart->Init(ESolidBiome::Grassland);
 			Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		}
 		return Chart;

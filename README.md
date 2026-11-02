@@ -251,7 +251,7 @@ ASolidGameMode                      # World root. OpenLevel replaces it
       FSolidTerrainPoint[]          # Height, biome, threat, and fog
       USolidWorldChart              # Solved copy of the chart
         uint8[]                     # 128×64 markers
-        FSolidWorldBang[]           # Named cells
+        int32[]                     # Town id of each cell
         FRoute[]                    # Solved roads
     ASolidTerrainChunk[]
   ASolidCompanionCharacter[]        # Fielded squad

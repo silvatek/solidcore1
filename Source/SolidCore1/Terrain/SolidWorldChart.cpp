@@ -704,7 +704,7 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 
 	for (const FWorldMapBangRef& Ref : BangRefs)
 	{
-		if (Ref.CellX == INDEX_NONE || Ref.CellY == INDEX_NONE || Ref.Kind == FWorldMapBangRef::EKind::Skip)
+		if (Ref.CellX == INDEX_NONE || Ref.CellY == INDEX_NONE || Ref.Kind != FWorldMapBangRef::EKind::Town)
 		{
 			continue;
 		}
@@ -718,7 +718,7 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 				Row, Column);
 			continue;
 		}
-		if (BangMarks.Contains(Index))
+		if (BangLocationIds[Index] != INDEX_NONE)
 		{
 			UE_LOG(LogSolid, Warning,
 				TEXT("WorldMap: ! %d,%d is already described; keeping it."),
@@ -726,85 +726,20 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 			continue;
 		}
 
-		FSolidWorldBang Mark;
-		Mark.Cell = FIntPoint(Ref.CellX, Ref.CellY);
-		switch (Ref.Kind)
+		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Ref.Identifier);
+		if (!Town)
 		{
-		case FWorldMapBangRef::EKind::Town:
-		{
-			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Ref.Identifier);
-			if (!Town)
-			{
-				UE_LOG(LogSolid, Warning,
-					TEXT("WorldMap: ! %d,%d town '%s' is unknown; ignored."),
-					Row, Column, *Ref.Identifier);
-				continue;
-			}
-			Mark.Kind = ESolidWorldBang::Town;
-			Mark.LocationId = Town->Id;
-			Mark.Name = Town->Name;
-			BangLocationIds[Index] = Town->Id;
-			FTownSeed Seed;
-			Seed.LocationId = Town->Id;
-			Seed.CellX = Ref.CellX;
-			Seed.CellY = Ref.CellY;
-			TownSeeds.Add(Seed);
-			break;
-		}
-		case FWorldMapBangRef::EKind::Stronghold:
-		{
-			ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
-			ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
-			if (!SolidStronghold::FromToken(Ref.Identifier, HoldType, HoldSize))
-			{
-				UE_LOG(LogSolid, Warning,
-					TEXT("WorldMap: ! %d,%d stronghold '%s' is unknown; ignored."),
-					Row, Column, *Ref.Identifier);
-				continue;
-			}
-			Mark.Kind = ESolidWorldBang::Stronghold;
-			Mark.StrongholdType = HoldType;
-			Mark.StrongholdSize = HoldSize;
-			Mark.Name = SolidStronghold::Label(FSolidStronghold(HoldType, HoldSize));
-			break;
-		}
-		case FWorldMapBangRef::EKind::StrongholdSite:
-		{
-			ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
-			if (!SolidStronghold::SizeFromToken(Ref.Identifier, Size))
-			{
-				UE_LOG(LogSolid, Warning,
-					TEXT("WorldMap: ! %d,%d stronghold site '%s' is unknown; ignored."),
-					Row, Column, *Ref.Identifier);
-				continue;
-			}
-			Mark.Kind = ESolidWorldBang::StrongholdSite;
-			Mark.StrongholdSize = Size;
-			Mark.Name = SolidStronghold::SizeName(Size);
-			break;
-		}
-		case FWorldMapBangRef::EKind::LairEntrance:
-		case FWorldMapBangRef::EKind::LairExit:
-		{
-			const SolidLair::FDefinition* Lair = SolidLair::FindByName(Ref.Identifier);
-			if (!Lair)
-			{
-				UE_LOG(LogSolid, Warning,
-					TEXT("WorldMap: ! %d,%d lair '%s' is unknown; ignored."),
-					Row, Column, *Ref.Identifier);
-				continue;
-			}
-			Mark.Kind = Ref.Kind == FWorldMapBangRef::EKind::LairEntrance
-				? ESolidWorldBang::LairEntrance
-				: ESolidWorldBang::LairExit;
-			Mark.Name = Lair->Name;
-			Mark.LairId = Lair->Id;
-			break;
-		}
-		default:
+			UE_LOG(LogSolid, Warning,
+				TEXT("WorldMap: ! %d,%d town '%s' is unknown; ignored."),
+				Row, Column, *Ref.Identifier);
 			continue;
 		}
-		BangMarks.Add(Index, Mark);
+		BangLocationIds[Index] = Town->Id;
+		FTownSeed Seed;
+		Seed.LocationId = Town->Id;
+		Seed.CellX = Ref.CellX;
+		Seed.CellY = Ref.CellY;
+		TownSeeds.Add(Seed);
 	}
 
 	CollectNamedTowns();
@@ -847,7 +782,6 @@ void USolidWorldChart::ResetLoad() const
 	RoadSpans.Reset();
 	RoadSpansByCell.Reset();
 	bHasStartTown = false;
-	BangMarks.Reset();
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	EncounterMarks.Reset();
 	TownSeeds.Reset();
@@ -887,13 +821,11 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 		return false;
 	}
 	const int32 Index = Cell.Y * MapWidth + Cell.X;
-	if (BangMarks.Contains(Index))
+	if (static_cast<TCHAR>(Markers[Index]) == LocationMarker)
 	{
 		return false;
 	}
 
-	FSolidWorldBang Bang;
-	Bang.Cell = Cell;
 	switch (Mark.Kind)
 	{
 	case ESolidWorldChartMarkKind::Town:
@@ -903,9 +835,6 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 		{
 			return false;
 		}
-		Bang.Kind = ESolidWorldBang::Town;
-		Bang.LocationId = Town->Id;
-		Bang.Name = Town->Name;
 		BangLocationIds[Index] = Town->Id;
 		FTownSeed Seed;
 		Seed.LocationId = Town->Id;
@@ -915,40 +844,15 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 		break;
 	}
 	case ESolidWorldChartMarkKind::Stronghold:
-	{
-		ESolidStrongholdType HoldType = Mark.StrongholdType;
-		ESolidStrongholdSize HoldSize = Mark.StrongholdSize;
-		SolidStronghold::FromToken(Mark.Name, HoldType, HoldSize);
-		Bang.Kind = ESolidWorldBang::Stronghold;
-		Bang.StrongholdType = HoldType;
-		Bang.StrongholdSize = HoldSize;
-		Bang.Name = SolidStronghold::Label(FSolidStronghold(HoldType, HoldSize));
-		break;
-	}
 	case ESolidWorldChartMarkKind::StrongholdSite:
-	{
-		ESolidStrongholdSize Size = Mark.StrongholdSize;
-		SolidStronghold::SizeFromToken(Mark.Name, Size);
-		Bang.Kind = ESolidWorldBang::StrongholdSite;
-		Bang.StrongholdSize = Size;
-		Bang.Name = SolidStronghold::SizeName(Size);
 		break;
-	}
 	case ESolidWorldChartMarkKind::LairEntrance:
 	case ESolidWorldChartMarkKind::LairExit:
-	{
-		const SolidLair::FDefinition* Lair = SolidLair::FindByName(Mark.Name);
-		if (!Lair)
+		if (!SolidLair::FindByName(Mark.Name))
 		{
 			return false;
 		}
-		Bang.Kind = Mark.Kind == ESolidWorldChartMarkKind::LairEntrance
-			? ESolidWorldBang::LairEntrance
-			: ESolidWorldBang::LairExit;
-		Bang.Name = Lair->Name;
-		Bang.LairId = Lair->Id;
 		break;
-	}
 	case ESolidWorldChartMarkKind::Custom:
 	case ESolidWorldChartMarkKind::Encounter:
 	case ESolidWorldChartMarkKind::Bridge:
@@ -959,7 +863,6 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 
 	// A town id and the text file both use !. The chart stored that cell as grassland.
 	Markers[Index] = static_cast<uint8>(LocationMarker);
-	BangMarks.Add(Index, Bang);
 	return true;
 }
 
@@ -1083,20 +986,6 @@ ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 CellX, int32 CellY) const
 	}
 	const TCHAR Marker = static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]);
 	return MarkerToBiome(Marker);
-}
-
-bool USolidWorldChart::FindBang(const int32 CellX, const int32 CellY, FSolidWorldBang& Out) const
-{
-	if (!EnsureQuery() || CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
-	{
-		return false;
-	}
-	if (const FSolidWorldBang* Found = BangMarks.Find(CellY * MapWidth + CellX))
-	{
-		Out = *Found;
-		return true;
-	}
-	return false;
 }
 
 bool USolidWorldChart::StrongholdAtCell(

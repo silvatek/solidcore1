@@ -33,32 +33,6 @@ struct FSolidWorldChartRoad
 	ESolidWorldChartRoadType Type = ESolidWorldChartRoadType::Trail;
 };
 
-/** What a "! row,column = ..." line names. None means the cell has no such line. */
-enum class ESolidWorldBang : uint8
-{
-	None,
-	Town,
-	Stronghold,
-	/** A size, and no type. The cell stays the marker's biome. */
-	StrongholdSite,
-	LairEntrance,
-	LairExit,
-};
-
-/** One ! cell named by a description line. Row and column count from 1. */
-struct FSolidWorldBang
-{
-	ESolidWorldBang Kind = ESolidWorldBang::None;
-	int32 LocationId = INDEX_NONE;
-	FString Name;
-	/** Eight hex digits when this cell is a lair mouth. Empty otherwise. */
-	FString LairId;
-	/** Unused for a stronghold site. */
-	ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;
-	ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
-	FIntPoint Cell = FIntPoint::ZeroValue;
-};
-
 /** One encounter mark. The position is the mark's terrain point. */
 struct FSolidWorldEncounterMark
 {
@@ -222,9 +196,6 @@ public:
 
 	/** The stronghold site of this size. False when the chart has none. */
 	bool FindStrongholdSiteMarker(ESolidStrongholdSize Size, FSolidWorldChartMark& OutMark) const;
-
-	/** The description of a named cell, or false when that cell has none. */
-	bool FindBang(int32 CellX, int32 CellY, FSolidWorldBang& Out) const;
 
 	/** True when the mark on this cell is a stronghold. A site is not one. */
 	bool StrongholdAtCell(int32 CellX, int32 CellY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
@@ -415,7 +386,6 @@ private:
 	mutable bool bIsLoaded = false;
 	mutable TArray<uint8> Markers;
 	mutable TArray<int32> BangLocationIds;
-	mutable TMap<int32, FSolidWorldBang> BangMarks;
 	mutable bool bHasStartTown = false;
 	mutable TArray<FIntPoint> StartTownCells;
 	mutable TArray<FSolidWorldEncounterMark> EncounterMarks;
@@ -450,7 +420,7 @@ protected:
 	void BuildListedRoads() const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
-	/** Turn one chart mark into the named cell the queries read. A custom note and an encounter are skipped. */
+	/** Record a town on this cell and mark the cell. A note, an encounter, and a bridge are skipped. */
 	bool RememberChartMark(const FSolidWorldChartMark& Mark, FIntPoint Cell) const;
 	/** One location per town id. Two cells with the same name are one town. Iglin is the start. */
 	void CollectNamedTowns() const;

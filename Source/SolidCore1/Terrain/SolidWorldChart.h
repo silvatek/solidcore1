@@ -329,25 +329,12 @@ private:
 	mutable TArray<FIntPoint> StartTownCells;
 	mutable TArray<FSolidWorldEncounterMark> EncounterMarks;
 
-	/** A town marker, in the order the chart stored it. The first seed claims a shared region. */
-	struct FTownSeed
-	{
-		int32 LocationId = INDEX_NONE;
-		int32 CellX = 0;
-		int32 CellY = 0;
-	};
-
-	mutable TArray<FTownSeed> TownSeeds;
 	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
 	mutable TArray<int32> PointTowns;
 	/** Deprecated. Prefer RoutedRoads. One solved route per listed road, including an empty route. */
 	mutable TArray<SolidRoad::FRoute> SolvedRoads;
 	/** Preferred road data. Listed roads that found a route. Empty until the chart loads. */
 	mutable TArray<SolidRoad::FSolidRoad> RoutedRoads;
-	/** Deprecated. The strip is measured from RoutedRoads. These stay empty. */
-	mutable TArray<SolidRoad::FSpan> RoadSpans;
-	/** Deprecated. The strip is measured from RoutedRoads. This stays empty. */
-	mutable TArray<TArray<int32>> RoadSpansByCell;
 
 protected:
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutCellX, int32& OutCellY) const;

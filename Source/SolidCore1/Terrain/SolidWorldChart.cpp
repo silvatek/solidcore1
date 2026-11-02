@@ -477,12 +477,9 @@ void USolidWorldChart::ResetLoad() const
 	StartTownCells.Reset();
 	SolvedRoads.Reset();
 	RoutedRoads.Reset();
-	RoadSpans.Reset();
-	RoadSpansByCell.Reset();
 	bHasStartTown = false;
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	EncounterMarks.Reset();
-	TownSeeds.Reset();
 	PointTowns.Reset();
 	bIsLoaded = false;
 }
@@ -534,11 +531,6 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 			return false;
 		}
 		BangLocationIds[Index] = Town->Id;
-		FTownSeed Seed;
-		Seed.LocationId = Town->Id;
-		Seed.CellX = Cell.X;
-		Seed.CellY = Cell.Y;
-		TownSeeds.Add(Seed);
 		break;
 	}
 	case ESolidWorldChartMarkKind::Stronghold:
@@ -1752,8 +1744,6 @@ void USolidWorldChart::ResetRoads() const
 {
 	SolvedRoads.Reset();
 	RoutedRoads.Reset();
-	RoadSpans.Reset();
-	RoadSpansByCell.Reset();
 }
 
 namespace

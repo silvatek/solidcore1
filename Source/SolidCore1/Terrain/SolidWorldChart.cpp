@@ -62,83 +62,6 @@ void USolidWorldChart::PushUndo()
 	UndoStack.Add(MoveTemp(Snapshot));
 }
 
-bool USolidWorldChart::CellIndex(const FIntPoint Cell, int32& OutIndex) const
-{
-	if (Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight
-		|| Cell.X < 0 || Cell.Y < 0
-		|| Cell.X >= USolidWorldChart::MapWidth || Cell.Y >= USolidWorldChart::MapHeight)
-	{
-		return false;
-	}
-	OutIndex = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
-	return true;
-}
-
-bool USolidWorldChart::PaintRun(const TArray<FIntPoint>& CellsToPaint, const ESolidBiome Biome, FString& OutError)
-{
-	OutError.Reset();
-	if (!SolidBiome::Of(Biome).Paintable())
-	{
-		OutError = TEXT("Swamp and road are not paint biomes.");
-		return false;
-	}
-	if (Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
-	{
-		OutError = TEXT("The chart does not cover the map.");
-		return false;
-	}
-
-	TArray<int32> Indexes;
-	Indexes.Reserve(CellsToPaint.Num());
-	for (const FIntPoint& Cell : CellsToPaint)
-	{
-		int32 Index = INDEX_NONE;
-		if (!CellIndex(Cell, Index))
-		{
-			OutError = TEXT("That cell is off the map.");
-			return false;
-		}
-		Indexes.AddUnique(Index);
-	}
-	if (Indexes.Num() == 0)
-	{
-		OutError = TEXT("Paint needs a cell.");
-		return false;
-	}
-	if (!EnsurePoints())
-	{
-		OutError = TEXT("The chart does not cover the map.");
-		return false;
-	}
-
-	PushUndo();
-	for (const int32 Index : Indexes)
-	{
-		Cells[Index] = Biome;
-	}
-	SetPointsInCells(Indexes, Biome);
-	InvalidateQuery();
-	return true;
-}
-
-bool USolidWorldChart::PaintRectangle(const FIntPoint FromCell, const FIntPoint ToCell, const ESolidBiome Biome, FString& OutError)
-{
-	const int32 CellX0 = FMath::Min(FromCell.X, ToCell.X);
-	const int32 CellX1 = FMath::Max(FromCell.X, ToCell.X);
-	const int32 CellY0 = FMath::Min(FromCell.Y, ToCell.Y);
-	const int32 CellY1 = FMath::Max(FromCell.Y, ToCell.Y);
-	TArray<FIntPoint> Covered;
-	Covered.Reserve((CellX1 - CellX0 + 1) * (CellY1 - CellY0 + 1));
-	for (int32 CellY = CellY0; CellY <= CellY1; ++CellY)
-	{
-		for (int32 CellX = CellX0; CellX <= CellX1; ++CellX)
-		{
-			Covered.Add(FIntPoint(CellX, CellY));
-		}
-	}
-	return PaintRun(Covered, Biome, OutError);
-}
-
 bool USolidWorldChart::PlaceOn(const FIntPoint TerrainPoint, const FSolidWorldChartMark& Mark, FString& OutError)
 {
 	OutError.Reset();
@@ -800,38 +723,6 @@ void USolidWorldChart::AssignTownPoints() const
 bool USolidWorldChart::EnsurePoints() const
 {
 	return Points.Num() == PointCount;
-}
-
-void USolidWorldChart::SetPointsInCells(const TArray<int32>& CellIndexes, const ESolidBiome Biome) const
-{
-	if (Points.Num() != PointCount || CellIndexes.Num() == 0)
-	{
-		return;
-	}
-
-	TSet<int32> Want;
-	Want.Reserve(CellIndexes.Num());
-	for (const int32 Index : CellIndexes)
-	{
-		Want.Add(Index);
-	}
-
-	for (int32 TerrainY = 0; TerrainY < PointAxis; ++TerrainY)
-	{
-		for (int32 TerrainX = 0; TerrainX < PointAxis; ++TerrainX)
-		{
-			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (!CellAtTerrainPoint(FIntPoint(TerrainX, TerrainY), Cell))
-			{
-				continue;
-			}
-			if (!Want.Contains(Cell.Y * MapWidth + Cell.X))
-			{
-				continue;
-			}
-			Points[PointSlot(TerrainX, TerrainY)] = Biome;
-		}
-	}
 }
 
 bool USolidWorldChart::TerrainPointAt(

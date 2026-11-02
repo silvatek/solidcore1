@@ -118,11 +118,10 @@ public:
 	static const TCHAR* RoadTypeName(SolidRoad::EType Type);
 
 	/**
-	 * Paint marker biomes. Swamp and road are rejected. Marks stay where they are.
-	 * One call is one undo step. A run is the cells of one drag. A rectangle is inclusive.
+	 * Write these terrain points. Swamp and road are rejected.
+	 * One call is one undo step. A mark on a point does not change that paint.
 	 */
-	bool PaintRun(const TArray<FIntPoint>& CellsToPaint, ESolidBiome Biome, FString& OutError);
-	bool PaintRectangle(FIntPoint FromCell, FIntPoint ToCell, ESolidBiome Biome, FString& OutError);
+	bool PaintPoints(const TArray<FIntPoint>& Covered, ESolidBiome Biome, FString& OutError);
 
 	/**
 	 * Terrain point nearest this position. TerrainPoint.X increases west from the east edge.
@@ -231,13 +230,9 @@ private:
 	};
 
 	void PushUndo();
-	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
-	/** Write these terrain points. One undo step. A mark on a point does not change that paint. */
-	bool PaintPoints(const TArray<FIntPoint>& Covered, ESolidBiome Biome, FString& OutError);
 	/** Claim each run of town points for the first town mark that touches it. */
 	void AssignTownPoints() const;
 	bool EnsurePoints() const;
-	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
 	bool PlaceOn(FIntPoint TerrainPoint, const FSolidWorldChartMark& Mark, FString& OutError);
 	/** Solve when a query finds the chart unsolved. The terrain points cover the map. */
 	bool EnsureQuery() const;

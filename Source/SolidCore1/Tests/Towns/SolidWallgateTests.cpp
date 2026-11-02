@@ -14,6 +14,23 @@ namespace
 
 	const FIntPoint WallgateMarkerCell(40, 30);
 
+	void PointsUnderCells(const TArray<FIntPoint>& Cells, TArray<FIntPoint>& OutPoints)
+	{
+		OutPoints.Reset();
+		for (int32 TerrainY = 0; TerrainY < USolidWorldChart::PointAxis; ++TerrainY)
+		{
+			for (int32 TerrainX = 0; TerrainX < USolidWorldChart::PointAxis; ++TerrainX)
+			{
+				const FIntPoint TerrainPoint(TerrainX, TerrainY);
+				FIntPoint Cell = FIntPoint::ZeroValue;
+				if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell) && Cells.Contains(Cell))
+				{
+					OutPoints.Add(TerrainPoint);
+				}
+			}
+		}
+	}
+
 	USolidWorldChart* WallgateChart(const TArray<FIntPoint>& TownCells)
 	{
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
@@ -22,7 +39,6 @@ namespace
 			return nullptr;
 		}
 		Map->Init(ESolidBiome::Grassland);
-		Map->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 		for (const FIntPoint& Cell : TownCells)
 		{
 			FSolidWorldChartMark Mark;
@@ -37,7 +53,9 @@ namespace
 		if (TownCells.Num() > 0)
 		{
 			FString Error;
-			Map->PaintRun(TownCells, ESolidBiome::Town, Error);
+			TArray<FIntPoint> TownPoints;
+			PointsUnderCells(TownCells, TownPoints);
+			Map->PaintPoints(TownPoints, ESolidBiome::Town, Error);
 		}
 		return Map;
 	}

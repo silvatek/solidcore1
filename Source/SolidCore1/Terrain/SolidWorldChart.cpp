@@ -56,7 +56,6 @@ namespace
 void USolidWorldChart::PushUndo()
 {
 	FSnapshot Snapshot;
-	Snapshot.Cells = Cells;
 	Snapshot.Points = Points;
 	Snapshot.Marks = Marks;
 	UndoStack.Add(MoveTemp(Snapshot));
@@ -296,7 +295,6 @@ bool USolidWorldChart::Undo()
 		return false;
 	}
 	const FSnapshot Snapshot = UndoStack.Pop();
-	Cells = Snapshot.Cells;
 	Points = Snapshot.Points;
 	Marks = Snapshot.Marks;
 	InvalidateQuery();

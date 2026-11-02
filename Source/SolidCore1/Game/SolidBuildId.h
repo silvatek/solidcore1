@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0937")
+#define SOLID_BUILD_ID TEXT("SC1-0938")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The unused cell lookups are gone, and the cell methods that remain are deprecated.")
+#define SOLID_BUILD_NOTE TEXT("Undo keeps points and marks, and drops the cell grid.")
 #endif

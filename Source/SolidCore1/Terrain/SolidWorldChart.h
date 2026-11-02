@@ -212,10 +212,9 @@ public:
 	TArray<FSolidWorldChartMark> Marks;
 
 private:
-	/** Cells and marks from before one edit. Not saved with the asset. */
+	/** Points and marks from before one edit. Not saved with the asset. */
 	struct FSnapshot
 	{
-		TArray<ESolidBiome> Cells;
 		TArray<ESolidBiome> Points;
 		TArray<FSolidWorldChartMark> Marks;
 	};

@@ -1026,7 +1026,7 @@ bool USolidWorldChart::StrongholdAtCell(
 	ESolidStrongholdType& OutType,
 	ESolidStrongholdSize& OutSize) const
 {
-	if (!EnsureQuery() || CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
+	if (CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
 	{
 		return false;
 	}
@@ -2085,11 +2085,6 @@ bool USolidWorldChart::IsOnRoad(
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY) const
 {
-	if (!EnsureQuery())
-	{
-		return false;
-	}
-
 	const FVector2D World(WorldX, WorldY);
 	for (const SolidRoad::FSolidRoad& Road : GetRoutedRoads())
 	{

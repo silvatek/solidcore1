@@ -12,7 +12,6 @@
 
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
-#include "Components/LineBatchComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "EditorModeManager.h"
 #include "EditorViewportClient.h"
@@ -99,44 +98,6 @@ namespace
 			bHasPrevious = true;
 		}
 		return false;
-	}
-
-	void CellCorners(
-		const FIntPoint& Cell,
-		const FVector2D& WorldMin,
-		const FVector2D& WorldMax,
-		FVector2D& OutWestSouth,
-		FVector2D& OutEastNorth)
-	{
-		const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
-		const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
-		const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
-		const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
-		const float East = WorldMax.X - static_cast<float>(Cell.X) * CellW;
-		const float North = WorldMax.Y - static_cast<float>(Cell.Y) * CellH;
-		OutWestSouth = FVector2D(East - CellW, North - CellH);
-		OutEastNorth = FVector2D(East, North);
-	}
-
-	void DrawCellOutline(
-		FPrimitiveDrawInterface* PDI,
-		const USolidTerrainMap& Terrain,
-		const FIntPoint& Cell,
-		const FLinearColor& Color,
-		float Thickness)
-	{
-		FVector2D WestSouth = FVector2D::ZeroVector;
-		FVector2D EastNorth = FVector2D::ZeroVector;
-		CellCorners(Cell, Terrain.GetWorldMinXY(), Terrain.GetWorldMaxXY(), WestSouth, EastNorth);
-		const float Lift = 180.f;
-		const FVector A(WestSouth.X, WestSouth.Y, Terrain.SampleHeight(WestSouth.X, WestSouth.Y) + Lift);
-		const FVector B(EastNorth.X, WestSouth.Y, Terrain.SampleHeight(EastNorth.X, WestSouth.Y) + Lift);
-		const FVector C(EastNorth.X, EastNorth.Y, Terrain.SampleHeight(EastNorth.X, EastNorth.Y) + Lift);
-		const FVector D(WestSouth.X, EastNorth.Y, Terrain.SampleHeight(WestSouth.X, EastNorth.Y) + Lift);
-		PDI->DrawLine(A, B, Color, SDPG_Foreground, Thickness);
-		PDI->DrawLine(B, C, Color, SDPG_Foreground, Thickness);
-		PDI->DrawLine(C, D, Color, SDPG_Foreground, Thickness);
-		PDI->DrawLine(D, A, Color, SDPG_Foreground, Thickness);
 	}
 
 	void DrawPointBrush(
@@ -819,13 +780,6 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 	{
 		return;
 	}
-	if (bHasCell && !bStroke && Tool != ESolidWorldChartTool::Paint)
-	{
-		const FLinearColor Color = Tool == ESolidWorldChartTool::Place
-			? MarkColor(MarkKind)
-			: FLinearColor::White;
-		DrawCellOutline(PDI, *Terrain, CurrentCell, Color, Tool == ESolidWorldChartTool::Place ? 5.f : 3.f);
-	}
 	if (!Chart)
 	{
 		return;
@@ -972,8 +926,6 @@ void FSolidWorldChartEdMode::AddReferencedObjects(FReferenceCollector& Collector
 {
 	Collector.AddReferencedObject(Chart);
 	Collector.AddReferencedObject(Streamer);
-	Collector.AddReferencedObject(Overlay);
-	Collector.AddReferencedObject(Lines);
 	Collector.AddReferencedObjects(Signs);
 }
 
@@ -1113,7 +1065,6 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		}
 		Streamer->RebuildChartView(Chart, Cells);
 	}
-	RebuildOverlay();
 	RebuildSigns();
 	RefreshPanel();
 }
@@ -1136,7 +1087,6 @@ void FSolidWorldChartEdMode::DeleteCurrentMark()
 	{
 		Streamer->RebuildChartView(Chart, { CurrentCell });
 	}
-	RebuildOverlay();
 	RebuildSigns();
 	Hover = bHasPoint ? DescribePoint(CurrentTerrainPoint) : FString();
 	RefreshPanel();
@@ -1154,7 +1104,6 @@ void FSolidWorldChartEdMode::UndoChart()
 	{
 		Streamer->BuildChartView(Chart);
 	}
-	RebuildOverlay();
 	RebuildSigns();
 	Hover = bHasPoint ? DescribePoint(CurrentTerrainPoint) : FString();
 	RefreshPanel();
@@ -1463,7 +1412,6 @@ void FSolidWorldChartEdMode::EndStroke()
 		}
 		Streamer->RebuildChartPoints(Chart, Positions);
 	}
-	RebuildOverlay();
 	if (bHasPoint)
 	{
 		Hover = DescribePoint(CurrentTerrainPoint);
@@ -1517,18 +1465,6 @@ void FSolidWorldChartEdMode::ShowChart()
 	}
 	Streamer->bIsEditorOnlyActor = true;
 	Streamer->BuildChartView(Chart);
-
-	Overlay = World->SpawnActor<AActor>(
-		AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Params);
-	if (Overlay)
-	{
-		Overlay->bIsEditorOnlyActor = true;
-		Lines = NewObject<ULineBatchComponent>(Overlay, TEXT("ChartLines"));
-		Overlay->AddInstanceComponent(Lines);
-		Overlay->SetRootComponent(Lines);
-		Lines->RegisterComponent();
-	}
-	RebuildOverlay();
 	RebuildSigns();
 }
 
@@ -1542,59 +1478,12 @@ void FSolidWorldChartEdMode::ClearChartActors()
 		}
 	}
 	Signs.Reset();
-	if (Overlay)
-	{
-		Overlay->Destroy();
-		Overlay = nullptr;
-		Lines = nullptr;
-	}
 	if (Streamer)
 	{
 		Streamer->ClearChartView();
 		Streamer->Destroy();
 		Streamer = nullptr;
 	}
-}
-
-void FSolidWorldChartEdMode::RebuildOverlay()
-{
-	if (!Lines || !Chart || !Streamer || !Streamer->GetTerrainMap())
-	{
-		return;
-	}
-	const USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-	const USolidWorldChart* WorldMap = Terrain->GetWorldMap();
-	if (!Terrain->IsBuilt() || !WorldMap)
-	{
-		return;
-	}
-
-	Lines->Flush();
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	TArray<FBatchedLine> Batch;
-	Batch.Reserve(USolidWorldChart::MapWidth * USolidWorldChart::MapHeight * 4);
-	const float Lift = 80.f;
-	for (int32 CellY = 0; CellY < USolidWorldChart::MapHeight; ++CellY)
-	{
-		for (int32 CellX = 0; CellX < USolidWorldChart::MapWidth; ++CellX)
-		{
-			const FIntPoint Cell(CellX, CellY);
-			FVector2D WestSouth = FVector2D::ZeroVector;
-			FVector2D EastNorth = FVector2D::ZeroVector;
-			CellCorners(Cell, WorldMin, WorldMax, WestSouth, EastNorth);
-			const FLinearColor Color = WorldMap->GetBiomeColor(WorldMap->GetBiomeAtCell(CellX, CellY));
-			const FVector A(WestSouth.X, WestSouth.Y, Terrain->SampleHeight(WestSouth.X, WestSouth.Y) + Lift);
-			const FVector B(EastNorth.X, WestSouth.Y, Terrain->SampleHeight(EastNorth.X, WestSouth.Y) + Lift);
-			const FVector C(EastNorth.X, EastNorth.Y, Terrain->SampleHeight(EastNorth.X, EastNorth.Y) + Lift);
-			const FVector D(WestSouth.X, EastNorth.Y, Terrain->SampleHeight(WestSouth.X, EastNorth.Y) + Lift);
-			Batch.Emplace(A, B, Color, 0.f, 1.5f, SDPG_World);
-			Batch.Emplace(B, C, Color, 0.f, 1.5f, SDPG_World);
-			Batch.Emplace(C, D, Color, 0.f, 1.5f, SDPG_World);
-			Batch.Emplace(D, A, Color, 0.f, 1.5f, SDPG_World);
-		}
-	}
-	Lines->DrawLines(Batch);
 }
 
 void FSolidWorldChartEdMode::RebuildSigns()

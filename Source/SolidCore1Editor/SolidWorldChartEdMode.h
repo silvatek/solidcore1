@@ -8,7 +8,6 @@ class ASolidTerrainStreamer;
 class ATextRenderActor;
 class FSolidWorldChartToolkit;
 class SWidget;
-class ULineBatchComponent;
 
 /** What a left click does in the world chart. */
 enum class ESolidWorldChartTool : uint8
@@ -82,8 +81,6 @@ private:
 
 	TObjectPtr<USolidWorldChart> Chart;
 	TObjectPtr<ASolidTerrainStreamer> Streamer;
-	TObjectPtr<AActor> Overlay;
-	TObjectPtr<ULineBatchComponent> Lines;
 	TArray<TObjectPtr<ATextRenderActor>> Signs;
 	TSharedPtr<FSolidWorldChartToolkit> ChartToolkit;
 
@@ -114,7 +111,6 @@ private:
 	void SampleBrush(const FIntPoint& TerrainPoint);
 	void ShowChart();
 	void ClearChartActors();
-	void RebuildOverlay();
 	void RebuildSigns();
 	void FaceSigns(const FVector& Camera);
 	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;

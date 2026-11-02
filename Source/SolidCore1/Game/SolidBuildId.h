@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0923")
+#define SOLID_BUILD_ID TEXT("SC1-0924")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The world chart hover describes the terrain point.")
+#define SOLID_BUILD_NOTE TEXT("The world chart editor drops the cell outlines.")
 #endif

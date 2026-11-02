@@ -311,6 +311,15 @@ private:
 	bool PlaceMark(FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError);
 	/** Solve from Cells and Marks when a query finds the chart unsolved. */
 	bool EnsureQuery() const;
+	/**
+	 * AssignTownPoints claims each run of town points for the town mark that touches it.
+	 * BuildListedRoads routes each road in SolidRoads.h across the terrain points.
+	 * The cell grid is legacy. MarkerForChartBiome still fills Markers from the cells,
+	 * or from the point under each cell when the cells are empty. CellAtTerrainPoint
+	 * turns a mark into a cell, and RememberChartMark stamps that cell. CollectNamedTowns
+	 * gathers the start town as cells. CopyPlayOntoPoints copies each cell's play biome
+	 * onto the points. Those cell steps go when the cell grid goes.
+	 */
 	bool BuildQuery() const;
 	/** Drop the solved copy. The next query solves Cells and Marks again. */
 	void InvalidateQuery();

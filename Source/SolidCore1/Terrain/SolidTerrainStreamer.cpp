@@ -323,6 +323,25 @@ int32 ASolidTerrainStreamer::EagleStreamRadius(
 	return FMath::Clamp(FMath::Max(FromHeight, NearbyRadius), 0, Upper);
 }
 
+void ASolidTerrainStreamer::RebuildLoadedChunks()
+{
+	for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
+	{
+		if (!Pair.Value)
+		{
+			continue;
+		}
+		if (bEagleMapStream)
+		{
+			BuildChunkActor(Pair.Value, Pair.Key, EagleQuadsPerSide, EagleFogQuadsPerSide);
+		}
+		else
+		{
+			BuildChunkActor(Pair.Value, Pair.Key);
+		}
+	}
+}
+
 void ASolidTerrainStreamer::BuildChunkActor(
 	ASolidTerrainChunk* Chunk, FIntPoint Coord, int32 Quads, int32 FogQuads)
 {

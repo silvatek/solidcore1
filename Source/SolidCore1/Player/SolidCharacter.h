@@ -221,6 +221,8 @@ protected:
 	void ToggleDebugPanelFromInput();
 	/** Alt-P. One picture of the Play In Editor view, in Saved/Playshots. */
 	void TakePlayshot();
+	/** Ctrl+Shift+M. The next quad split, and the loaded ground rebuilds. */
+	void CycleQuadSplit();
 	void CloseMenuOverlayFromInput();
 	void ToggleArrangeFromInput();
 	void TurnArrangeClockwise();

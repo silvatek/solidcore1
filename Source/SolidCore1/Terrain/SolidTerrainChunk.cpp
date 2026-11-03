@@ -425,7 +425,7 @@ void ASolidTerrainChunk::BuildChunk(
 						WestWorldX, OriginY + static_cast<float>(Y) * Step).Biome;
 				}
 			}
-			const FSolidQuadTriangles Picked = FSolidQuadSplit::Of(FSolidQuadSplit::QuadMaterial).Triangles(
+			const FSolidQuadTriangles Picked = FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Triangles(
 				Preferred, B00, B10, B01, B11,
 				WestOfNorthWest, SouthWestOfNorthWest);
 			for (int32 TriangleIndex = 0; TriangleIndex < Picked.Count; ++TriangleIndex)

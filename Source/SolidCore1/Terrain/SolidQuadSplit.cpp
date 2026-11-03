@@ -3,6 +3,40 @@
 
 FSolidQuadSplit::~FSolidQuadSplit() = default;
 
+ESolidQuadSplit FSolidQuadSplit::QuadSplit = ESolidQuadSplit::NorthWest;
+
+void FSolidQuadSplit::Cycle()
+{
+	switch (QuadSplit)
+	{
+	case ESolidQuadSplit::NorthWest:
+		QuadSplit = ESolidQuadSplit::OddCorner;
+		break;
+	case ESolidQuadSplit::OddCorner:
+		QuadSplit = ESolidQuadSplit::NorthWestCut;
+		break;
+	case ESolidQuadSplit::NorthWestCut:
+	default:
+		QuadSplit = ESolidQuadSplit::NorthWest;
+		break;
+	}
+}
+
+const TCHAR* FSolidNorthWestSplit::Name() const
+{
+	return TEXT("NorthWest");
+}
+
+const TCHAR* FSolidOddCornerSplit::Name() const
+{
+	return TEXT("OddCorner");
+}
+
+const TCHAR* FSolidNorthWestCutSplit::Name() const
+{
+	return TEXT("NorthWestCut");
+}
+
 FString FSolidQuadSplit::Description(
 	const ESolidBiome Preferred,
 	const ESolidBiome B00,
@@ -26,17 +60,17 @@ FString FSolidQuadSplit::Description(
 	return Text;
 }
 
-const FSolidQuadSplit& FSolidQuadSplit::Of(const ESolidQuadMaterial Method)
+const FSolidQuadSplit& FSolidQuadSplit::Of(const ESolidQuadSplit Method)
 {
 	static const FSolidNorthWestSplit NorthWest;
 	static const FSolidNorthWestCutSplit NorthWestCut;
 	switch (Method)
 	{
-	case ESolidQuadMaterial::OddCorner:
+	case ESolidQuadSplit::OddCorner:
 		return FSolidOddCornerSplit::Instance();
-	case ESolidQuadMaterial::NorthWestCut:
+	case ESolidQuadSplit::NorthWestCut:
 		return NorthWestCut;
-	case ESolidQuadMaterial::NorthWest:
+	case ESolidQuadSplit::NorthWest:
 	default:
 		return NorthWest;
 	}

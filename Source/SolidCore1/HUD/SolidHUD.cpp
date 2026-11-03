@@ -2179,6 +2179,9 @@ void ASolidHUD::DrawHUD()
 				TEXT("Biome %s  threat=%.2f"),
 				SolidBiome::Of(Point.Biome).Name(),
 				Point.Threat));
+			Lines.Add(FString::Printf(
+				TEXT("Split %s"),
+				FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()));
 			if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
 			{
 				Lines.Add(FString::Printf(
@@ -2203,7 +2206,7 @@ void ASolidHUD::DrawHUD()
 					const ESolidBiome Preferred = Map->SamplePoint(CentreX, CentreY).Biome;
 					const ESolidBiome WestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY1).Biome;
 					const ESolidBiome SouthWestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY0).Biome;
-					const FSolidQuadSplit& Split = FSolidQuadSplit::Of(FSolidQuadSplit::QuadMaterial);
+					const FSolidQuadSplit& Split = FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit);
 					Lines.Add(FString::Printf(
 						TEXT("Quad %s %s / %s %s  %s"),
 						SolidBiome::Of(Corners[0]).Name(),

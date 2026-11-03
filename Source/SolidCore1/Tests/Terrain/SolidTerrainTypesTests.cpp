@@ -98,32 +98,32 @@ bool FSolidBiomeBorderTextureTest::RunTest(const FString& Parameters)
 {
 	TestEqual(
 		TEXT("mountain cliff beats the river"),
-		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).BorderBiome(
 			ESolidBiome::River, ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::Mountain));
 	TestEqual(
 		TEXT("grass bank beats the river"),
-		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).BorderBiome(
 			ESolidBiome::River, ESolidBiome::River, ESolidBiome::Grassland, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(
 		TEXT("a river triangle stays river"),
-		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).BorderBiome(
 			ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::River, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::River));
 	TestEqual(
 		TEXT("equal shelves keep the quad biome"),
-		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).BorderBiome(
 			ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Grassland, ESolidBiome::Desert)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(
 		TEXT("mountain already on the quad stays"),
-		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).BorderBiome(
 			ESolidBiome::Mountain, ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::Grassland)),
 		static_cast<uint8>(ESolidBiome::Mountain));
 	TestEqual(
 		TEXT("sea and river share the shelf"),
-		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).BorderBiome(
 			ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::Sea, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::Sea));
 	return true;
@@ -427,8 +427,8 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	TestEqual(
 		TEXT("this build uses NorthWest"),
-		static_cast<uint8>(FSolidQuadSplit::QuadMaterial),
-		static_cast<uint8>(ESolidQuadMaterial::NorthWest));
+		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
+		static_cast<uint8>(ESolidQuadSplit::NorthWest));
 
 	auto Expect = [this](const TCHAR* What, const FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{
@@ -468,74 +468,98 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	Expect(
 		TEXT("odd 11"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		true, Forest, Desert);
 	Expect(
 		TEXT("odd 00"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Desert, Forest, Forest, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Desert, Forest, Forest, Forest, Forest, Forest),
 		true, Desert, Forest);
 	Expect(
 		TEXT("odd 10"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Forest, Desert, Forest, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Forest, Desert, Forest, Forest, Forest, Forest),
 		false, Desert, Forest);
 	Expect(
 		TEXT("odd 01"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Forest, Forest, Desert, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Forest, Forest, Desert, Forest, Forest, Forest),
 		false, Forest, Desert);
 	Expect(
 		TEXT("a straight run stays on the northwest corner"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Desert, Forest, Forest, Desert, Desert, Desert, Desert),
+		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Desert, Forest, Forest, Desert, Desert, Desert, Desert),
 		false, Desert, Desert);
 	Expect(
 		TEXT("the northwest method leaves the odd corner"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		false, Forest, Forest);
 	TestEqual(
 		TEXT("the debug line names both triangles"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Description(
+		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Description(
 			Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		FString(TEXT("Forest / Desert")));
 	TestEqual(
 		TEXT("a matching pair is named twice"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).Description(
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).Description(
 			Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		FString(TEXT("Forest / Forest")));
 	Expect(
 		TEXT("a lone northwest corner is cut"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Desert, Forest, Forest, Forest, Desert, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Desert, Forest, Forest, Forest, Desert, Forest, Forest),
 		true, Forest, Desert);
 	Expect(
 		TEXT("a south corner that continues west is cut"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Grass, Grass, Town, Grass, Grass, Town, Town),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Grass, Grass, Town, Grass, Grass, Town, Town),
 		false, Town, Grass);
 	Expect(
 		TEXT("a south corner whose west point matches the northwest stays"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Forest, Forest, Town, Forest, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Forest, Forest, Town, Forest, Forest, Forest, Forest),
 		false, Forest, Forest);
 	Expect(
 		TEXT("a straight run stays whole under NorthWestCut"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Forest, Town, Town, Forest, Forest, Forest, Town),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Forest, Town, Town, Forest, Forest, Forest, Town),
 		false, Forest, Forest);
 	Expect(
 		TEXT("a two-and-two edge cuts at its west end"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Grass, Grass),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Grass, Grass),
 		false, Grass, Town);
 	Expect(
 		TEXT("a two-and-two edge stays whole where the west point matches"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Town, Grass),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Town, Grass),
 		false, Town, Town);
 	Expect(
 		TEXT("a two-and-two edge stays whole when the south-west point differs"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Grass, Town),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Grass, Town),
 		false, Town, Town);
 	Expect(
 		TEXT("a mountain top uses the mountain"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Grass, Grass, Grass, Mountain, Mountain, Grass, Grass),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Grass, Grass, Grass, Mountain, Mountain, Grass, Grass),
 		false, Mountain, Mountain);
 	Expect(
 		TEXT("a lone mountain corner leaves the grass triangle"),
-		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Grass, Grass, Grass, Grass, Mountain, Grass, Grass),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Grass, Grass, Grass, Grass, Mountain, Grass, Grass),
 		true, Grass, Mountain);
+
+	FSolidQuadSplit::Cycle();
+	TestEqual(
+		TEXT("the next split is OddCorner"),
+		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
+		static_cast<uint8>(ESolidQuadSplit::OddCorner));
+	TestEqual(
+		TEXT("the debug line names OddCorner"),
+		FString(FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()),
+		FString(TEXT("OddCorner")));
+	FSolidQuadSplit::Cycle();
+	TestEqual(
+		TEXT("the next split is NorthWestCut"),
+		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
+		static_cast<uint8>(ESolidQuadSplit::NorthWestCut));
+	FSolidQuadSplit::Cycle();
+	TestEqual(
+		TEXT("NorthWest follows the last method"),
+		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
+		static_cast<uint8>(ESolidQuadSplit::NorthWest));
+	Expect(
+		TEXT("selecting NorthWest again restores those two triangles"),
+		FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Triangles(Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		false, Forest, Forest);
 
 	return true;
 }

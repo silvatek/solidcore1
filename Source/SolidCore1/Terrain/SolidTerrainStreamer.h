@@ -38,6 +38,9 @@ public:
 
 	/** Read-only helpers for the debug HUD (no streaming side effects). */
 	int32 GetLoadedChunkCount() const { return LoadedChunks.Num(); }
+
+	/** Build every loaded chunk again. The ground uses the quad split selected now. */
+	void RebuildLoadedChunks();
 	float GetHeightAt(const FVector& WorldLocation) const { return SampleHeightAtWorld(WorldLocation); }
 	FIntPoint GetChunkCoordAt(const FVector& WorldLocation) const { return WorldToChunkCoord(WorldLocation); }
 	UMaterialInterface* GetActiveMaterial() const

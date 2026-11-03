@@ -19,6 +19,7 @@
 #include "Vegetation/SolidForage.h"
 #include "SolidStronghold.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Terrain/SolidQuadSplit.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
@@ -390,6 +391,12 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		Playshot.KeyDelegate.BindDelegate(this, &ASolidCharacter::TakePlayshot);
 		PlayerInputComponent->KeyBindings.Add(MoveTemp(Playshot));
 	}
+	{
+		FInputKeyBinding CycleSplit(FInputChord(EKeys::M, true, true, false, false), IE_Pressed);
+		CycleSplit.bConsumeInput = true;
+		CycleSplit.KeyDelegate.BindDelegate(this, &ASolidCharacter::CycleQuadSplit);
+		PlayerInputComponent->KeyBindings.Add(MoveTemp(CycleSplit));
+	}
 	PlayerInputComponent->BindKey(EKeys::Slash, IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromSlash);
 	PlayerInputComponent->BindKey(EKeys::Backslash, IE_Pressed, this, &ASolidCharacter::ToggleArrangeFromInput);
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &ASolidCharacter::TurnArrangeClockwise);
@@ -725,6 +732,15 @@ void ASolidCharacter::ToggleDebugPanelFromInput()
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->ToggleDebugPanel();
+	}
+}
+
+void ASolidCharacter::CycleQuadSplit()
+{
+	FSolidQuadSplit::Cycle();
+	if (ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(GetWorld()))
+	{
+		Streamer->RebuildLoadedChunks();
 	}
 }
 

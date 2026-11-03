@@ -4,7 +4,7 @@
 #include "SolidTerrainTypes.h"
 
 /** How a quad's triangles choose a material. The chunk is built with one of these. */
-enum class ESolidQuadMaterial : uint8
+enum class ESolidQuadSplit : uint8
 {
 	NorthWest,
 	OddCorner,
@@ -38,10 +38,16 @@ public:
 	virtual ~FSolidQuadSplit();
 
 	/** The subclass for this method. The same instance on every call. */
-	static const FSolidQuadSplit& Of(ESolidQuadMaterial Method);
+	static const FSolidQuadSplit& Of(ESolidQuadSplit Method);
 
-	/** The method the mesh and the debug line use. Change this and rebuild. */
-	static constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::NorthWest;
+	/** The method the mesh and the debug line use. Starts as NorthWest. */
+	static ESolidQuadSplit QuadSplit;
+
+	/** The next method in enum order. NorthWest follows NorthWestCut. */
+	static void Cycle();
+
+	/** The word for this method. The debug line prints it. */
+	virtual const TCHAR* Name() const = 0;
 
 	/**
 	 * Triangles for one quad.
@@ -91,6 +97,8 @@ protected:
 class SOLIDCORE1_API FSolidNorthWestSplit : public FSolidQuadSplit
 {
 public:
+	virtual const TCHAR* Name() const override;
+
 	virtual FSolidQuadTriangles Triangles(
 		ESolidBiome Preferred,
 		ESolidBiome B00,
@@ -106,6 +114,8 @@ class SOLIDCORE1_API FSolidOddCornerSplit : public FSolidQuadSplit
 {
 public:
 	static const FSolidOddCornerSplit& Instance();
+
+	virtual const TCHAR* Name() const override;
 
 	virtual FSolidQuadTriangles Triangles(
 		ESolidBiome Preferred,
@@ -145,6 +155,8 @@ public:
 class SOLIDCORE1_API FSolidNorthWestCutSplit : public FSolidQuadSplit
 {
 public:
+	virtual const TCHAR* Name() const override;
+
 	virtual FSolidQuadTriangles Triangles(
 		ESolidBiome Preferred,
 		ESolidBiome B00,

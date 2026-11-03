@@ -624,6 +624,17 @@ bool USolidWorldChart::TerrainPointToWorld(
 	return true;
 }
 
+bool USolidWorldChart::OneTerrainPointNorthOf(const FIntPoint TerrainPoint, FIntPoint& OutNorth) const
+{
+	const FIntPoint North(TerrainPoint.X, TerrainPoint.Y + 1);
+	if (!OnPoint(TerrainPoint) || !OnPoint(North))
+	{
+		return false;
+	}
+	OutNorth = North;
+	return true;
+}
+
 ESolidBiome USolidWorldChart::GetPointBiome(const FIntPoint TerrainPoint) const
 {
 	if (!EnsurePoints() || !OnPoint(TerrainPoint))

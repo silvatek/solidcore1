@@ -104,6 +104,12 @@ public:
 	/** World position of one terrain point. The same rectangle as TerrainPointAt. */
 	bool TerrainPointToWorld(FIntPoint TerrainPoint, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
+	/**
+	 * The next terrain point north of this one.
+	 * North is increasing Y. False when that point is off the grid.
+	 */
+	bool OneTerrainPointNorthOf(FIntPoint TerrainPoint, FIntPoint& OutNorth) const;
+
 	/** Biome stored on that terrain point. The road strip is not part of it. */
 	ESolidBiome GetPointBiome(FIntPoint TerrainPoint) const;
 

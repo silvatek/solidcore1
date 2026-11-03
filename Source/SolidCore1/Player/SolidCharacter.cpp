@@ -1556,10 +1556,11 @@ void ASolidCharacter::RefreshStrongholdNameSign()
 		Streamer = *It;
 		break;
 	}
-	const USolidWorldChart* Map = (Streamer && Streamer->GetTerrainMap())
-		? Streamer->GetTerrainMap()->GetWorldMap()
-		: nullptr;
-	const SolidNameSigns::FWorldPlace Place = SolidNameSigns::WorldPlace(*Stronghold, Map);
+	const USolidTerrainMap* Terrain = (Streamer && Streamer->GetTerrainMap()) ? Streamer->GetTerrainMap() : nullptr;
+	const USolidWorldChart* Map = Terrain ? Terrain->GetWorldMap() : nullptr;
+	const SolidNameSigns::FWorldPlace Place = Terrain
+		? SolidNameSigns::WorldPlace(*Stronghold, Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY())
+		: SolidNameSigns::WorldPlace(*Stronghold, Map);
 	for (TActorIterator<ASolidNameSign> Sign(World); Sign; ++Sign)
 	{
 		FVector Location(Place.XY.X, Place.XY.Y, Sign->GetActorLocation().Z);

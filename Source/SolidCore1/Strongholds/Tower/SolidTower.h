@@ -139,7 +139,10 @@ namespace SolidStronghold
 		 */
 		float ExteriorYawDeg(const float GrassFacingYawDeg) const;
 
-		virtual float ExteriorYawDeg(const USolidWorldChart* Map) const override;
+		virtual float ExteriorYawDeg(
+			const USolidWorldChart* Map,
+			FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+			FVector2D WorldMaxXY = FVector2D(1.f, 1.f)) const override;
 
 		/**
 		 * Grass side of the door, just past the stone.
@@ -148,7 +151,10 @@ namespace SolidStronghold
 		FVector2D OutsideDoorXY(const FVector2D& CellCenterXY, const float GrassFacingYawDeg) const;
 
 		virtual float ExitReachCm() const override;
-		virtual void RememberExit(const USolidWorldChart* Map) override;
+		virtual void RememberExit(
+			const USolidWorldChart* Map,
+			FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+			FVector2D WorldMaxXY = FVector2D(1.f, 1.f)) override;
 
 		/** Beside the door, on the actor's right. The board faces the grass. */
 		virtual FSolidNameSignPlace NameSign() const override;

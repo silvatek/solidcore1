@@ -51,7 +51,11 @@ namespace SolidNameSigns
 	 * The name sign for this stronghold.
 	 * The exterior yaw turns the type's place into world centimetres.
 	 */
-	FWorldPlace WorldPlace(const FSolidStronghold& Stronghold, const USolidWorldChart* Map);
+	FWorldPlace WorldPlace(
+		const FSolidStronghold& Stronghold,
+		const USolidWorldChart* Map,
+		FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+		FVector2D WorldMaxXY = FVector2D(1.f, 1.f));
 
 	/** The sign stands at the company stronghold. One the company has left does not get one. */
 	inline bool StandsFor(const FSolidStronghold* Active, const FSolidStronghold* Candidate)

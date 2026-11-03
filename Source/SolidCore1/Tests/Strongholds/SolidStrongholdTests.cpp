@@ -158,7 +158,8 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 				SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CavePoint, Entrance));
 			++CaveMouths;
 			TestEqual(TEXT("entrance point"), Entrance.TerrainPoint, CavePoint);
-			const FIntPoint North(CavePoint.X, CavePoint.Y + 1);
+			FIntPoint North = FIntPoint::ZeroValue;
+			TestTrue(TEXT("the chart names the point north"), Map->OneTerrainPointNorthOf(CavePoint, North));
 			TestEqual(TEXT("grass point is the next point north"), Entrance.GrassPoint, North);
 			TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
 

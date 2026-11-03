@@ -143,9 +143,11 @@ FVector SolidNameSigns::PoleLocalCm(const FSolidNameSignPlace& Place, const FStr
 
 SolidNameSigns::FWorldPlace SolidNameSigns::WorldPlace(
 	const FSolidStronghold& Stronghold,
-	const USolidWorldChart* Map)
+	const USolidWorldChart* Map,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY)
 {
-	const float Yaw = Stronghold.ExteriorYawDeg(Map);
+	const float Yaw = Stronghold.ExteriorYawDeg(Map, WorldMinXY, WorldMaxXY);
 	const FSolidNameSignPlace Place = Stronghold.NameSign();
 	const FVector Local = PoleLocalCm(Place, Stronghold.Name);
 	const FVector WorldPoint = FTransform(

@@ -342,10 +342,13 @@ namespace SolidStronghold
 		Room->PlaceFurnishings(Furnishings);
 	}
 
-	float FSolidTower::ExteriorYawDeg(const USolidWorldChart* Map) const
+	float FSolidTower::ExteriorYawDeg(
+		const USolidWorldChart* Map,
+		const FVector2D WorldMinXY,
+		const FVector2D WorldMaxXY) const
 	{
 		SolidStrongholds::FGrassFace Face;
-		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face))
+		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face, WorldMinXY, WorldMaxXY))
 			? Face.FacingYawDeg
 			: 0.f;
 		return ExteriorYawDeg(GrassYaw);
@@ -375,10 +378,13 @@ namespace SolidStronghold
 			+ DoorStandClearCm;
 	}
 
-	void FSolidTower::RememberExit(const USolidWorldChart* Map)
+	void FSolidTower::RememberExit(
+		const USolidWorldChart* Map,
+		const FVector2D WorldMinXY,
+		const FVector2D WorldMaxXY)
 	{
 		SolidStrongholds::FGrassFace Face;
-		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face))
+		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face, WorldMinXY, WorldMaxXY))
 			? Face.FacingYawDeg
 			: 0.f;
 		Orientation = OrientationFromYaw(GrassYaw);

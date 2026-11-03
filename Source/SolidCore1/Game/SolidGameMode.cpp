@@ -777,14 +777,14 @@ void ASolidGameMode::ShowOpenStronghold()
 		*Stronghold, *Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY());
 	if (!bDrawn && bPlaced && Stronghold->ExteriorClass())
 	{
-		Stronghold->RememberExit(Map);
+		Stronghold->RememberExit(Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY());
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		FVector SpawnLoc(Stronghold->Location.X, Stronghold->Location.Y, 0.f);
 		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-		const FRotator Rotation(0.f, Stronghold->ExteriorYawDeg(Map), 0.f);
+		const FRotator Rotation(0.f, Stronghold->ExteriorYawDeg(Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY()), 0.f);
 		AActor* SpawnedActor = World->SpawnActor(Stronghold->ExteriorClass(), &SpawnLoc, &Rotation, SpawnParams);
 		if (ASolidStrongholdExterior* Exterior = Cast<ASolidStrongholdExterior>(SpawnedActor))
 		{
@@ -799,7 +799,8 @@ void ASolidGameMode::ShowOpenStronghold()
 		return;
 	}
 
-	const FVector2D Stand = static_cast<SolidStronghold::FSolidFortress*>(Stronghold)->OutsideGateXY(Map);
+	const FVector2D Stand = static_cast<SolidStronghold::FSolidFortress*>(Stronghold)->OutsideGateXY(
+		Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY());
 	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), Stand);
 	const float StandZ = Streamer->GetHeightAt(FVector(Stand.X, Stand.Y, 0.f)) + Streamer->CollisionHeightBias;
 	float CapsuleHalf = 96.f;
@@ -2554,7 +2555,9 @@ void ASolidGameMode::EnsureVegetation()
 		const USolidWorldChart* Map = Terrain ? Terrain->GetWorldMap() : nullptr;
 		if (SolidNameSigns::StandsFor(Active, Active))
 		{
-			const SolidNameSigns::FWorldPlace Place = SolidNameSigns::WorldPlace(*Active, Map);
+			const SolidNameSigns::FWorldPlace Place = Terrain
+				? SolidNameSigns::WorldPlace(*Active, Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY())
+				: SolidNameSigns::WorldPlace(*Active, Map);
 			FVector SpawnLoc(Place.XY.X, Place.XY.Y, 0.f);
 			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;

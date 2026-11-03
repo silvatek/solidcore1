@@ -10,16 +10,15 @@ namespace SolidLairMouth
 			&& Point.Y < USolidWorldChart::PointAxis;
 	}
 
-	/** One terrain point toward the grass. Terrain X grows west and terrain Y grows north. */
+	/** One terrain point toward the grass. East, south, and west. North is the chart's. */
 	FIntPoint StepFor(const SolidLair::EOrientation Orientation)
 	{
 		switch (Orientation)
 		{
-		case SolidLair::EOrientation::North: return FIntPoint(0, 1);
 		case SolidLair::EOrientation::East: return FIntPoint(-1, 0);
 		case SolidLair::EOrientation::South: return FIntPoint(0, -1);
 		case SolidLair::EOrientation::West: return FIntPoint(1, 0);
-		default: return FIntPoint(0, 1);
+		default: return FIntPoint::ZeroValue;
 		}
 	}
 
@@ -49,11 +48,21 @@ namespace SolidLairMouth
 			return false;
 		}
 
-		const FIntPoint ChosenStep = StepFor(Orientation);
-		const FIntPoint GrassPoint = TerrainPoint + ChosenStep;
-		if (!OnGrid(GrassPoint))
+		FIntPoint GrassPoint = FIntPoint::ZeroValue;
+		if (Orientation == SolidLair::EOrientation::North)
 		{
-			return false;
+			if (!WorldMap.OneTerrainPointNorthOf(TerrainPoint, GrassPoint))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			GrassPoint = TerrainPoint + StepFor(Orientation);
+			if (!OnGrid(GrassPoint))
+			{
+				return false;
+			}
 		}
 
 		FVector2D MouthXY = FVector2D::ZeroVector;

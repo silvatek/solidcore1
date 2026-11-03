@@ -30,7 +30,7 @@ TUniquePtr<FSolidStronghold> FSolidStronghold::Clone() const
 	return MakeUnique<FSolidStronghold>(*this);
 }
 
-float FSolidStronghold::ExteriorYawDeg(const USolidWorldChart*) const
+float FSolidStronghold::ExteriorYawDeg(const USolidWorldChart*, FVector2D, FVector2D) const
 {
 	return SolidStronghold::OrientationYawDeg(Orientation);
 }
@@ -43,7 +43,7 @@ FVector2D FSolidStronghold::ExitStandXY() const
 	return Location + Forward * ExitReachCm() + Left * ExitLateralCm();
 }
 
-void FSolidStronghold::RememberExit(const USolidWorldChart*)
+void FSolidStronghold::RememberExit(const USolidWorldChart*, FVector2D, FVector2D)
 {
 }
 
@@ -175,7 +175,7 @@ namespace SolidStronghold
 				{
 					continue;
 				}
-				Stronghold->RememberExit(Map);
+				Stronghold->RememberExit(Map, WorldMin, WorldMax);
 				UClass* ExteriorClass = Stronghold->ExteriorClass();
 				if (!ExteriorClass)
 				{
@@ -185,7 +185,7 @@ namespace SolidStronghold
 				FVector SpawnLoc(Stronghold->Location.X, Stronghold->Location.Y, 0.f);
 				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-				const FRotator Rotation(0.f, Stronghold->ExteriorYawDeg(Map), 0.f);
+				const FRotator Rotation(0.f, Stronghold->ExteriorYawDeg(Map, WorldMin, WorldMax), 0.f);
 				AActor* SpawnedActor = World->SpawnActor(ExteriorClass, &SpawnLoc, &Rotation, SpawnParams);
 				ASolidStrongholdExterior* Exterior = Cast<ASolidStrongholdExterior>(SpawnedActor);
 				if (!Exterior)
@@ -213,11 +213,13 @@ bool SolidStrongholds::MakeEntrance(
 	FEntrance& OutEntrance)
 {
 	OutEntrance = FEntrance();
-	const FIntPoint GrassPoint(TerrainPoint.X, TerrainPoint.Y + 1);
-	const bool bOnGrid = TerrainPoint.X >= 0 && TerrainPoint.Y >= 0
-		&& GrassPoint.X < USolidWorldChart::PointAxis
-		&& GrassPoint.Y < USolidWorldChart::PointAxis;
-	if (!WorldMap || !WorldMap->IsLoaded() || !bOnGrid)
+	if (!WorldMap || !WorldMap->IsLoaded())
+	{
+		return false;
+	}
+
+	FIntPoint GrassPoint = FIntPoint::ZeroValue;
+	if (!WorldMap->OneTerrainPointNorthOf(TerrainPoint, GrassPoint))
 	{
 		return false;
 	}
@@ -242,7 +244,9 @@ bool SolidStrongholds::MakeEntrance(
 bool SolidStrongholds::FindGrassFace(
 	const USolidWorldChart* WorldMap,
 	const FIntPoint TerrainPoint,
-	FGrassFace& Out)
+	FGrassFace& Out,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY)
 {
 	Out = FGrassFace();
 	if (!WorldMap || !WorldMap->IsLoaded())
@@ -250,15 +254,22 @@ bool SolidStrongholds::FindGrassFace(
 		return false;
 	}
 
-	const FIntPoint GrassPoint(TerrainPoint.X, TerrainPoint.Y + 1);
-	if (TerrainPoint.X < 0 || TerrainPoint.Y < 0
-		|| GrassPoint.X >= USolidWorldChart::PointAxis
-		|| GrassPoint.Y >= USolidWorldChart::PointAxis)
+	FIntPoint GrassPoint = FIntPoint::ZeroValue;
+	if (!WorldMap->OneTerrainPointNorthOf(TerrainPoint, GrassPoint))
 	{
 		return false;
 	}
+
+	FVector2D Here = FVector2D::ZeroVector;
+	FVector2D NorthXY = FVector2D::ZeroVector;
+	if (!WorldMap->TerrainPointToWorld(TerrainPoint, WorldMinXY, WorldMaxXY, Here)
+		|| !WorldMap->TerrainPointToWorld(GrassPoint, WorldMinXY, WorldMaxXY, NorthXY))
+	{
+		return false;
+	}
+
 	Out.GrassPoint = GrassPoint;
-	const FVector2D TowardGrass(0.f, 1.f);
+	const FVector2D TowardGrass = (NorthXY - Here).GetSafeNormal();
 	Out.FacingYawDeg = FMath::RadiansToDegrees(FMath::Atan2(TowardGrass.Y, TowardGrass.X));
 	return true;
 }

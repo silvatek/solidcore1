@@ -197,7 +197,10 @@ public:
 	 * World yaw of that exterior.
 	 * A dungeon points local +X along its exit. A tower turns its door toward the grass.
 	 */
-	virtual float ExteriorYawDeg(const USolidWorldChart* Map) const;
+	virtual float ExteriorYawDeg(
+		const USolidWorldChart* Map,
+		FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+		FVector2D WorldMaxXY = FVector2D(1.f, 1.f)) const;
 
 	/**
 	 * Ground-floor hexes this type keeps at Size.
@@ -223,7 +226,10 @@ public:
 	FVector2D ExitStandXY() const;
 
 	/** Records the direction the exit faces when this type takes it from the map. */
-	virtual void RememberExit(const USolidWorldChart* Map);
+	virtual void RememberExit(
+		const USolidWorldChart* Map,
+		FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+		FVector2D WorldMaxXY = FVector2D(1.f, 1.f));
 
 	/** After Make sets the size. A tower copies that size's measurements into its plan. */
 	virtual void BindPlan() {}
@@ -667,7 +673,12 @@ namespace SolidStrongholds
 		float FacingYawDeg = 0.f;
 	};
 
-	bool FindGrassFace(const USolidWorldChart* WorldMap, FIntPoint TerrainPoint, FGrassFace& Out);
+	bool FindGrassFace(
+		const USolidWorldChart* WorldMap,
+		FIntPoint TerrainPoint,
+		FGrassFace& Out,
+		FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+		FVector2D WorldMaxXY = FVector2D(1.f, 1.f));
 }
 
 /**

@@ -263,7 +263,9 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the cave marker has a grass face"),
 		SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CavePoint, CaveFace));
-	TestEqual(TEXT("the cave faces the next point north"), CaveFace.GrassPoint, CavePoint + FIntPoint(0, 1));
+	FIntPoint CaveNorth = FIntPoint::ZeroValue;
+	TestTrue(TEXT("the chart names the point north of the cave"), Map->OneTerrainPointNorthOf(CavePoint, CaveNorth));
+	TestEqual(TEXT("the cave faces the next point north"), CaveFace.GrassPoint, CaveNorth);
 
 	ASolidLairEntrance* Unmarked = NewObject<ASolidLairEntrance>();
 	ASolidLairEntrance* Tunnel = NewObject<ASolidLairEntrance>();
@@ -572,7 +574,11 @@ bool FSolidLairMouthFacingTest::RunTest(const FString& Parameters)
 		if (Mouth.EndMarker == SolidLair::Entrance)
 		{
 			bSawEntrance = true;
-			TestEqual(TEXT("the entrance faces the next point north"), Mouth.GrassPoint, EntrancePoint + FIntPoint(0, 1));
+			FIntPoint EntranceNorth = FIntPoint::ZeroValue;
+			TestTrue(
+				TEXT("the chart names the point north of the entrance"),
+				Chart->OneTerrainPointNorthOf(EntrancePoint, EntranceNorth));
+			TestEqual(TEXT("the entrance faces the next point north"), Mouth.GrassPoint, EntranceNorth);
 			TestTrue(TEXT("north yaw"), FMath::IsNearlyEqual(Mouth.FacingYawDeg, 90.f, 0.1f));
 		}
 	}

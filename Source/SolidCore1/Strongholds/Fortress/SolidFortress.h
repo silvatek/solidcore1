@@ -95,12 +95,18 @@ namespace SolidStronghold
 			const FSolidStronghold* Active,
 			FIntPoint OpeningCell) const override;
 		virtual float ExitReachCm() const override;
-		virtual void RememberExit(const USolidWorldChart* Map) override;
+		virtual void RememberExit(
+			const USolidWorldChart* Map,
+			FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+			FVector2D WorldMaxXY = FVector2D(1.f, 1.f)) override;
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;
 		virtual UClass* InteriorClass() const override;
 		virtual void ConfigureInterior(AActor* Interior) const override;
-		virtual float ExteriorYawDeg(const USolidWorldChart* Map) const override;
+		virtual float ExteriorYawDeg(
+			const USolidWorldChart* Map,
+			FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+			FVector2D WorldMaxXY = FVector2D(1.f, 1.f)) const override;
 		/** Beside the gate, on the grass side of the curtain. */
 		virtual FSolidNameSignPlace NameSign() const override;
 		virtual void CollectGroundHexes(
@@ -110,7 +116,10 @@ namespace SolidStronghold
 		float OuterWidthCm() const;
 		float OuterDepthCm() const;
 		/** One hex outside the gate, on the grass side. */
-		FVector2D OutsideGateXY(const USolidWorldChart* Map) const;
+		FVector2D OutsideGateXY(
+			const USolidWorldChart* Map,
+			FVector2D WorldMinXY = FVector2D(-1.f, -1.f),
+			FVector2D WorldMaxXY = FVector2D(1.f, 1.f)) const;
 		/** One storey plus the parapet. The gate stops under the parapet. */
 		float CurtainHeightCm() const;
 

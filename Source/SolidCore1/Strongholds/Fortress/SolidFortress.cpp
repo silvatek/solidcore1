@@ -473,10 +473,13 @@ namespace SolidStronghold
 		return OuterDepthCm() * 0.5f + SolidStrongholdGrid::FlatToFlatCm;
 	}
 
-	void FSolidFortress::RememberExit(const USolidWorldChart* Map)
+	void FSolidFortress::RememberExit(
+		const USolidWorldChart* Map,
+		const FVector2D WorldMinXY,
+		const FVector2D WorldMaxXY)
 	{
 		SolidStrongholds::FGrassFace Face;
-		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face))
+		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face, WorldMinXY, WorldMaxXY))
 			? Face.FacingYawDeg
 			: 0.f;
 		Orientation = OrientationFromYaw(GrassYaw);
@@ -534,10 +537,13 @@ namespace SolidStronghold
 		return Place;
 	}
 
-	float FSolidFortress::ExteriorYawDeg(const USolidWorldChart* Map) const
+	float FSolidFortress::ExteriorYawDeg(
+		const USolidWorldChart* Map,
+		const FVector2D WorldMinXY,
+		const FVector2D WorldMaxXY) const
 	{
 		SolidStrongholds::FGrassFace Face;
-		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face))
+		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face, WorldMinXY, WorldMaxXY))
 			? Face.FacingYawDeg
 			: 0.f;
 		return FMath::UnwindDegrees(GrassYaw + 180.f);
@@ -568,10 +574,13 @@ namespace SolidStronghold
 		return FSolidStronghold::StoreyCm + ParapetCm;
 	}
 
-	FVector2D FSolidFortress::OutsideGateXY(const USolidWorldChart* Map) const
+	FVector2D FSolidFortress::OutsideGateXY(
+		const USolidWorldChart* Map,
+		const FVector2D WorldMinXY,
+		const FVector2D WorldMaxXY) const
 	{
 		const float Reach = OuterDepthCm() * 0.5f + SolidStrongholdGrid::FlatToFlatCm;
-		const FVector World = FRotator(0.f, ExteriorYawDeg(Map), 0.f).RotateVector(FVector(-Reach, 0.f, 0.f));
+		const FVector World = FRotator(0.f, ExteriorYawDeg(Map, WorldMinXY, WorldMaxXY), 0.f).RotateVector(FVector(-Reach, 0.f, 0.f));
 		return Location + FVector2D(World.X, World.Y);
 	}
 

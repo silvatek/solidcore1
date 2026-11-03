@@ -220,3 +220,4 @@ When asked to refactor code, finish with a summary of the code before and after.
 - C++ types: `Solid*`. New Blueprints: `BP_SolidCharacter`, `BP_SolidGameMode`, paths under `/Game/Characters/`.
 - Do not create new assets named `BP_SolidCore1*`.
 - Do not use the word den. The company's first stronghold is the cave: size Meagre, type Dungeon. Its interior is the cave. Its fourteen-cell plan is the Meagre floor.
+- Do not use the word cell in new code without explicit permission.

@@ -157,7 +157,7 @@ Read the request and the names next to the new code before choosing. When those 
 
 ## Tests
 
-Follow the Automated tests policy in `CodingGuidelines.md`. A test that creates an object uses `UTEST_NOT_NULL`. A test chart stores the land on terrain points and the ends on marks. It does not fill `Cells`.
+Follow the Automated tests policy in `CodingGuidelines.md`. A test that creates an object uses `UTEST_NOT_NULL`. A test chart stores the land on terrain points and the ends on marks.
 
 A failure caused by an edit to `/Game/World/WorldChart` follows the World chart section.
 
@@ -192,13 +192,11 @@ The search leaves unused includes, unused parameters, comments, commented-out bl
 
 ## World chart
 
-The game builds the world from `/Game/World/WorldChart`. Code comes first. The chart asset is not edited until the game code understands that edit. An earlier instruction told a coding agent, working on the Windows machine, to review `WorldMap.txt` before other work and match the code to that file. The chart asset replaced that file. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
+The game builds the world from `/Game/World/WorldChart`. Code comes first. The chart asset is not edited until the game code understands that edit. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
 
 When a test fails because `/Game/World/WorldChart` has changed, the agent may investigate. The chart stays as the product owner saved it. The investigation does not restore that asset from git or revert it any other way. Checking `Content/World/WorldChart.uasset` back out was the miss. A test that assumes particular chart content is valid only when the product code needs that content to keep working. Otherwise the test is not valid. When the agent thinks the chart edit was a mistake, it asks the product owner before changing the chart.
 
-The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is west. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
-
-World +Y is north and world +X is west for a terrain point and for a world cell. A terrain point's row number counts up toward the north, so point row 0 is the south edge. A world cell's row number counts up toward the south. Column 0 is west on both.
+The grid is 513 points by 513 points, 2 m apart. Point row 0 is the south edge and the row number counts up toward the north. Column 0 is the west edge. World +Y is north and world +X is west. Swamp and road are not painted. The dump's first row is the north edge, and the first character of a row is the west edge.
 
 A mark is a town, a stronghold, a stronghold site, a lair entrance, a lair exit, a custom note, or an encounter. A named town resolves as town. A lair mouth resolves as mountain. A stronghold uses the shelf that stronghold names. A site, a note, and an encounter leave the paint. A road is two end names and a type: trail, track, road, or highway. An end is a town or a stronghold. A site is not an end. The Iglin Tunnels Entrance is the LairEntrance south of Iglin. The Iglin Tunnels Exit is the LairExit west of Relion.
 

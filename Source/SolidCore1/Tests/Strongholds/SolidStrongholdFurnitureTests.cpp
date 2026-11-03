@@ -325,33 +325,30 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 	}
 
 	UStaticMesh* HearthMesh = Hearth->GetStaticMesh();
-	UStaticMesh* EmberMesh = Embers->GetStaticMesh();
 	UStaticMesh* BedMesh = BedBody->GetStaticMesh();
 	UStaticMesh* PillowMesh = Pillow->GetStaticMesh();
 	UStaticMesh* ChestMesh = ChestBody->GetStaticMesh();
 	UStaticMesh* LidMesh = Lid->GetStaticMesh();
-	TestNotNull(TEXT("hearth mesh"), HearthMesh);
-	TestNotNull(TEXT("ember mesh"), EmberMesh);
+	TestNotNull(TEXT("campfire mesh"), HearthMesh);
 	TestNotNull(TEXT("bed mesh"), BedMesh);
 	TestNotNull(TEXT("pillow mesh"), PillowMesh);
 	TestNotNull(TEXT("chest mesh"), ChestMesh);
 	TestNotNull(TEXT("lid mesh"), LidMesh);
-	TestNotNull(TEXT("hearth material"), Hearth->GetMaterial(0));
+	if (!HearthMesh || !BedMesh || !PillowMesh || !ChestMesh || !LidMesh)
+	{
+		return false;
+	}
+	TestEqual(TEXT("fireplace uses the campfire"), HearthMesh->GetName(), FString(TEXT("Campfire")));
+	TestNotNull(TEXT("campfire material"), Hearth->GetMaterial(0));
 	TestNotNull(TEXT("pillow material"), Pillow->GetMaterial(0));
-
+	TestTrue(TEXT("campfire scale is 90 percent"), Hearth->GetRelativeScale3D().Equals(FVector(0.9f), 0.001f));
+	TestFalse(TEXT("embers stay hidden"), Embers->IsVisible());
+	TestNull(TEXT("embers have no mesh"), Embers->GetStaticMesh());
+	const float Scale = Hearth->GetRelativeScale3D().X;
+	const float Bottom = Hearth->GetRelativeLocation().Z + HearthMesh->GetBounds().GetBox().Min.Z * Scale;
 	TestTrue(
-		TEXT("hearth scale is one hex across"),
-		ScaleMatches(Hearth, FVector(
-			Fireplace->AcrossCm(),
-			Fireplace->AcrossCm(),
-			Fireplace->HearthCm())));
-	TestTrue(
-		TEXT("embers are a short cylinder"),
-		ScaleMatches(Embers, FVector(
-			Fireplace->EmberRadiusCm() * 2.f,
-			Fireplace->EmberRadiusCm() * 2.f,
-			Fireplace->EmberHeightCm())));
-	TestTrue(TEXT("embers sit on the hearth"), Embers->GetRelativeLocation().Z > Hearth->GetRelativeLocation().Z);
+		TEXT("campfire sits on the floor"),
+		FMath::IsNearlyEqual(Bottom, Fireplace->FloorLiftCm(), 0.05f));
 
 	TestTrue(
 		TEXT("bed scale covers two hexes"),

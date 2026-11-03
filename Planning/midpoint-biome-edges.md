@@ -1,6 +1,6 @@
 # Midpoint biome edges
 
-Status: New
+Status: Ready
 
 ## Story
 

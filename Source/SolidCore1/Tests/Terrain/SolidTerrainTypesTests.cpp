@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidBiome.h"
+#include "SolidQuadSplit.h"
 #include "SolidTerrainMaterials.h"
 #include "SolidTerrainTypes.h"
 #include "SolidWorldChart.h"
@@ -97,32 +98,32 @@ bool FSolidBiomeBorderTextureTest::RunTest(const FString& Parameters)
 {
 	TestEqual(
 		TEXT("mountain cliff beats the river"),
-		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
 			ESolidBiome::River, ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::Mountain));
 	TestEqual(
 		TEXT("grass bank beats the river"),
-		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
 			ESolidBiome::River, ESolidBiome::River, ESolidBiome::Grassland, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(
 		TEXT("a river triangle stays river"),
-		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
 			ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::River, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::River));
 	TestEqual(
 		TEXT("equal shelves keep the quad biome"),
-		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
 			ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Grassland, ESolidBiome::Desert)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(
 		TEXT("mountain already on the quad stays"),
-		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
 			ESolidBiome::Mountain, ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::Grassland)),
 		static_cast<uint8>(ESolidBiome::Mountain));
 	TestEqual(
 		TEXT("sea and river share the shelf"),
-		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+		static_cast<uint8>(FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).BorderBiome(
 			ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::Sea, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::Sea));
 	return true;
@@ -267,16 +268,16 @@ bool FSolidBiomeFadeWeightTest::RunTest(const FString& Parameters)
 
 	TestFalse(
 		TEXT("one biome keeps its material"),
-		SolidTerrainTypes::FadeWeight(Patch[0][0], Patch[0][1], Patch[1][0], Patch[1][1], Weights));
+		SolidTerrainMaterials::FadeWeight(Patch[0][0], Patch[0][1], Patch[1][0], Patch[1][1], Weights));
 
 	TestTrue(
 		TEXT("the odd desert corner fades"),
-		SolidTerrainTypes::FadeWeight(Patch[0][1], Patch[0][2], Patch[1][1], Patch[1][2], Weights));
+		SolidTerrainMaterials::FadeWeight(Patch[0][1], Patch[0][2], Patch[1][1], Patch[1][2], Weights));
 	Matches(TEXT("that odd corner is fully desert"), Weights, 0.f, 0.f, 0.f, 1.f);
 
 	TestTrue(
 		TEXT("a straight run fades"),
-		SolidTerrainTypes::FadeWeight(Patch[0][2], Patch[0][3], Patch[1][2], Patch[1][3], Weights));
+		SolidTerrainMaterials::FadeWeight(Patch[0][2], Patch[0][3], Patch[1][2], Patch[1][3], Weights));
 	Matches(TEXT("one row is forest and the next is desert"), Weights, 0.f, 0.f, 1.f, 1.f);
 	TestTrue(
 		TEXT("the halfway line is the middle of that fade"),
@@ -285,31 +286,31 @@ bool FSolidBiomeFadeWeightTest::RunTest(const FString& Parameters)
 
 	TestTrue(
 		TEXT("the odd forest corner fades"),
-		SolidTerrainTypes::FadeWeight(Patch[1][1], Patch[1][2], Patch[2][1], Patch[2][2], Weights));
+		SolidTerrainMaterials::FadeWeight(Patch[1][1], Patch[1][2], Patch[2][1], Patch[2][2], Weights));
 	Matches(TEXT("that odd corner is fully forest"), Weights, 0.f, 1.f, 1.f, 1.f);
 
 	TestFalse(
 		TEXT("desert alone keeps its material"),
-		SolidTerrainTypes::FadeWeight(Patch[2][2], Patch[2][3], Patch[2][2], Patch[2][3], Weights));
+		SolidTerrainMaterials::FadeWeight(Patch[2][2], Patch[2][3], Patch[2][2], Patch[2][3], Weights));
 	TestFalse(
 		TEXT("a road corner keeps the hard material"),
-		SolidTerrainTypes::FadeWeight(Forest, Forest, Desert, ESolidBiome::Road, Weights));
+		SolidTerrainMaterials::FadeWeight(Forest, Forest, Desert, ESolidBiome::Road, Weights));
 	TestFalse(
 		TEXT("a higher shelf keeps the hard material"),
-		SolidTerrainTypes::FadeWeight(Forest, Forest, Desert, ESolidBiome::Mountain, Weights));
+		SolidTerrainMaterials::FadeWeight(Forest, Forest, Desert, ESolidBiome::Mountain, Weights));
 	TestFalse(
 		TEXT("three biomes keep the hard material"),
-		SolidTerrainTypes::FadeWeight(Forest, Desert, ESolidBiome::Town, Forest, Weights));
+		SolidTerrainMaterials::FadeWeight(Forest, Desert, ESolidBiome::Town, Forest, Weights));
 	TestFalse(
 		TEXT("grassland keeps the hard material"),
-		SolidTerrainTypes::FadeWeight(ESolidBiome::Grassland, ESolidBiome::Grassland, Forest, Forest, Weights));
+		SolidTerrainMaterials::FadeWeight(ESolidBiome::Grassland, ESolidBiome::Grassland, Forest, Forest, Weights));
 	TestFalse(
 		TEXT("sea against forest keeps the higher land shelf"),
-		SolidTerrainTypes::FadeWeight(ESolidBiome::Sea, ESolidBiome::Sea, Forest, Forest, Weights));
+		SolidTerrainMaterials::FadeWeight(ESolidBiome::Sea, ESolidBiome::Sea, Forest, Forest, Weights));
 
 	TestTrue(
 		TEXT("sea against river fades"),
-		SolidTerrainTypes::FadeWeight(
+		SolidTerrainMaterials::FadeWeight(
 			ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::River, Weights));
 	Matches(TEXT("sea and river share one shelf"), Weights, 0.f, 0.f, 1.f, 1.f);
 	return true;
@@ -333,54 +334,54 @@ bool FSolidBiomeDiagonalCutTest::RunTest(const FString& Parameters)
 
 	TestFalse(
 		TEXT("one biome keeps its material"),
-		SolidTerrainTypes::DiagonalCut(Patch[0][0], Patch[0][1], Patch[1][0], Patch[1][1], Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[0][0], Patch[0][1], Patch[1][0], Patch[1][1], Corner));
 
 	TestTrue(
 		TEXT("the odd desert corner is cut off"),
-		SolidTerrainTypes::DiagonalCut(Patch[0][1], Patch[0][2], Patch[1][1], Patch[1][2], Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[0][1], Patch[0][2], Patch[1][1], Patch[1][2], Corner));
 	TestEqual(TEXT("that corner is 11"), Corner, 3);
 
 	TestFalse(
 		TEXT("a straight run keeps the grid edge"),
-		SolidTerrainTypes::DiagonalCut(Patch[0][2], Patch[0][3], Patch[1][2], Patch[1][3], Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[0][2], Patch[0][3], Patch[1][2], Patch[1][3], Corner));
 
 	TestTrue(
 		TEXT("the odd forest corner is cut off"),
-		SolidTerrainTypes::DiagonalCut(Patch[1][1], Patch[1][2], Patch[2][1], Patch[2][2], Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[1][1], Patch[1][2], Patch[2][1], Patch[2][2], Corner));
 	TestEqual(TEXT("that corner is 00"), Corner, 0);
 
 	TestTrue(
 		TEXT("an odd 10 corner is cut off"),
-		SolidTerrainTypes::DiagonalCut(Forest, Desert, Forest, Forest, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Desert, Forest, Forest, Corner));
 	TestEqual(TEXT("that corner is 10"), Corner, 1);
 
 	TestTrue(
 		TEXT("an odd 01 corner is cut off"),
-		SolidTerrainTypes::DiagonalCut(Forest, Forest, Desert, Forest, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Forest, Desert, Forest, Corner));
 	TestEqual(TEXT("that corner is 01"), Corner, 2);
 
 	TestFalse(
 		TEXT("desert alone keeps its material"),
-		SolidTerrainTypes::DiagonalCut(Desert, Desert, Desert, Desert, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Desert, Desert, Desert, Desert, Corner));
 	TestFalse(
 		TEXT("a checker keeps one material"),
-		SolidTerrainTypes::DiagonalCut(Forest, Desert, Desert, Forest, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Desert, Desert, Forest, Corner));
 	TestFalse(
 		TEXT("a road corner keeps the hard material"),
-		SolidTerrainTypes::DiagonalCut(Forest, Forest, Desert, ESolidBiome::Road, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Forest, Desert, ESolidBiome::Road, Corner));
 	TestFalse(
 		TEXT("a higher shelf keeps the whole quad"),
-		SolidTerrainTypes::DiagonalCut(ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::Sea, Forest, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::Sea, Forest, Corner));
 	TestFalse(
 		TEXT("three biomes keep one material"),
-		SolidTerrainTypes::DiagonalCut(Forest, Desert, ESolidBiome::Town, Forest, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Desert, ESolidBiome::Town, Forest, Corner));
 	TestFalse(
 		TEXT("grassland keeps its material"),
-		SolidTerrainTypes::DiagonalCut(ESolidBiome::Grassland, ESolidBiome::Grassland, ESolidBiome::Grassland, Forest, Corner));
+		FSolidOddCornerSplit::Instance().DiagonalCut(ESolidBiome::Grassland, ESolidBiome::Grassland, ESolidBiome::Grassland, Forest, Corner));
 
 	TestTrue(
 		TEXT("sea against river is cut"),
-		SolidTerrainTypes::DiagonalCut(
+		FSolidOddCornerSplit::Instance().DiagonalCut(
 			ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::River, Corner));
 	TestEqual(TEXT("the river corner is 11"), Corner, 3);
 	return true;
@@ -426,10 +427,10 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	TestEqual(
 		TEXT("this build uses NorthWest"),
-		static_cast<uint8>(SolidTerrainTypes::QuadMaterial),
-		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::NorthWest));
+		static_cast<uint8>(FSolidQuadSplit::QuadMaterial),
+		static_cast<uint8>(ESolidQuadMaterial::NorthWest));
 
-	auto Expect = [this](const TCHAR* What, const SolidTerrainTypes::FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
+	auto Expect = [this](const TCHAR* What, const FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{
 		TestEqual(*FString::Printf(TEXT("%s count"), What), Tri.Count, 2);
 		if (Tri.Count < 2)
@@ -467,63 +468,63 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	Expect(
 		TEXT("odd 11"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		true, Forest, Desert);
 	Expect(
 		TEXT("odd 00"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Desert, Forest, Forest, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Desert, Forest, Forest, Forest, Forest, Forest),
 		true, Desert, Forest);
 	Expect(
 		TEXT("odd 10"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Desert, Forest, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Forest, Desert, Forest, Forest, Forest, Forest),
 		false, Desert, Forest);
 	Expect(
 		TEXT("odd 01"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Desert, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Forest, Forest, Forest, Desert, Forest, Forest, Forest),
 		false, Forest, Desert);
 	Expect(
 		TEXT("a straight run stays on the northwest corner"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Desert, Forest, Forest, Desert, Desert, Desert, Desert),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Triangles( Desert, Forest, Forest, Desert, Desert, Desert, Desert),
 		false, Desert, Desert);
 	Expect(
 		TEXT("the northwest method leaves the odd corner"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWest, Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		false, Forest, Forest);
 	Expect(
 		TEXT("a lone northwest corner is cut"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Desert, Forest, Forest, Forest, Desert, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Desert, Forest, Forest, Forest, Desert, Forest, Forest),
 		true, Forest, Desert);
 	Expect(
 		TEXT("a south corner that continues west is cut"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Town, Grass, Grass, Town, Town),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Grass, Grass, Town, Grass, Grass, Town, Town),
 		false, Town, Grass);
 	Expect(
 		TEXT("a south corner whose west point matches the northwest stays"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Forest, Town, Forest, Forest, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Forest, Forest, Town, Forest, Forest, Forest, Forest),
 		false, Forest, Forest);
 	Expect(
 		TEXT("a straight run stays whole under NorthWestCut"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Town, Town, Forest, Forest, Forest, Town),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Forest, Town, Town, Forest, Forest, Forest, Town),
 		false, Forest, Forest);
 	Expect(
 		TEXT("a two-and-two edge cuts at its west end"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Town, Grass, Grass, Town, Town, Grass, Grass),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Grass, Grass),
 		false, Grass, Town);
 	Expect(
 		TEXT("a two-and-two edge stays whole where the west point matches"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Town, Grass, Grass, Town, Town, Town, Grass),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Town, Grass),
 		false, Town, Town);
 	Expect(
 		TEXT("a two-and-two edge stays whole when the south-west point differs"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Town, Grass, Grass, Town, Town, Grass, Town),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Town, Grass, Grass, Town, Town, Grass, Town),
 		false, Town, Town);
 	Expect(
 		TEXT("a mountain top uses the mountain"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Grass, Mountain, Mountain, Grass, Grass),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Grass, Grass, Grass, Mountain, Mountain, Grass, Grass),
 		false, Mountain, Mountain);
 	Expect(
 		TEXT("a lone mountain corner leaves the grass triangle"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Grass, Grass, Mountain, Grass, Grass),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Grass, Grass, Grass, Grass, Mountain, Grass, Grass),
 		true, Grass, Mountain);
 
 	return true;

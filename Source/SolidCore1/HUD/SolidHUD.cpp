@@ -31,6 +31,7 @@
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidBiome.h"
+#include "Terrain/SolidQuadSplit.h"
 #include "GameFramework/GameModeBase.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -2202,8 +2203,8 @@ void ASolidHUD::DrawHUD()
 					const ESolidBiome Preferred = Map->SamplePoint(CentreX, CentreY).Biome;
 					const ESolidBiome WestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY1).Biome;
 					const ESolidBiome SouthWestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY0).Biome;
-					const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
-						SolidTerrainTypes::QuadMaterial, Preferred,
+					const FSolidQuadTriangles Picked = FSolidQuadSplit::Of(FSolidQuadSplit::QuadMaterial).Triangles(
+						Preferred,
 						Corners[0], Corners[1], Corners[2], Corners[3],
 						WestOfNorthWest, SouthWestOfNorthWest);
 					FString Materials;

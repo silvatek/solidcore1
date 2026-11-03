@@ -1,4 +1,5 @@
 #include "SolidTerrainChunk.h"
+#include "SolidQuadSplit.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainNoise.h"
@@ -267,7 +268,7 @@ void ASolidTerrainChunk::BuildChunk(
 	Tangents.Reserve(VertsPerSide * VertsPerSide);
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
-	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * SolidTerrainTypes::FSolidQuadTriangles::Capacity * 3);
+	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * FSolidQuadTriangles::Capacity * 3);
 
 	TArray<float> Heights;
 	Heights.SetNumUninitialized(VertsPerSide * VertsPerSide);
@@ -351,8 +352,8 @@ void ASolidTerrainChunk::BuildChunk(
 	TArray<UMaterialInterface*> Materials;
 	TArray<int32> TriMatIndices;
 	TArray<FLinearColor> CornerColors;
-	TriMatIndices.Reserve(InQuadsPerSide * InQuadsPerSide * SolidTerrainTypes::FSolidQuadTriangles::Capacity);
-	CornerColors.Reserve(InQuadsPerSide * InQuadsPerSide * SolidTerrainTypes::FSolidQuadTriangles::Capacity * 3);
+	TriMatIndices.Reserve(InQuadsPerSide * InQuadsPerSide * FSolidQuadTriangles::Capacity);
+	CornerColors.Reserve(InQuadsPerSide * InQuadsPerSide * FSolidQuadTriangles::Capacity * 3);
 
 	auto EnsureMaterialSlot = [&](const ESolidBiome Biome) -> int32
 	{
@@ -424,12 +425,12 @@ void ASolidTerrainChunk::BuildChunk(
 						WestWorldX, OriginY + static_cast<float>(Y) * Step).Biome;
 				}
 			}
-			const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
-				SolidTerrainTypes::QuadMaterial, Preferred, B00, B10, B01, B11,
+			const FSolidQuadTriangles Picked = FSolidQuadSplit::Of(FSolidQuadSplit::QuadMaterial).Triangles(
+				Preferred, B00, B10, B01, B11,
 				WestOfNorthWest, SouthWestOfNorthWest);
 			for (int32 TriangleIndex = 0; TriangleIndex < Picked.Count; ++TriangleIndex)
 			{
-				const SolidTerrainTypes::FSolidQuadTriangle& Triangle = Picked.Triangles[TriangleIndex];
+				const FSolidQuadTriangle& Triangle = Picked.Triangles[TriangleIndex];
 				const int32 V0 = CornerVertex[Triangle.Corner0];
 				const int32 V1 = CornerVertex[Triangle.Corner1];
 				const int32 V2 = CornerVertex[Triangle.Corner2];

@@ -20,7 +20,7 @@ The player looks across the ground where two biomes meet. Each 2 m square takes 
 
 ## Implementation notes
 
-The mesh is changed first so a quad can hold as many triangles as the method returns. NorthWest, OddCorner, and NorthWestCut keep returning two, the same two they return now. Once that still matches, PriorityMidpoint is added as a value of QuadSplit. Ctrl+Shift+M cycles the values in enum order, and the loaded chunks rebuild. This story introduces no new class.
+The mesh is changed first so a quad can hold as many triangles as the method returns. NorthWest, OddCorner, and NorthWestCut keep returning two, the same two they return now. Once that still matches, PriorityMidpoint is added as a value of QuadSplit. Ctrl+Shift+M cycles the values in enum order, and the loaded chunks rebuild.
 
 The patch is eight rows by twelve points, the middle of a chart export with a road added. The first row is north and the first character of a row is west. F is forest, T is town, G is grassland, and R is road.
 

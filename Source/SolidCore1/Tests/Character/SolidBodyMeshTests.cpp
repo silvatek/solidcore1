@@ -357,30 +357,22 @@ bool FSolidBodySkinSlotTest::RunTest(const FString& Parameters)
 #if WITH_EDITOR
 namespace
 {
-	bool ConstantIs(const FExpressionInput& Input, const float Value)
-	{
-		const UMaterialExpressionConstant* Node = Cast<UMaterialExpressionConstant>(Input.Expression);
-		return Node && Node->R == Value;
-	}
-
-	bool ClothingRoughnessIsZero(UMaterialInterface* Material)
+	bool ClothingUsesGrassParent(UMaterialInterface* Material)
 	{
 		UMaterial* Parent = Material ? Material->GetMaterial() : nullptr;
-		UMaterialEditorOnlyData* EditorData = Parent ? Parent->GetEditorOnlyData() : nullptr;
-		const UMaterialExpressionSubstrateShadingModels* Shading = EditorData
-			? Cast<UMaterialExpressionSubstrateShadingModels>(EditorData->FrontMaterial.Expression)
-			: nullptr;
-		if (!Shading)
-		{
-			return false;
-		}
-		const UMaterialExpressionVectorParameter* Color =
-			Cast<UMaterialExpressionVectorParameter>(Shading->BaseColor.Expression);
-		return Color
-			&& Color->ParameterName == TEXT("Base Color")
-			&& ConstantIs(Shading->Roughness, 0.f)
-			&& ConstantIs(Shading->Specular, 0.f)
-			&& ConstantIs(Shading->Metallic, 0.f);
+		UMaterialInstanceDynamic* Mid = Cast<UMaterialInstanceDynamic>(Material);
+		float Roughness = -1.f;
+		float Metallic = -1.f;
+		float Specular = -1.f;
+		return Parent
+			&& Parent->GetFName() == TEXT("M_Default")
+			&& Mid
+			&& Mid->GetScalarParameterValue(TEXT("RoughnessFactor"), Roughness)
+			&& Mid->GetScalarParameterValue(TEXT("MetallicFactor"), Metallic)
+			&& Mid->GetScalarParameterValue(TEXT("SpecularFactor"), Specular)
+			&& Roughness == 1.f
+			&& Metallic == 0.f
+			&& Specular == 0.f;
 	}
 }
 #endif
@@ -415,8 +407,8 @@ bool FSolidBodyClothingMatteTest::RunTest(const FString& Parameters)
 	}
 
 #if WITH_EDITOR
-	TestTrue(TEXT("shirt roughness is zero"), ClothingRoughnessIsZero(Materials[0].MaterialInterface));
-	TestTrue(TEXT("trouser roughness is zero"), ClothingRoughnessIsZero(Materials[1].MaterialInterface));
+	TestTrue(TEXT("shirt uses the grass parent"), ClothingUsesGrassParent(Materials[0].MaterialInterface));
+	TestTrue(TEXT("trousers use the grass parent"), ClothingUsesGrassParent(Materials[1].MaterialInterface));
 	if (UMaterial* Shirt = Materials[0].MaterialInterface->GetMaterial())
 	{
 		TestTrue(TEXT("shirt is used on a skeletal mesh"), Shirt->GetUsageByFlag(MATUSAGE_SkeletalMesh));

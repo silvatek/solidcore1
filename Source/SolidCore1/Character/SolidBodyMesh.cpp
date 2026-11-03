@@ -401,23 +401,50 @@ namespace
 #endif
 	}
 
+	/**
+	 * The grass material's parent. RoughnessFactor, MetallicFactor, and SpecularFactor are the
+	 * parameters that parent already compiles. Specular 0 is the matte end of that scale.
+	 */
+	UMaterialInterface* CreateMatteCloth(UObject* Outer, const FLinearColor& Color)
+	{
+#if WITH_EDITOR
+		UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
+			nullptr, TEXT("/InterchangeAssets/gltf/M_Default.M_Default"));
+		UMaterial* Base = Parent ? Parent->GetMaterial() : nullptr;
+		if (Base && !Base->GetUsageByFlag(MATUSAGE_SkeletalMesh))
+		{
+			Base->SetUsageByFlag(MATUSAGE_SkeletalMesh, true);
+			Base->PreEditChange(nullptr);
+			Base->PostEditChange();
+			if (UPackage* Package = Base->GetOutermost())
+			{
+				Package->SetDirtyFlag(false);
+			}
+		}
+		if (UMaterialInstanceDynamic* MID = Parent ? UMaterialInstanceDynamic::Create(Parent, Outer) : nullptr)
+		{
+			MID->SetVectorParameterValue(TEXT("BaseColorFactor"), Color);
+			MID->SetScalarParameterValue(TEXT("RoughnessFactor"), 1.f);
+			MID->SetScalarParameterValue(TEXT("MetallicFactor"), 0.f);
+			MID->SetScalarParameterValue(TEXT("SpecularFactor"), 0.f);
+			UE_LOG(LogSolid, Warning, TEXT("Clothing material: M_Default roughness 1 specular 0 metallic 0"));
+			return MID;
+		}
+		UE_LOG(LogSolid, Error, TEXT("Clothing material: M_Default failed to load."));
+#endif
+		return nullptr;
+	}
+
 	/** Shirt or trousers. Falls back to a flat colour when the matte parent cannot be built. */
 	UMaterialInterface* CreateClothingColor(
 		UObject* Outer,
 		const FLinearColor& Color,
 		const TCHAR* DebugName)
 	{
-#if WITH_EDITOR
-		if (UMaterial* Parent = ClothingMaterial(0.f, 0.f, 0.f, false))
+		if (UMaterialInterface* Cloth = CreateMatteCloth(Outer, Color))
 		{
-			if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, Outer))
-			{
-				MID->SetVectorParameterValue(TEXT("Base Color"), Color);
-				MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
-				return MID;
-			}
+			return Cloth;
 		}
-#endif
 		return SolidMaterials::CreateSolidColor(Outer, Color, DebugName, 1.f);
 	}
 
@@ -883,7 +910,11 @@ void SolidBodyMesh::ApplyClothingSample(
 	}
 	UMaterialInterface* Created = nullptr;
 #if WITH_EDITOR
-	if (!bFlat)
+	if (!bFlat && !bUnlit)
+	{
+		Created = CreateMatteCloth(Mesh, Color);
+	}
+	else if (!bFlat)
 	{
 		if (UMaterial* Parent = ClothingMaterial(Roughness, Specular, Metallic, bUnlit))
 		{

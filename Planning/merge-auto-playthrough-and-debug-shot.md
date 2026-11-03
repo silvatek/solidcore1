@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-Auto playthrough and Debug Shot become one script runner. A script has a name and a list of commands. Several named scripts can be defined. Each script has a flag that says whether it is on the F10 menu.
+Auto playthrough and Debug Shot become one script runner. A script has a name and a list of commands. Several named scripts can be defined. Each script has a flag that says whether it is on the F10 menu, and a DisableAfterMove flag. When DisableAfterMove is set, the script is disabled once the captain moves. A move the script makes counts, and a move the player makes counts.
 
 The two scripts are Full-playthrough and Companion parade. Full-playthrough is the script Auto playthrough runs now. Companion parade is the current Debug Shot: Sam, the Parade formation, true sight, 10 m south of the Dragongate mark, facing south, a three-second wait, and a playshot.
 
@@ -21,6 +21,7 @@ The command line launches the game with `-Autoplay=` and the script name. That l
 - More than one script can be defined, and each script has a name.
 - The scripts are Full-playthrough and Companion parade. Full-playthrough is the script Auto playthrough runs now. Companion parade places the company 10 m south of the Dragongate mark, with Sam, the Parade formation, true sight, and facing south. It waits three seconds and takes a playshot.
 - Each script has a flag for the F10 menu. Full-playthrough's flag is set, and Companion parade's flag is clear. The menu lists each script whose flag is set, so the row is Full-playthrough. Choosing that row runs that script and leaves the game running.
+- Each script has a DisableAfterMove flag. When that flag is set, the script is disabled once the captain moves. A move the script makes counts, and a move the player makes counts.
 - The command-line switch is `-Autoplay=` followed by the script name. `-Autoplay=Full-playthrough` runs Full-playthrough, and the game quits when the script has finished.
 - A script can use the commands Auto playthrough already has.
 - A script can use `PortalToMarker`, `TakePlayshot`, `Pause(nSeconds)`, `EnableSight`, and `FaceDirection`. `PortalToMarker` takes a mark kind, a mark name, and X and Y offsets. `BuildSquad` names a companion, and `SelectBattlePlan` selects a formation. `EnableSight` enables a sight mode. `TakePlayshot` writes the same playshot as Alt-P, and a script can take more than one. `Pause` waits that many seconds, then the script continues. `FaceDirection` sets the facing.
@@ -32,3 +33,4 @@ The command line launches the game with `-Autoplay=` and the script name. That l
 - `Pause` today is `.Pause(seconds)` on another step. This story adds `Pause(nSeconds)` as its own step.
 - Companion parade uses the settings in `SolidDebugShot`: Dragongate, Sam, Parade, true sight, `SignFacesSouthYawDeg`, and `CaptureDelaySeconds` 3. The offset is on `PortalToMarker`. Sam is `BuildSquad`, Parade is `SelectBattlePlan`, true sight is `EnableSight`, and the facing is `FaceDirection`.
 - `-Autoplay=` is read with `FParse::Value`. Companion parade's name contains a space, so that launch quotes the name: `-Autoplay="Companion parade"`.
+- `USolidGameState::bAutoPlaythroughDim` is the current Auto playthrough disable. The row draws dim, and confirming it does nothing. DisableAfterMove is the per-script flag. The trigger is any captain move.

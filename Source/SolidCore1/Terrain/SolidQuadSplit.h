@@ -144,10 +144,8 @@ public:
 };
 
 /**
- * Four matching corners are two triangles of that corner.
- * Three matching corners keep the odd one as the triangle from that corner to the
- * midpoints of its two edges. The other three corners share the rest.
- * Any other quad still takes the northwest corner.
+ * The seven cases in the midpoint notes, tried in that order.
+ * 1, 2, 3, and 5 are implemented. 4, 6, and 7 are not, so those quads take the northwest corner.
  */
 class SOLIDCORE1_API FSolidPriorityMidpointSplit : public FSolidQuadSplit
 {
@@ -162,4 +160,39 @@ public:
 		ESolidBiome B11,
 		ESolidBiome WestOfNorthWest,
 		ESolidBiome SouthWestOfNorthWest) const override;
+
+private:
+	// Each method below is empty when the quad is not that case.
+
+	/** 1. Four corners match. Two triangles of that corner, northwest to southeast. */
+	FSolidQuadTriangles FourMatchingCorners(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11) const;
+
+	/** 2. Opposite sides are pairs. Each half is two triangles of that side. */
+	FSolidQuadTriangles OppositeSides(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11) const;
+
+	/**
+	 * 3. Both diagonals are pairs. The pair further right is a band of four triangles.
+	 * Each of the other two corners keeps one triangle.
+	 * The order, lowest first, is Sea, Grassland, Forest, Desert, Mountain, Town, River, Road.
+	 */
+	FSolidQuadTriangles Checker(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11) const;
+
+	/** 5. Three corners match. The odd corner is cut off at the midpoints of its two edges. */
+	FSolidQuadTriangles ThreeMatchingCorners(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11) const;
 };

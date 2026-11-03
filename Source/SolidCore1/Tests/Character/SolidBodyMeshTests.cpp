@@ -357,22 +357,16 @@ bool FSolidBodySkinSlotTest::RunTest(const FString& Parameters)
 #if WITH_EDITOR
 namespace
 {
-	bool ClothingUsesGrassParent(UMaterialInterface* Material)
+	bool ClothingUsesEditorCloth(UMaterialInterface* Material, const FLinearColor& Color)
 	{
 		UMaterial* Parent = Material ? Material->GetMaterial() : nullptr;
 		UMaterialInstanceDynamic* Mid = Cast<UMaterialInstanceDynamic>(Material);
-		float Roughness = -1.f;
-		float Metallic = -1.f;
-		float Specular = -1.f;
+		FLinearColor Read = FLinearColor::Black;
 		return Parent
-			&& Parent->GetFName() == TEXT("M_Default")
+			&& Parent->GetFName() == TEXT("M_SolidCloth")
 			&& Mid
-			&& Mid->GetScalarParameterValue(TEXT("RoughnessFactor"), Roughness)
-			&& Mid->GetScalarParameterValue(TEXT("MetallicFactor"), Metallic)
-			&& Mid->GetScalarParameterValue(TEXT("SpecularFactor"), Specular)
-			&& Roughness == 1.f
-			&& Metallic == 0.f
-			&& Specular == 0.f;
+			&& Mid->GetVectorParameterValue(TEXT("Colour"), Read)
+			&& Read.Equals(Color);
 	}
 }
 #endif
@@ -407,8 +401,10 @@ bool FSolidBodyClothingMatteTest::RunTest(const FString& Parameters)
 	}
 
 #if WITH_EDITOR
-	TestTrue(TEXT("shirt uses the grass parent"), ClothingUsesGrassParent(Materials[0].MaterialInterface));
-	TestTrue(TEXT("trousers use the grass parent"), ClothingUsesGrassParent(Materials[1].MaterialInterface));
+	TestTrue(TEXT("shirt uses M_SolidCloth"), ClothingUsesEditorCloth(
+		Materials[0].MaterialInterface, FLinearColor(0.29f, 0.38f, 0.55f)));
+	TestTrue(TEXT("trousers use M_SolidCloth"), ClothingUsesEditorCloth(
+		Materials[1].MaterialInterface, FLinearColor(0.12f, 0.11f, 0.10f)));
 	if (UMaterial* Shirt = Materials[0].MaterialInterface->GetMaterial())
 	{
 		TestTrue(TEXT("shirt is used on a skeletal mesh"), Shirt->GetUsageByFlag(MATUSAGE_SkeletalMesh));

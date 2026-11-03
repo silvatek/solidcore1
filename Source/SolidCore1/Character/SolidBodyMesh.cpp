@@ -402,14 +402,14 @@ namespace
 	}
 
 	/**
-	 * The grass material's parent. RoughnessFactor, MetallicFactor, and SpecularFactor are the
-	 * parameters that parent already compiles. Specular 0 is the matte end of that scale.
+	 * M_SolidCloth, authored in the editor. Colour is its vector parameter. Roughness, specular,
+	 * and metallic stay as constants on that asset. The skeletal-mesh flag is saved on it.
 	 */
 	UMaterialInterface* CreateMatteCloth(UObject* Outer, const FLinearColor& Color)
 	{
 #if WITH_EDITOR
 		UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/InterchangeAssets/gltf/M_Default.M_Default"));
+			nullptr, TEXT("/Game/Characters/M_SolidCloth.M_SolidCloth"));
 		UMaterial* Base = Parent ? Parent->GetMaterial() : nullptr;
 		if (Base && !Base->GetUsageByFlag(MATUSAGE_SkeletalMesh))
 		{
@@ -423,14 +423,11 @@ namespace
 		}
 		if (UMaterialInstanceDynamic* MID = Parent ? UMaterialInstanceDynamic::Create(Parent, Outer) : nullptr)
 		{
-			MID->SetVectorParameterValue(TEXT("BaseColorFactor"), Color);
-			MID->SetScalarParameterValue(TEXT("RoughnessFactor"), 1.f);
-			MID->SetScalarParameterValue(TEXT("MetallicFactor"), 0.f);
-			MID->SetScalarParameterValue(TEXT("SpecularFactor"), 0.f);
-			UE_LOG(LogSolid, Warning, TEXT("Clothing material: M_Default roughness 1 specular 0 metallic 0"));
+			MID->SetVectorParameterValue(TEXT("Colour"), Color);
+			UE_LOG(LogSolid, Warning, TEXT("Clothing material: M_SolidCloth"));
 			return MID;
 		}
-		UE_LOG(LogSolid, Error, TEXT("Clothing material: M_Default failed to load."));
+		UE_LOG(LogSolid, Error, TEXT("Clothing material: M_SolidCloth failed to load."));
 #endif
 		return nullptr;
 	}
@@ -470,6 +467,7 @@ namespace
 		UMaterialInstanceDynamic* Existing = Cast<UMaterialInstanceDynamic>(Current);
 		if (Existing && Existing->GetOuter() == MeshComp)
 		{
+			Existing->SetVectorParameterValue(TEXT("Colour"), Color);
 			Existing->SetVectorParameterValue(TEXT("Base Color"), Color);
 			Existing->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Existing->SetScalarParameterValue(TEXT("Roughness"), 1.f);

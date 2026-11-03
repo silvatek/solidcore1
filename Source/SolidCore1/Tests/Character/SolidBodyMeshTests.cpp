@@ -363,7 +363,7 @@ namespace
 		return Node && Node->R == Value;
 	}
 
-	bool ClothingParentIsMatte(UMaterialInterface* Material)
+	bool ClothingRoughnessIsZero(UMaterialInterface* Material)
 	{
 		UMaterial* Parent = Material ? Material->GetMaterial() : nullptr;
 		UMaterialEditorOnlyData* EditorData = Parent ? Parent->GetEditorOnlyData() : nullptr;
@@ -378,7 +378,7 @@ namespace
 			Cast<UMaterialExpressionVectorParameter>(Shading->BaseColor.Expression);
 		return Color
 			&& Color->ParameterName == TEXT("Base Color")
-			&& ConstantIs(Shading->Roughness, 1.f)
+			&& ConstantIs(Shading->Roughness, 0.f)
 			&& ConstantIs(Shading->Specular, 0.f)
 			&& ConstantIs(Shading->Metallic, 0.f);
 	}
@@ -415,8 +415,8 @@ bool FSolidBodyClothingMatteTest::RunTest(const FString& Parameters)
 	}
 
 #if WITH_EDITOR
-	TestTrue(TEXT("shirt is matte"), ClothingParentIsMatte(Materials[0].MaterialInterface));
-	TestTrue(TEXT("trousers are matte"), ClothingParentIsMatte(Materials[1].MaterialInterface));
+	TestTrue(TEXT("shirt roughness is zero"), ClothingRoughnessIsZero(Materials[0].MaterialInterface));
+	TestTrue(TEXT("trouser roughness is zero"), ClothingRoughnessIsZero(Materials[1].MaterialInterface));
 	if (UMaterial* Shirt = Materials[0].MaterialInterface->GetMaterial())
 	{
 		TestTrue(TEXT("shirt is used on a skeletal mesh"), Shirt->GetUsageByFlag(MATUSAGE_SkeletalMesh));

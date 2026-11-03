@@ -285,7 +285,8 @@ namespace
 	/**
 	 * Parent for shirt and trousers.
 	 * Play In Editor will not set the skeletal-mesh usage flag, and the mesh then draws the default grey.
-	 * The flag is set here. The front node takes Base Color, roughness 1, specular 0, and metallic 0.
+	 * The flag is set here. The front node takes Base Color, roughness 0, specular 0, and metallic 0.
+	 * Roughness 0 is this shot. A mirror means the pin reaches the shader.
 	 */
 	UMaterial* ClothingMaterial()
 	{
@@ -324,7 +325,7 @@ namespace
 
 		UMaterialExpressionConstant* Roughness = NewObject<UMaterialExpressionConstant>(Material);
 		Roughness->Material = Material;
-		Roughness->R = 1.f;
+		Roughness->R = 0.f;
 		Roughness->MaterialExpressionEditorX = -700;
 		Roughness->MaterialExpressionEditorY = 180;
 

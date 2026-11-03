@@ -1,6 +1,6 @@
 # Merge Auto playthrough and Debug Shot
 
-Status: New
+Status: Ready
 
 ## Story
 

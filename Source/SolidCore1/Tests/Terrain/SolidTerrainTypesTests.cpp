@@ -445,6 +445,11 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		TEXT("a lone mountain corner leaves the grass triangle"),
 		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Grass, Grass, Grass, Grass, Mountain, Grass, Grass),
 		true, Grass, Mountain);
+	const ESolidBiome Sea = ESolidBiome::Sea;
+	Expect(
+		TEXT("a grass shelf replaces the sea on that triangle"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Grass, Sea, Sea, Grass, Grass, Sea, Sea),
+		false, Grass, Grass);
 	Expect(
 		TEXT("four matching corners use that corner"),
 		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
@@ -500,6 +505,11 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
 			Forest, Forest, Grass, Forest, Grass, Town, Town),
 		Grass, Forest, WestEastCorners);
+	ExpectHalves(
+		TEXT("a sea half stays sea beside the grass"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Grass, Sea, Sea, Grass, Grass, Town, Town),
+		Sea, Grass, NorthSouthCorners);
 
 	const int32 AcrossBand[6][3] = {
 		{ 0, 7, 4 }, { 0, 3, 7 }, { 0, 6, 3 }, { 6, 5, 3 }, { 1, 4, 7 }, { 2, 5, 6 } };

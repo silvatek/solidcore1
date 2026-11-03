@@ -91,11 +91,18 @@ public:
 	ESolidBiome BorderBiome(ESolidBiome Preferred, ESolidBiome A, ESolidBiome B, ESolidBiome C) const;
 
 protected:
-	/** Two triangles on one diagonal. A mountain corner keeps the mountain. */
+	/** Two triangles on one diagonal. */
 	FSolidQuadTriangles TwoTriangles(
 		ESolidBiome First,
 		ESolidBiome Second,
-		bool bFlip,
+		bool bFlip) const;
+
+	/**
+	 * A triangle whose terrain points sit on two shelves takes the higher shelf.
+	 * A midpoint or the centre is not a terrain point. One shelf leaves the material.
+	 */
+	FSolidQuadTriangles ApplyShelf(
+		FSolidQuadTriangles Triangles,
 		ESolidBiome B00,
 		ESolidBiome B10,
 		ESolidBiome B01,

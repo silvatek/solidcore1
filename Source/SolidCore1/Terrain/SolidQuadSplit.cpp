@@ -133,30 +133,8 @@ ESolidBiome FSolidQuadSplit::BorderBiome(
 FSolidQuadTriangles FSolidQuadSplit::TwoTriangles(
 	const ESolidBiome First,
 	const ESolidBiome Second,
-	const bool bFlip,
-	const ESolidBiome B00,
-	const ESolidBiome B10,
-	const ESolidBiome B01,
-	const ESolidBiome B11) const
+	const bool bFlip) const
 {
-	auto KeepMountainTop = [](const ESolidBiome Material, const ESolidBiome A, const ESolidBiome B, const ESolidBiome C)
-	{
-		const ESolidBiome Corners[3] = { A, B, C };
-		int32 Top = 0;
-		float Best = SolidBiome::Of(A).HeightOffsetCm();
-		for (int32 Index = 1; Index < 3; ++Index)
-		{
-			const float Height = SolidBiome::Of(Corners[Index]).HeightOffsetCm();
-			if (Height > Best)
-			{
-				Best = Height;
-				Top = Index;
-			}
-		}
-		return Corners[Top] == ESolidBiome::Mountain ? ESolidBiome::Mountain : Material;
-	};
-
-	const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
 	FSolidQuadTriangles Out;
 	auto Append = [&](const ESolidBiome Material, const int32 A, const int32 B, const int32 C)
 	{
@@ -165,7 +143,7 @@ FSolidQuadTriangles FSolidQuadSplit::TwoTriangles(
 			return;
 		}
 		FSolidQuadTriangle& Triangle = Out.Triangles[Out.Count];
-		Triangle.Material = KeepMountainTop(Material, Corners[A], Corners[B], Corners[C]);
+		Triangle.Material = Material;
 		Triangle.Corner0 = A;
 		Triangle.Corner1 = B;
 		Triangle.Corner2 = C;
@@ -184,6 +162,64 @@ FSolidQuadTriangles FSolidQuadSplit::TwoTriangles(
 	return Out;
 }
 
+FSolidQuadTriangles FSolidQuadSplit::ApplyShelf(
+	FSolidQuadTriangles Triangles,
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11) const
+{
+	const ESolidBiome Corner[4] = { B00, B10, B01, B11 };
+	for (int32 Index = 0; Index < Triangles.Count; ++Index)
+	{
+		FSolidQuadTriangle& Triangle = Triangles.Triangles[Index];
+		const int32 Vertices[3] = { Triangle.Corner0, Triangle.Corner1, Triangle.Corner2 };
+		float Low = 0.f;
+		float High = 0.f;
+		bool bTerrain = false;
+		for (const int32 Vertex : Vertices)
+		{
+			if (Vertex < 0 || Vertex > 3)
+			{
+				continue;
+			}
+			const float Shelf = SolidBiome::Of(Corner[Vertex]).HeightOffsetCm();
+			if (!bTerrain)
+			{
+				Low = Shelf;
+				High = Shelf;
+				bTerrain = true;
+			}
+			else
+			{
+				Low = FMath::Min(Low, Shelf);
+				High = FMath::Max(High, Shelf);
+			}
+		}
+		if (!bTerrain || Low == High)
+		{
+			continue;
+		}
+		if (SolidBiome::Of(Triangle.Material).HeightOffsetCm() == High)
+		{
+			continue;
+		}
+		for (const int32 Vertex : Vertices)
+		{
+			if (Vertex < 0 || Vertex > 3)
+			{
+				continue;
+			}
+			if (SolidBiome::Of(Corner[Vertex]).HeightOffsetCm() == High)
+			{
+				Triangle.Material = Corner[Vertex];
+				break;
+			}
+		}
+	}
+	return Triangles;
+}
+
 FSolidQuadTriangles FSolidNorthWestSplit::Triangles(
 	const ESolidBiome Preferred,
 	const ESolidBiome B00,
@@ -193,10 +229,11 @@ FSolidQuadTriangles FSolidNorthWestSplit::Triangles(
 	const ESolidBiome /*WestOfNorthWest*/,
 	const ESolidBiome /*SouthWestOfNorthWest*/) const
 {
-	return TwoTriangles(
-		BorderBiome(Preferred, B00, B11, B10),
-		BorderBiome(Preferred, B00, B01, B11),
-		false,
+	return ApplyShelf(
+		TwoTriangles(
+			BorderBiome(Preferred, B00, B11, B10),
+			BorderBiome(Preferred, B00, B01, B11),
+			false),
 		B00, B10, B01, B11);
 }
 
@@ -235,7 +272,7 @@ FSolidQuadTriangles FSolidNorthWestCutSplit::Triangles(
 			Second = B11;
 		}
 	}
-	return TwoTriangles(First, Second, bFlip, B00, B10, B01, B11);
+	return ApplyShelf(TwoTriangles(First, Second, bFlip), B00, B10, B01, B11);
 }
 
 namespace
@@ -287,7 +324,7 @@ FSolidQuadTriangles FSolidPriorityMidpointSplit::FourMatchingCorners(
 	{
 		return FSolidQuadTriangles();
 	}
-	return TwoTriangles(B00, B00, false, B00, B10, B01, B11);
+	return TwoTriangles(B00, B00, false);
 }
 
 // 2. Opposite sides are pairs.
@@ -598,48 +635,49 @@ FSolidQuadTriangles FSolidPriorityMidpointSplit::Triangles(
 	const FSolidQuadTriangles Four = FourMatchingCorners(B00, B10, B01, B11);
 	if (Four.Count > 0)
 	{
-		return Four;
+		return ApplyShelf(Four, B00, B10, B01, B11);
 	}
 	// 2. Opposite sides are pairs.
 	const FSolidQuadTriangles Sides = OppositeSides(B00, B10, B01, B11);
 	if (Sides.Count > 0)
 	{
-		return Sides;
+		return ApplyShelf(Sides, B00, B10, B01, B11);
 	}
 	// 3. Both diagonals are pairs.
 	const FSolidQuadTriangles Band = Checker(B00, B10, B01, B11);
 	if (Band.Count > 0)
 	{
-		return Band;
+		return ApplyShelf(Band, B00, B10, B01, B11);
 	}
 	// 4. One diagonal is a pair.
 	const FSolidQuadTriangles Diagonal = OneDiagonal(B00, B10, B01, B11);
 	if (Diagonal.Count > 0)
 	{
-		return Diagonal;
+		return ApplyShelf(Diagonal, B00, B10, B01, B11);
 	}
 	// 5. Three corners match.
 	const FSolidQuadTriangles Three = ThreeMatchingCorners(B00, B10, B01, B11);
 	if (Three.Count > 0)
 	{
-		return Three;
+		return ApplyShelf(Three, B00, B10, B01, B11);
 	}
 	// 6. Two adjacent corners are the highest material.
 	const FSolidQuadTriangles High = HighestAdjacent(B00, B10, B01, B11);
 	if (High.Count > 0)
 	{
-		return High;
+		return ApplyShelf(High, B00, B10, B01, B11);
 	}
 	// 7. One corner is the highest, and the opposite side is a pair.
 	const FSolidQuadTriangles Opposite = HighestOpposite(B00, B10, B01, B11);
 	if (Opposite.Count > 0)
 	{
-		return Opposite;
+		return ApplyShelf(Opposite, B00, B10, B01, B11);
 	}
 	// None of the seven cases. The northwest corner.
-	return TwoTriangles(
-		BorderBiome(Preferred, B00, B11, B10),
-		BorderBiome(Preferred, B00, B01, B11),
-		false,
+	return ApplyShelf(
+		TwoTriangles(
+			BorderBiome(Preferred, B00, B11, B10),
+			BorderBiome(Preferred, B00, B01, B11),
+			false),
 		B00, B10, B01, B11);
 }

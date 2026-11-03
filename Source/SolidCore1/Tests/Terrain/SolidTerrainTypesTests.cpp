@@ -317,77 +317,6 @@ bool FSolidBiomeFadeWeightTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidBiomeDiagonalCutTest,
-	"SolidCore1.Types.DiagonalCut",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidBiomeDiagonalCutTest::RunTest(const FString& Parameters)
-{
-	const ESolidBiome Forest = ESolidBiome::Forest;
-	const ESolidBiome Desert = ESolidBiome::Desert;
-	const ESolidBiome Patch[3][4] = {
-		{ Forest, Forest, Forest, Forest },
-		{ Forest, Forest, Desert, Desert },
-		{ Desert, Desert, Desert, Desert },
-	};
-	int32 Corner = -1;
-
-	TestFalse(
-		TEXT("one biome keeps its material"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[0][0], Patch[0][1], Patch[1][0], Patch[1][1], Corner));
-
-	TestTrue(
-		TEXT("the odd desert corner is cut off"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[0][1], Patch[0][2], Patch[1][1], Patch[1][2], Corner));
-	TestEqual(TEXT("that corner is 11"), Corner, 3);
-
-	TestFalse(
-		TEXT("a straight run keeps the grid edge"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[0][2], Patch[0][3], Patch[1][2], Patch[1][3], Corner));
-
-	TestTrue(
-		TEXT("the odd forest corner is cut off"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Patch[1][1], Patch[1][2], Patch[2][1], Patch[2][2], Corner));
-	TestEqual(TEXT("that corner is 00"), Corner, 0);
-
-	TestTrue(
-		TEXT("an odd 10 corner is cut off"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Desert, Forest, Forest, Corner));
-	TestEqual(TEXT("that corner is 10"), Corner, 1);
-
-	TestTrue(
-		TEXT("an odd 01 corner is cut off"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Forest, Desert, Forest, Corner));
-	TestEqual(TEXT("that corner is 01"), Corner, 2);
-
-	TestFalse(
-		TEXT("desert alone keeps its material"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Desert, Desert, Desert, Desert, Corner));
-	TestFalse(
-		TEXT("a checker keeps one material"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Desert, Desert, Forest, Corner));
-	TestFalse(
-		TEXT("a road corner keeps the hard material"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Forest, Desert, ESolidBiome::Road, Corner));
-	TestFalse(
-		TEXT("a higher shelf keeps the whole quad"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::Sea, Forest, Corner));
-	TestFalse(
-		TEXT("three biomes keep one material"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(Forest, Desert, ESolidBiome::Town, Forest, Corner));
-	TestFalse(
-		TEXT("grassland keeps its material"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(ESolidBiome::Grassland, ESolidBiome::Grassland, ESolidBiome::Grassland, Forest, Corner));
-
-	TestTrue(
-		TEXT("sea against river is cut"),
-		FSolidOddCornerSplit::Instance().DiagonalCut(
-			ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::River, Corner));
-	TestEqual(TEXT("the river corner is 11"), Corner, 3);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBiomeFadeMaterialTest,
 	"SolidCore1.Types.FadeMaterial",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -467,33 +396,13 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 	const ESolidBiome Mountain = ESolidBiome::Mountain;
 
 	Expect(
-		TEXT("odd 11"),
-		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
-		true, Forest, Desert);
-	Expect(
-		TEXT("odd 00"),
-		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Desert, Forest, Forest, Forest, Forest, Forest),
-		true, Desert, Forest);
-	Expect(
-		TEXT("odd 10"),
-		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Forest, Desert, Forest, Forest, Forest, Forest),
-		false, Desert, Forest);
-	Expect(
-		TEXT("odd 01"),
-		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Forest, Forest, Forest, Desert, Forest, Forest, Forest),
-		false, Forest, Desert);
-	Expect(
-		TEXT("a straight run stays on the northwest corner"),
-		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Triangles( Desert, Forest, Forest, Desert, Desert, Desert, Desert),
-		false, Desert, Desert);
-	Expect(
 		TEXT("the northwest method leaves the odd corner"),
 		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWest).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		false, Forest, Forest);
 	TestEqual(
 		TEXT("the debug line names both triangles"),
-		FSolidQuadSplit::Of(ESolidQuadSplit::OddCorner).Description(
-			Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Description(
+			Desert, Forest, Forest, Forest, Desert, Forest, Forest),
 		FString(TEXT("Forest / Desert")));
 	TestEqual(
 		TEXT("a matching pair is named twice"),
@@ -539,18 +448,13 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	FSolidQuadSplit::Cycle();
 	TestEqual(
-		TEXT("the next split is OddCorner"),
-		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
-		static_cast<uint8>(ESolidQuadSplit::OddCorner));
-	TestEqual(
-		TEXT("the debug line names OddCorner"),
-		FString(FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()),
-		FString(TEXT("OddCorner")));
-	FSolidQuadSplit::Cycle();
-	TestEqual(
 		TEXT("the next split is NorthWestCut"),
 		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
 		static_cast<uint8>(ESolidQuadSplit::NorthWestCut));
+	TestEqual(
+		TEXT("the debug line names NorthWestCut"),
+		FString(FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()),
+		FString(TEXT("NorthWestCut")));
 	FSolidQuadSplit::Cycle();
 	TestEqual(
 		TEXT("NorthWest follows the last method"),

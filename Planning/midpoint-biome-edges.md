@@ -8,8 +8,8 @@ The player looks across the ground where two biomes meet. Each 2 m square takes 
 
 ## Acceptance
 
-- A quad is built from the triangles the selected method returns. NorthWest, OddCorner, and NorthWestCut each return two, and those two match the triangles they return now. The existing quad-triangle checks still pass.
-- QuadMaterial is renamed to QuadSplit. Its type is ESolidQuadSplit. NorthWest, OddCorner, and NorthWestCut keep those names.
+- A quad is built from the triangles the selected method returns. NorthWest and NorthWestCut each return two, and those two match the triangles they return now. The existing quad-triangle checks still pass.
+- QuadMaterial is renamed to QuadSplit. Its type is ESolidQuadSplit. NorthWest and NorthWestCut keep those names.
 - QuadSplit selects the method. It starts as NorthWest. Ctrl+Shift+M cycles the values while playing, the loaded ground rebuilds, and NorthWest is still one of the values. Selecting it again restores those two triangles.
 - PriorityMidpoint follows the split in the notes. An edge whose ends match adds no vertex. An edge whose ends differ gets one vertex in the middle, and the neighbouring quad uses that same vertex. The checker, and the two cases that look for the highest material, use the biome order.
 - On a checker, the biome further right in the order stays joined. The order, lowest first, is Sea, Grassland, Forest, Desert, Mountain, Town, River, Road. Swamp is not part of this story.
@@ -20,7 +20,7 @@ The player looks across the ground where two biomes meet. Each 2 m square takes 
 
 ## Implementation notes
 
-The mesh is changed first so a quad can hold as many triangles as the method returns. NorthWest, OddCorner, and NorthWestCut keep returning two, the same two they return now. Once that still matches, PriorityMidpoint is added as a value of QuadSplit. Ctrl+Shift+M cycles the values in enum order, and the loaded chunks rebuild.
+The mesh is changed first so a quad can hold as many triangles as the method returns. NorthWest and NorthWestCut keep returning two, the same two they return now. Once that still matches, PriorityMidpoint is added as a value of QuadSplit. Ctrl+Shift+M cycles the values in enum order, and the loaded chunks rebuild.
 
 The patch is eight rows by twelve points, the middle of a chart export with a road added. The first row is north and the first character of a row is west. F is forest, T is town, G is grassland, and R is road.
 
@@ -47,7 +47,7 @@ Walk one 2 m quad at a time. The corners are the four terrain points. The first 
 6. Two adjacent corners are the highest material, and the other two differ. The high pair takes that half of the quad, two triangles. The other half is split between the two lower materials. They meet at the middle of the cut.
 7. One corner is the highest material, and the opposite side is a matching pair. The high corner keeps its triangle. The matching pair takes the side it occupies. The remaining corner takes what is left beside the high triangle.
 
-The mesh and the debug line both read the method's triangles, so a method can return more than two. The three current methods keep returning two.
+The mesh and the debug line both read the method's triangles, so a method can return more than two. NorthWest and NorthWestCut keep returning two.
 
 Sea and river are the low shelf. Grassland, forest, desert, town, and road share the next shelf. Mountain is the highest. The shelf is the biome's height offset, not the noisy ground. A new vertex takes the height the map already has at that place. On an edge, that is the average of the two ends.
 

@@ -7,7 +7,6 @@
 enum class ESolidQuadSplit : uint8
 {
 	NorthWest,
-	OddCorner,
 	NorthWestCut,
 };
 
@@ -53,7 +52,7 @@ public:
 	 * Triangles for one quad.
 	 * WestOfNorthWest is the point directly west of corner 11.
 	 * SouthWestOfNorthWest is the point south-west of that corner.
-	 * NorthWest and OddCorner ignore both. NorthWestCut uses them for two of its cuts.
+	 * NorthWest ignores both. NorthWestCut uses them for two of its cuts.
 	 */
 	virtual FSolidQuadTriangles Triangles(
 		ESolidBiome Preferred,
@@ -107,37 +106,6 @@ public:
 		ESolidBiome B11,
 		ESolidBiome WestOfNorthWest,
 		ESolidBiome SouthWestOfNorthWest) const override;
-};
-
-/** The single odd corner is cut off. Any other quad takes the northwest corner. */
-class SOLIDCORE1_API FSolidOddCornerSplit : public FSolidQuadSplit
-{
-public:
-	static const FSolidOddCornerSplit& Instance();
-
-	virtual const TCHAR* Name() const override;
-
-	virtual FSolidQuadTriangles Triangles(
-		ESolidBiome Preferred,
-		ESolidBiome B00,
-		ESolidBiome B10,
-		ESolidBiome B01,
-		ESolidBiome B11,
-		ESolidBiome WestOfNorthWest,
-		ESolidBiome SouthWestOfNorthWest) const override;
-
-	/**
-	 * True when the quad is cut on the diagonal that isolates one corner.
-	 * OutCorner is that corner in mesh order 00, 10, 01, 11.
-	 * False when the quad keeps one material: one biome, a straight pair,
-	 * a checker, three biomes, a road, grassland, or a higher shelf.
-	 */
-	bool DiagonalCut(
-		ESolidBiome B00,
-		ESolidBiome B10,
-		ESolidBiome B01,
-		ESolidBiome B11,
-		int32& OutCorner) const;
 };
 
 /**

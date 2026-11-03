@@ -10,9 +10,6 @@ void FSolidQuadSplit::Cycle()
 	switch (QuadSplit)
 	{
 	case ESolidQuadSplit::NorthWest:
-		QuadSplit = ESolidQuadSplit::OddCorner;
-		break;
-	case ESolidQuadSplit::OddCorner:
 		QuadSplit = ESolidQuadSplit::NorthWestCut;
 		break;
 	case ESolidQuadSplit::NorthWestCut:
@@ -25,11 +22,6 @@ void FSolidQuadSplit::Cycle()
 const TCHAR* FSolidNorthWestSplit::Name() const
 {
 	return TEXT("NorthWest");
-}
-
-const TCHAR* FSolidOddCornerSplit::Name() const
-{
-	return TEXT("OddCorner");
 }
 
 const TCHAR* FSolidNorthWestCutSplit::Name() const
@@ -66,8 +58,6 @@ const FSolidQuadSplit& FSolidQuadSplit::Of(const ESolidQuadSplit Method)
 	static const FSolidNorthWestCutSplit NorthWestCut;
 	switch (Method)
 	{
-	case ESolidQuadSplit::OddCorner:
-		return FSolidOddCornerSplit::Instance();
 	case ESolidQuadSplit::NorthWestCut:
 		return NorthWestCut;
 	case ESolidQuadSplit::NorthWest:
@@ -172,90 +162,6 @@ FSolidQuadTriangles FSolidNorthWestSplit::Triangles(
 		BorderBiome(Preferred, B00, B01, B11),
 		false,
 		B00, B10, B01, B11);
-}
-
-const FSolidOddCornerSplit& FSolidOddCornerSplit::Instance()
-{
-	static const FSolidOddCornerSplit Split;
-	return Split;
-}
-
-FSolidQuadTriangles FSolidOddCornerSplit::Triangles(
-	const ESolidBiome Preferred,
-	const ESolidBiome B00,
-	const ESolidBiome B10,
-	const ESolidBiome B01,
-	const ESolidBiome B11,
-	const ESolidBiome /*WestOfNorthWest*/,
-	const ESolidBiome /*SouthWestOfNorthWest*/) const
-{
-	ESolidBiome First = BorderBiome(Preferred, B00, B11, B10);
-	ESolidBiome Second = BorderBiome(Preferred, B00, B01, B11);
-	bool bFlip = false;
-	int32 CutCorner = 0;
-	if (DiagonalCut(B00, B10, B01, B11, CutCorner))
-	{
-		const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
-		const ESolidBiome Odd = Corners[CutCorner];
-		const ESolidBiome Majority = Corners[(CutCorner + 1) % 4];
-		bFlip = CutCorner == 0 || CutCorner == 3;
-		const bool bOddOnFirst = bFlip ? (CutCorner == 0) : (CutCorner == 1);
-		First = bOddOnFirst ? Odd : Majority;
-		Second = bOddOnFirst ? Majority : Odd;
-	}
-	return TwoTriangles(First, Second, bFlip, B00, B10, B01, B11);
-}
-
-bool FSolidOddCornerSplit::DiagonalCut(
-	const ESolidBiome B00,
-	const ESolidBiome B10,
-	const ESolidBiome B01,
-	const ESolidBiome B11,
-	int32& OutCorner) const
-{
-	const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
-	for (int32 Odd = 0; Odd < 4; ++Odd)
-	{
-		const FSolidBiome& Single = SolidBiome::Of(Corners[Odd]);
-		if (!Single.FlatColour())
-		{
-			continue;
-		}
-
-		const float Shelf = Single.HeightOffsetCm();
-		ESolidBiome Majority = Corners[Odd];
-		bool bMajority = false;
-		bool bMatch = true;
-		for (int32 Index = 0; Index < 4; ++Index)
-		{
-			if (Index == Odd)
-			{
-				continue;
-			}
-			const FSolidBiome& Ground = SolidBiome::Of(Corners[Index]);
-			if (!Ground.FlatColour() || Ground.HeightOffsetCm() != Shelf)
-			{
-				bMatch = false;
-				break;
-			}
-			if (!bMajority)
-			{
-				Majority = Corners[Index];
-				bMajority = true;
-			}
-			else if (Corners[Index] != Majority)
-			{
-				bMatch = false;
-				break;
-			}
-		}
-		if (bMatch && bMajority && Majority != Corners[Odd])
-		{
-			OutCorner = Odd;
-			return true;
-		}
-	}
-	return false;
 }
 
 FSolidQuadTriangles FSolidNorthWestCutSplit::Triangles(

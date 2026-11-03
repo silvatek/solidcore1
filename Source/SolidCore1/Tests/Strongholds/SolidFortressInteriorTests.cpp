@@ -24,7 +24,7 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Fortress,
 		ESolidStrongholdSize::Humble,
 		HumbleCell,
-		SolidStronghold::WorldXY(HumbleCell));
+		FVector2D::ZeroVector);
 	TestNotNull(TEXT("a Humble fortress"), Keep.Get());
 	if (!Keep)
 	{

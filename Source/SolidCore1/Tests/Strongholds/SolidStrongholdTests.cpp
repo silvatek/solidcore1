@@ -304,7 +304,7 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		MovedCell,
-		SolidStronghold::WorldXY(MovedCell)));
+		FVector2D::ZeroVector));
 	Instance->Capture(FSolidTravelSession());
 	const USolidGameState* Carried = Instance->GetConfiguration();
 	TestTrue(TEXT("the trip is the same play state"), Carried == Moved);

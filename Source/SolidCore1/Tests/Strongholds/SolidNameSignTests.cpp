@@ -55,7 +55,7 @@ bool FSolidNameSignDefaultTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdSize::Meagre,
 		Elsewhere,
-		SolidStronghold::WorldXY(Elsewhere));
+		FVector2D::ZeroVector);
 	TestEqual(TEXT("another Meagre Dungeon is named from its size and type"), OtherCave->Name, FString(TEXT("Meagre Dungeon")));
 	TestEqual(TEXT("that name is its default"), SolidStronghold::DefaultName(*OtherCave), OtherCave->Name);
 
@@ -83,7 +83,7 @@ bool FSolidNameSignDefaultTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		TowerCell,
-		SolidStronghold::WorldXY(TowerCell));
+		FVector2D::ZeroVector);
 	TestEqual(TEXT("an Average Tower is named from its size and type"), Tower->Name, FString(TEXT("Average Tower")));
 	TestEqual(TEXT("that tower's default is its label"), SolidStronghold::DefaultName(*Tower), Tower->Name);
 
@@ -259,12 +259,12 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		TowerCell,
-		SolidStronghold::WorldXY(TowerCell));
+		FVector2D::ZeroVector);
 	TUniquePtr<FSolidStronghold> Imperious = SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Imperious,
 		TowerCell,
-		SolidStronghold::WorldXY(TowerCell));
+		FVector2D::ZeroVector);
 	const SolidStronghold::FSolidTower& AverageTower = static_cast<const SolidStronghold::FSolidTower&>(*Average);
 	const SolidStronghold::FSolidTower& ImperiousTower = static_cast<const SolidStronghold::FSolidTower&>(*Imperious);
 	TestTrue(
@@ -287,7 +287,7 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Fortress,
 		ESolidStrongholdSize::Humble,
 		FortCell,
-		SolidStronghold::WorldXY(FortCell));
+		FVector2D::ZeroVector);
 	const SolidStronghold::FSolidFortress& Fort = static_cast<const SolidStronghold::FSolidFortress&>(*Humble);
 	TestTrue(TEXT("the fortress board faces the grass"), FMath::IsNearlyEqual(Fort.NameSign().YawDeg, 180.f));
 	const FVector FortPole = SolidNameSigns::PoleLocalCm(Fort.NameSign(), Fort.Name);

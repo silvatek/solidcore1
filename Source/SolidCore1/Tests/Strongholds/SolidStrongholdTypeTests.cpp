@@ -80,7 +80,7 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdSize::Meagre,
 		OriginCell,
-		SolidStronghold::WorldXY(OriginCell));
+		FVector2D::ZeroVector);
 	const TUniquePtr<FSolidStronghold> DungeonCopy = DungeonOwned->Clone();
 	TestEqual(
 		TEXT("a copied dungeon keeps its size"),
@@ -91,7 +91,7 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		OriginCell,
-		SolidStronghold::WorldXY(OriginCell));
+		FVector2D::ZeroVector);
 	const TUniquePtr<FSolidStronghold> TowerCopy = TowerOwned->Clone();
 	TestEqual(
 		TEXT("a copied tower keeps the tower trip"),
@@ -137,28 +137,28 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			ESolidStrongholdType::Dungeon,
 			ESolidStrongholdSize::Humble,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
+			FVector2D::ZeroVector)->ExteriorClass());
 	TestNull(
 		TEXT("a humble dungeon has no interior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Dungeon,
 			ESolidStrongholdSize::Humble,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->InteriorClass());
+			FVector2D::ZeroVector)->InteriorClass());
 	TestTrue(
 		TEXT("a humble fortress names the fortress exterior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Humble,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->ExteriorClass() == ASolidFortressExterior::StaticClass());
+			FVector2D::ZeroVector)->ExteriorClass() == ASolidFortressExterior::StaticClass());
 	TestTrue(
 		TEXT("a humble fortress names the fortress interior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Humble,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->InteriorClass() == ASolidFortressInterior::StaticClass());
+			FVector2D::ZeroVector)->InteriorClass() == ASolidFortressInterior::StaticClass());
 	AddExpectedError(TEXT("Meagre is not a fortress size"), EAutomationExpectedErrorFlags::Contains, 1);
 	TestNull(
 		TEXT("a meagre fortress has no exterior"),
@@ -166,21 +166,21 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Meagre,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
+			FVector2D::ZeroVector)->ExteriorClass());
 	TestTrue(
 		TEXT("an Imperious fortress names the fortress exterior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Imperious,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->ExteriorClass() == ASolidFortressExterior::StaticClass());
+			FVector2D::ZeroVector)->ExteriorClass() == ASolidFortressExterior::StaticClass());
 	TestTrue(
 		TEXT("an Imperious fortress names the fortress interior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Imperious,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->InteriorClass() == ASolidFortressInterior::StaticClass());
+			FVector2D::ZeroVector)->InteriorClass() == ASolidFortressInterior::StaticClass());
 	TestTrue(
 		TEXT("an average tower names the tower exterior"),
 		TowerOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());
@@ -197,7 +197,7 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Imperious,
 		OriginCell,
-		SolidStronghold::WorldXY(OriginCell));
+		FVector2D::ZeroVector);
 	TestTrue(
 		TEXT("an Imperious tower names the tower exterior"),
 		ImperiousOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());
@@ -210,14 +210,14 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			ESolidStrongholdType::Tower,
 			ESolidStrongholdSize::Humble,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
+			FVector2D::ZeroVector)->ExteriorClass());
 	TestNull(
 		TEXT("a humble tower has no interior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Tower,
 			ESolidStrongholdSize::Humble,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->InteriorClass());
+			FVector2D::ZeroVector)->InteriorClass());
 	ASolidDungeonInterior* Cave = NewObject<ASolidDungeonInterior>();
 	ASolidTowerInterior* Room = NewObject<ASolidTowerInterior>();
 	TestNotNull(TEXT("dungeon interior"), Cave);

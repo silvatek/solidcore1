@@ -58,16 +58,6 @@ FSolidNameSignPlace FSolidStronghold::NameSign() const
 
 namespace SolidStronghold
 {
-	FVector2D WorldXY(const FIntPoint TerrainPoint)
-	{
-		constexpr float PointSpacing = 200.f;
-		constexpr int32 Grid = 513;
-		const float Half = static_cast<float>(Grid - 1) * PointSpacing * 0.5f;
-		return FVector2D(
-			-Half + static_cast<float>(TerrainPoint.X) * PointSpacing,
-			-Half + static_cast<float>(TerrainPoint.Y) * PointSpacing);
-	}
-
 	bool Place(
 		FSolidStronghold& Stronghold,
 		const USolidWorldChart& Chart,

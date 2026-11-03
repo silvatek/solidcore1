@@ -254,9 +254,6 @@ namespace SolidStronghold
 	/** The subclass for this enum. The same instance on every call. */
 	const FSolidStronghold& TypeOf(ESolidStrongholdType Type);
 
-	/** World centimetres of a terrain point on the centred 513-point grid. */
-	FVector2D WorldXY(FIntPoint TerrainPoint);
-
 	/**
 	 * Writes Location from the chart for this stronghold's terrain point.
 	 * The terrain map supplies the world rectangle.

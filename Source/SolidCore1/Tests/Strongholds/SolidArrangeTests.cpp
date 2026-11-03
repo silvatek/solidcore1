@@ -142,7 +142,7 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		OriginCell,
-		SolidStronghold::WorldXY(OriginCell));
+		FVector2D::ZeroVector);
 	TestNotNull(TEXT("an Average tower"), Owned.Get());
 	const SolidStronghold::FSolidTower* Tower = static_cast<const SolidStronghold::FSolidTower*>(Owned.Get());
 	if (!Tower)
@@ -240,7 +240,7 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		OriginCell,
-		SolidStronghold::WorldXY(OriginCell));
+		FVector2D::ZeroVector);
 	const SolidStronghold::FSolidTower* Tower = static_cast<const SolidStronghold::FSolidTower*>(Owned.Get());
 	TestNotNull(TEXT("tower"), Tower);
 	if (!Tower)
@@ -299,7 +299,7 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Fortress,
 		ESolidStrongholdSize::Humble,
 		FortCell,
-		SolidStronghold::WorldXY(FortCell));
+		FVector2D::ZeroVector);
 	const SolidStronghold::FSolidFortress& Fort = static_cast<const SolidStronghold::FSolidFortress&>(*Humble);
 	const FSolidArrangeSign Yard = FSolidArrangeSign::ForFortress(Fort);
 	TestTrue(TEXT("the fortress yard has a plate"), Yard.IsPresent());
@@ -641,7 +641,7 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		OriginCell,
-		SolidStronghold::WorldXY(OriginCell));
+		FVector2D::ZeroVector);
 	const SolidStronghold::FSolidTower* Tower = static_cast<const SolidStronghold::FSolidTower*>(Owned.Get());
 	TestNotNull(TEXT("average tower"), Tower);
 	if (!Tower)

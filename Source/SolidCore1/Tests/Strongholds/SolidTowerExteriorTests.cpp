@@ -174,7 +174,7 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Imperious,
 		ImperiousCell,
-		SolidStronghold::WorldXY(ImperiousCell));
+		FVector2D::ZeroVector);
 	TestNotNull(TEXT("an Imperious tower"), Spire.Get());
 	if (!Spire)
 	{

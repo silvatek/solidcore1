@@ -143,7 +143,7 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		DoorCell,
-		SolidStronghold::WorldXY(DoorCell)));
+		FVector2D::ZeroVector));
 	const FSolidStronghold* Tower = TowerCompany->GetStronghold();
 	TestFalse(
 		TEXT("a shut stronghold refuses the tower door"),

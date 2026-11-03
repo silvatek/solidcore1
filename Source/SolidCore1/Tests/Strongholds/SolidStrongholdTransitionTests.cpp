@@ -284,7 +284,7 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		FIntPoint::ZeroValue,
-		SolidStronghold::WorldXY(FIntPoint::ZeroValue)));
+		FVector2D::ZeroVector));
 	TestEqual(
 		TEXT("a larger size still asks"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Choices)),

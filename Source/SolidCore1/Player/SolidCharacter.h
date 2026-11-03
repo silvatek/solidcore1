@@ -113,6 +113,8 @@ public:
 	bool StickForKey(FKey Key, FVector2D& OutStick);
 	/** Move the captain onto a landing. Pitch 0 is a level camera. Clears a click-walk and a formation drill. */
 	void ArriveByPortal(const FVector& NewLocation, float YawDegrees, float PitchDegrees = 0.f);
+	/** Alt-P, and a debug shot. One picture of the Play In Editor view, in Saved/Playshots. */
+	void TakePlayshot();
 	void ToggleSight();
 	/** Hide the nameplate in true sight, in a stronghold or lair, and while no companions are out. */
 	void UpdateNameLabelVisibility();
@@ -219,8 +221,6 @@ protected:
 	void ToggleInventoryFromSlash();
 	void ToggleInventoryFromController();
 	void ToggleDebugPanelFromInput();
-	/** Alt-P. One picture of the Play In Editor view, in Saved/Playshots. */
-	void TakePlayshot();
 	/** Ctrl+Shift+M. The next quad split, and the loaded ground rebuilds. */
 	void CycleQuadSplit();
 	void CloseMenuOverlayFromInput();

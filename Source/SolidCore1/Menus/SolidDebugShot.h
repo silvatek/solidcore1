@@ -22,5 +22,5 @@ namespace SolidDebugShot
 	inline const TCHAR* FormationName = TEXT("Parade");
 	inline constexpr ESolidSight Sight = ESolidSight::True;
 	inline constexpr float FacingYawDeg = SolidTowns::SignFacesSouthYawDeg;
-	inline constexpr float CaptureDelaySeconds = 1.f;
+	inline constexpr float CaptureDelaySeconds = 3.f;
 }

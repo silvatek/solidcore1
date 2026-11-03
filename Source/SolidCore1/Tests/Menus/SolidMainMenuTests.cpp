@@ -253,7 +253,7 @@ bool FSolidDebugShotRecipeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the formation is Parade"), FString(SolidDebugShot::FormationName), FString(TEXT("Parade")));
 	TestEqual(TEXT("the sight is True"), static_cast<uint8>(SolidDebugShot::Sight), static_cast<uint8>(ESolidSight::True));
 	TestEqual(TEXT("facing south"), SolidDebugShot::FacingYawDeg, SolidTowns::SignFacesSouthYawDeg);
-	TestEqual(TEXT("the shot waits one second"), SolidDebugShot::CaptureDelaySeconds, 1.f);
+	TestEqual(TEXT("the shot waits three seconds"), SolidDebugShot::CaptureDelaySeconds, 3.f);
 
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);

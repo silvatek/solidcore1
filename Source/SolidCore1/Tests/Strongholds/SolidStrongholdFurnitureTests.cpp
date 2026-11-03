@@ -328,13 +328,11 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 	UStaticMesh* BedMesh = BedBody->GetStaticMesh();
 	UStaticMesh* PillowMesh = Pillow->GetStaticMesh();
 	UStaticMesh* ChestMesh = ChestBody->GetStaticMesh();
-	UStaticMesh* LidMesh = Lid->GetStaticMesh();
 	TestNotNull(TEXT("campfire mesh"), HearthMesh);
 	TestNotNull(TEXT("bed mesh"), BedMesh);
 	TestNotNull(TEXT("pillow mesh"), PillowMesh);
 	TestNotNull(TEXT("chest mesh"), ChestMesh);
-	TestNotNull(TEXT("lid mesh"), LidMesh);
-	if (!HearthMesh || !BedMesh || !PillowMesh || !ChestMesh || !LidMesh)
+	if (!HearthMesh || !BedMesh || !PillowMesh || !ChestMesh)
 	{
 		return false;
 	}
@@ -365,27 +363,17 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 			Bed->PillowHeightCm())));
 	TestTrue(TEXT("pillow sits on the bed"), Pillow->GetRelativeLocation().Z > BedBody->GetRelativeLocation().Z);
 
+	TestEqual(TEXT("chest uses the stylized chest"), ChestMesh->GetName(), FString(TEXT("Chest_Static")));
+	TestNotNull(TEXT("chest material"), ChestBody->GetMaterial(0));
+	TestTrue(TEXT("chest scale is the pack size"), ChestBody->GetRelativeScale3D().Equals(FVector::OneVector, 0.001f));
+	TestFalse(TEXT("lid stays hidden"), Lid->IsVisible());
+	UStaticMesh* LidMesh = Lid->GetStaticMesh();
+	TestNull(TEXT("lid has no mesh"), LidMesh);
+	const float ChestScale = ChestBody->GetRelativeScale3D().X;
+	const float ChestBottom = ChestBody->GetRelativeLocation().Z + ChestMesh->GetBounds().GetBox().Min.Z * ChestScale;
 	TestTrue(
-		TEXT("chest body scale"),
-		ScaleMatches(ChestBody, FVector(
-			Chest->LengthCm(),
-			Chest->WidthCm(),
-			Chest->BodyHeightCm())));
-	TestTrue(
-		TEXT("lid scale is a cylinder along the chest"),
-		ScaleMatches(Lid, FVector(
-			Chest->LidRadiusCm() * 2.f,
-			Chest->LidRadiusCm() * 2.f,
-			Chest->LengthCm())));
-	TestTrue(
-		TEXT("lid axis runs along the chest"),
-		Lid->GetRelativeRotation().Quaternion().GetAxisZ().Equals(FVector::ForwardVector, 0.02f));
-	TestTrue(
-		TEXT("lid is centered on the top of the chest"),
-		FMath::IsNearlyEqual(
-			Lid->GetRelativeLocation().Z,
-			ChestBody->GetRelativeLocation().Z + Chest->BodyHeightCm() * 0.5f,
-			0.05f));
+		TEXT("chest sits on the floor"),
+		FMath::IsNearlyEqual(ChestBottom, Chest->FloorLiftCm(), 0.05f));
 
 	UStaticMeshComponent* Slab = Table->GetTop();
 	TestNotNull(TEXT("small table top"), Slab);

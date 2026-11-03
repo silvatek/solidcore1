@@ -12,6 +12,8 @@ A lair layout is made of slabs. The plan says slab.
 
 An inventory position is a slot. The pack, the chest, and the crafting grid say slot.
 
+A square of the fog curtain on a chunk is a chunk point. The curtain says chunk point.
+
 This story introduces no new class.
 
 ## Acceptance
@@ -21,6 +23,7 @@ This story introduces no new class.
 - A lair layout says slab where it said cell.
 - An inventory position says slot where it said cell.
 - The comments on `FSolidWorldChartMark` call the marker's position a terrain point. They do not call it a cell.
+- A square of the fog curtain says chunk point where it said cell.
 
 ## Implementation notes
 
@@ -33,3 +36,5 @@ This story introduces no new class.
 The struct comment on `FSolidWorldChartMark` says the position is the terrain point of the cell centre, and that the chart turns that position into a cell and keeps the cell. The `TerrainPoint` comment says "The cell centre." Both describe the terrain point.
 
 `FirstEmptyPackCell` and the pack cell, chest cell, and empty cell in the inventory are slots. A crafting slot already uses that word.
+
+`EdgeOf` takes `CellX` and `CellY`, the column and row of one curtain square inside the chunk. `SlotForCell` picks the material for that square. `FogCells` is how many of those squares run along the chunk edge. The mesh params call them "Cells along one chunk edge." `FogQuadsPerSide` says "Fog curtain cells per chunk edge." Each square is 2 m, the terrain-point step. The word on that square becomes chunk point.

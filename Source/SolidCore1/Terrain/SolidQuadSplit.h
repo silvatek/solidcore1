@@ -98,8 +98,9 @@ protected:
 		bool bFlip) const;
 
 	/**
-	 * A triangle whose terrain points sit on two shelves takes the higher shelf.
-	 * A midpoint or the centre is not a terrain point. One shelf leaves the material.
+	 * A triangle whose vertices sit on two shelves takes the higher shelf.
+	 * A midpoint takes the higher of its ends. The centre takes the higher of the four corners.
+	 * One shelf leaves the material.
 	 */
 	FSolidQuadTriangles ApplyShelf(
 		FSolidQuadTriangles Triangles,

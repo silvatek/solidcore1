@@ -176,27 +176,73 @@ FSolidQuadTriangles FSolidQuadSplit::ApplyShelf(
 		const int32 Vertices[3] = { Triangle.Corner0, Triangle.Corner1, Triangle.Corner2 };
 		float Low = 0.f;
 		float High = 0.f;
-		bool bTerrain = false;
+		ESolidBiome HighBiome = Triangle.Material;
+		bool bVertex = false;
 		for (const int32 Vertex : Vertices)
 		{
-			if (Vertex < 0 || Vertex > 3)
+			ESolidBiome Biome = Triangle.Material;
+			float Shelf = 0.f;
+			if (Vertex >= 0 && Vertex <= 3)
 			{
-				continue;
+				Biome = Corner[Vertex];
+				Shelf = SolidBiome::Of(Biome).HeightOffsetCm();
 			}
-			const float Shelf = SolidBiome::Of(Corner[Vertex]).HeightOffsetCm();
-			if (!bTerrain)
+			else
+			{
+				int32 End0 = 0;
+				int32 End1 = 0;
+				if (FSolidQuadTriangle::MidpointEnds(Vertex, End0, End1))
+				{
+					const float FirstShelf = SolidBiome::Of(Corner[End0]).HeightOffsetCm();
+					const float SecondShelf = SolidBiome::Of(Corner[End1]).HeightOffsetCm();
+					if (SecondShelf > FirstShelf)
+					{
+						Biome = Corner[End1];
+						Shelf = SecondShelf;
+					}
+					else
+					{
+						Biome = Corner[End0];
+						Shelf = FirstShelf;
+					}
+				}
+				else if (Vertex == FSolidQuadTriangle::Centre)
+				{
+					Biome = Corner[0];
+					Shelf = SolidBiome::Of(Corner[0]).HeightOffsetCm();
+					for (int32 CornerIndex = 1; CornerIndex < 4; ++CornerIndex)
+					{
+						const float CornerShelf = SolidBiome::Of(Corner[CornerIndex]).HeightOffsetCm();
+						if (CornerShelf > Shelf)
+						{
+							Shelf = CornerShelf;
+							Biome = Corner[CornerIndex];
+						}
+					}
+				}
+				else
+				{
+					continue;
+				}
+			}
+			if (!bVertex)
 			{
 				Low = Shelf;
 				High = Shelf;
-				bTerrain = true;
+				HighBiome = Biome;
+				bVertex = true;
 			}
 			else
 			{
 				Low = FMath::Min(Low, Shelf);
-				High = FMath::Max(High, Shelf);
+				if (Shelf > High)
+				{
+					High = Shelf;
+					HighBiome = Biome;
+				}
 			}
 		}
-		if (!bTerrain || Low == High)
+		if (!bVertex || Low == High)
 		{
 			continue;
 		}
@@ -204,18 +250,7 @@ FSolidQuadTriangles FSolidQuadSplit::ApplyShelf(
 		{
 			continue;
 		}
-		for (const int32 Vertex : Vertices)
-		{
-			if (Vertex < 0 || Vertex > 3)
-			{
-				continue;
-			}
-			if (SolidBiome::Of(Corner[Vertex]).HeightOffsetCm() == High)
-			{
-				Triangle.Material = Corner[Vertex];
-				break;
-			}
-		}
+		Triangle.Material = HighBiome;
 	}
 	return Triangles;
 }

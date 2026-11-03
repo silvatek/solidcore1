@@ -506,10 +506,15 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 			Forest, Forest, Grass, Forest, Grass, Town, Town),
 		Grass, Forest, WestEastCorners);
 	ExpectHalves(
-		TEXT("a sea half stays sea beside the grass"),
+		TEXT("a sea half beside grass takes the grass"),
 		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
 			Grass, Sea, Sea, Grass, Grass, Town, Town),
-		Sea, Grass, NorthSouthCorners);
+		Grass, Grass, NorthSouthCorners);
+	ExpectHalves(
+		TEXT("a grass half beside a mountain takes the rock"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Grass, Grass, Grass, Mountain, Mountain, Town, Town),
+		Mountain, Mountain, NorthSouthCorners);
 
 	const int32 AcrossBand[6][3] = {
 		{ 0, 7, 4 }, { 0, 3, 7 }, { 0, 6, 3 }, { 6, 5, 3 }, { 1, 4, 7 }, { 2, 5, 6 } };

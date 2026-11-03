@@ -4,22 +4,22 @@ Status: New
 
 ## Story
 
-The player looks across the ground where two biomes meet. Each 2 m square takes its colour from the method in use. With NorthWest, the square takes the northwest corner, so the boundary steps from point to point. With the midpoint method, the boundary passes through the middle of any edge whose ends differ. A straight run of one biome against another is a straight edge. A road that steps across the grid stays one strip, because a road outranks the ground beside it. Ctrl+Shift+M cycles the method while the player watches, and the edge changes. The terrain points stay where they are.
+The player looks across the ground where two biomes meet. Each 2 m square takes its colour from the method in use. With NorthWest, the square takes the northwest corner, so the boundary steps from point to point. With PriorityMidpoint, the boundary passes through the middle of any edge whose ends differ. A straight run of one biome against another is a straight edge. A road that steps across the grid stays one strip, because a road outranks the ground beside it. Ctrl+Shift+M cycles the method while the player watches, and the edge changes. The terrain points stay where they are.
 
 ## Acceptance
 
 - A quad is built from the triangles the selected method returns. NorthWest, OddCorner, and NorthWestCut each return two, and those two match the triangles they return now. The existing quad-triangle checks still pass.
 - QuadMaterial is renamed to QuadSplit. Its type is ESolidQuadSplit. NorthWest, OddCorner, and NorthWestCut keep those names.
 - QuadSplit selects the method. It starts as NorthWest. Ctrl+Shift+M cycles the values while playing, the loaded ground rebuilds, and NorthWest is still one of the values. Selecting it again restores those two triangles.
-- The new value follows the midpoint split in the notes. An edge whose ends match adds no vertex. An edge whose ends differ gets one vertex in the middle, and the neighbouring quad uses that same vertex.
+- PriorityMidpoint follows the split in the notes. An edge whose ends match adds no vertex. An edge whose ends differ gets one vertex in the middle, and the neighbouring quad uses that same vertex. The checker, and the two cases that look for the highest material, use the biome order.
 - On a checker, the biome further right in the order stays joined. The order, lowest first, is Sea, Grassland, Forest, Desert, Mountain, Town, River, Road.
-- The patch below shows all seven cases. A test of the new value checks that patch.
+- The patch below shows all seven cases. A test of PriorityMidpoint checks that patch.
 - The debug readout shows the name of the method in use.
-- In Play In Editor, with the new value selected, a biome boundary runs through those midpoints. With NorthWest selected, the ground keeps the corners it has now.
+- In Play In Editor, with PriorityMidpoint selected, a biome boundary runs through those midpoints. With NorthWest selected, the ground keeps the corners it has now.
 
 ## Implementation notes
 
-The mesh is changed first so a quad can hold as many triangles as the method returns. NorthWest, OddCorner, and NorthWestCut keep returning two, the same two they return now. Once that still matches, the midpoint method is added as a value of QuadSplit. Ctrl+Shift+M cycles the values in enum order, and the loaded chunks rebuild. This story introduces no new class.
+The mesh is changed first so a quad can hold as many triangles as the method returns. NorthWest, OddCorner, and NorthWestCut keep returning two, the same two they return now. Once that still matches, PriorityMidpoint is added as a value of QuadSplit. Ctrl+Shift+M cycles the values in enum order, and the loaded chunks rebuild. This story introduces no new class.
 
 The patch is eight rows by twelve points, the middle of a chart export with a road added. The first row is north and the first character of a row is west. F is forest, T is town, G is grassland, and R is road.
 

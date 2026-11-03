@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-The player looks across the ground where two biomes meet. Each 2 m square takes its colour from the method in use. With NorthWest, the square takes the northwest corner, so the boundary steps from point to point. With PriorityMidpoint, the boundary passes through the middle of any edge whose ends differ. A straight run of one biome against another is a straight edge. A road that steps across the grid stays one strip, because a road outranks the ground beside it. Ctrl+Shift+M cycles the method while the player watches, and the edge changes. The terrain points stay where they are.
+The player looks across the ground where two biomes meet. Each 2 m square takes its colour from the method in use. With NorthWest, the square takes the northwest corner, so the boundary steps from point to point. With PriorityMidpoint, the boundary passes through the middle of any edge whose ends differ. A straight run of one biome against another is a straight edge. A road that steps across the grid stays one strip, because a road outranks the ground beside it. On a cliff or a coast, a triangle that reaches the higher ground takes that ground's colour. Ctrl+Shift+M cycles the method while the player watches, and the edge changes. The terrain points stay where they are.
 
 ## Acceptance
 
@@ -12,7 +12,8 @@ The player looks across the ground where two biomes meet. Each 2 m square takes 
 - QuadMaterial is renamed to QuadSplit. Its type is ESolidQuadSplit. NorthWest, OddCorner, and NorthWestCut keep those names.
 - QuadSplit selects the method. It starts as NorthWest. Ctrl+Shift+M cycles the values while playing, the loaded ground rebuilds, and NorthWest is still one of the values. Selecting it again restores those two triangles.
 - PriorityMidpoint follows the split in the notes. An edge whose ends match adds no vertex. An edge whose ends differ gets one vertex in the middle, and the neighbouring quad uses that same vertex. The checker, and the two cases that look for the highest material, use the biome order.
-- On a checker, the biome further right in the order stays joined. The order, lowest first, is Sea, Grassland, Forest, Desert, Mountain, Town, River, Road.
+- On a checker, the biome further right in the order stays joined. The order, lowest first, is Sea, Grassland, Forest, Desert, Mountain, Town, River, Road. Swamp is not part of this story.
+- After the triangles are calculated, a triangle with a vertex on a higher shelf takes the material of its highest vertex.
 - The patch below shows all seven cases. A test of PriorityMidpoint checks that patch.
 - The debug readout shows the name of the method in use.
 - In Play In Editor, with PriorityMidpoint selected, a biome boundary runs through those midpoints. With NorthWest selected, the ground keeps the corners it has now.
@@ -47,3 +48,7 @@ Walk one 2 m quad at a time. The corners are the four terrain points. The first 
 7. One corner is the highest material, and the opposite side is a matching pair. The high corner keeps its triangle. The matching pair takes the side it occupies. The remaining corner takes what is left beside the high triangle.
 
 The mesh and the debug line both read the method's triangles, so a method can return more than two. The three current methods keep returning two.
+
+Sea and river are the low shelf. Grassland, forest, desert, town, and road share the next shelf. Mountain is the highest. The shelf is the biome's height offset, not the noisy ground. A new vertex takes the height the map already has at that place. On an edge, that is the average of the two ends.
+
+In the seven cases, each triangle's terrain points are one biome. The shelf pass leaves that material in place. A triangle that does contain terrain points from two shelves takes the higher shelf.

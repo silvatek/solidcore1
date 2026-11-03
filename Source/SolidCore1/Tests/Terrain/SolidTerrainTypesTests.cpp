@@ -355,9 +355,9 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 	const ESolidBiome Desert = ESolidBiome::Desert;
 
 	TestEqual(
-		TEXT("this build uses NorthWest"),
+		TEXT("this build uses PriorityMidpoint"),
 		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
-		static_cast<uint8>(ESolidQuadSplit::NorthWest));
+		static_cast<uint8>(ESolidQuadSplit::PriorityMidpoint));
 
 	auto Expect = [this](const TCHAR* What, const FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{
@@ -765,6 +765,19 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	FSolidQuadSplit::Cycle();
 	TestEqual(
+		TEXT("NorthWest follows PriorityMidpoint"),
+		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
+		static_cast<uint8>(ESolidQuadSplit::NorthWest));
+	TestEqual(
+		TEXT("the debug line names NorthWest"),
+		FString(FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()),
+		FString(TEXT("NorthWest")));
+	Expect(
+		TEXT("selecting NorthWest restores those two triangles"),
+		FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Triangles(Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		false, Forest, Forest);
+	FSolidQuadSplit::Cycle();
+	TestEqual(
 		TEXT("the next split is NorthWestCut"),
 		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
 		static_cast<uint8>(ESolidQuadSplit::NorthWestCut));
@@ -774,22 +787,13 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		FString(TEXT("NorthWestCut")));
 	FSolidQuadSplit::Cycle();
 	TestEqual(
-		TEXT("the next split is PriorityMidpoint"),
+		TEXT("PriorityMidpoint follows NorthWestCut"),
 		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
 		static_cast<uint8>(ESolidQuadSplit::PriorityMidpoint));
 	TestEqual(
 		TEXT("the debug line names PriorityMidpoint"),
 		FString(FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()),
 		FString(TEXT("PriorityMidpoint")));
-	FSolidQuadSplit::Cycle();
-	TestEqual(
-		TEXT("NorthWest follows the last method"),
-		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
-		static_cast<uint8>(ESolidQuadSplit::NorthWest));
-	Expect(
-		TEXT("selecting NorthWest again restores those two triangles"),
-		FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Triangles(Forest, Forest, Forest, Forest, Desert, Forest, Forest),
-		false, Forest, Forest);
 
 	return true;
 }

@@ -49,7 +49,7 @@ public:
 	/** The subclass for this method. The same instance on every call. */
 	static const FSolidQuadSplit& Of(ESolidQuadSplit Method);
 
-	/** The method the mesh and the debug line use. Starts as NorthWest. */
+	/** The method the mesh and the debug line use. Starts as PriorityMidpoint. */
 	static ESolidQuadSplit QuadSplit;
 
 	/** The next method in enum order. NorthWest follows PriorityMidpoint. */

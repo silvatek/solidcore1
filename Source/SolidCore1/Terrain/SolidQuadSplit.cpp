@@ -28,7 +28,7 @@ bool FSolidQuadTriangle::MidpointEnds(const int32 Corner, int32& OutEnd0, int32&
 	}
 }
 
-ESolidQuadSplit FSolidQuadSplit::QuadSplit = ESolidQuadSplit::NorthWest;
+ESolidQuadSplit FSolidQuadSplit::QuadSplit = ESolidQuadSplit::PriorityMidpoint;
 
 void FSolidQuadSplit::Cycle()
 {

@@ -343,7 +343,8 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("pillow material"), Pillow->GetMaterial(0));
 	TestTrue(TEXT("campfire scale is 90 percent"), Hearth->GetRelativeScale3D().Equals(FVector(0.9f), 0.001f));
 	TestFalse(TEXT("embers stay hidden"), Embers->IsVisible());
-	TestNull(TEXT("embers have no mesh"), Embers->GetStaticMesh());
+	UStaticMesh* EmberMesh = Embers->GetStaticMesh();
+	TestNull(TEXT("embers have no mesh"), EmberMesh);
 	const float Scale = Hearth->GetRelativeScale3D().X;
 	const float Bottom = Hearth->GetRelativeLocation().Z + HearthMesh->GetBounds().GetBox().Min.Z * Scale;
 	TestTrue(

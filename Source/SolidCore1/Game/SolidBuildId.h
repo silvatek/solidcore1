@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0956")
+#define SOLID_BUILD_ID TEXT("SC1-0957")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The odd-corner split is gone.")
+#define SOLID_BUILD_NOTE TEXT("PriorityMidpoint cuts off a lone corner at the edge midpoints.")
 #endif

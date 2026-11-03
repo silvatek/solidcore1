@@ -8,15 +8,23 @@ enum class ESolidQuadSplit : uint8
 {
 	NorthWest,
 	NorthWestCut,
+	PriorityMidpoint,
 };
 
-/** One triangle. Corners are indexes in mesh order 00, 10, 01, 11. */
+/**
+ * One triangle.
+ * Corners 0-3 are mesh order 00, 10, 01, 11.
+ * 4, 5, 6, and 7 are the midpoints of the south, north, east, and west edges.
+ */
 struct FSolidQuadTriangle
 {
 	ESolidBiome Material = ESolidBiome::Grassland;
 	int32 Corner0 = 0;
 	int32 Corner1 = 0;
 	int32 Corner2 = 0;
+
+	/** True when Corner is an edge midpoint. The ends are grid corners 0-3. */
+	static bool MidpointEnds(int32 Corner, int32& OutEnd0, int32& OutEnd1);
 };
 
 /** The triangles one method returns for a quad. */
@@ -42,7 +50,7 @@ public:
 	/** The method the mesh and the debug line use. Starts as NorthWest. */
 	static ESolidQuadSplit QuadSplit;
 
-	/** The next method in enum order. NorthWest follows NorthWestCut. */
+	/** The next method in enum order. NorthWest follows PriorityMidpoint. */
 	static void Cycle();
 
 	/** The word for this method. The debug line prints it. */
@@ -52,7 +60,7 @@ public:
 	 * Triangles for one quad.
 	 * WestOfNorthWest is the point directly west of corner 11.
 	 * SouthWestOfNorthWest is the point south-west of that corner.
-	 * NorthWest ignores both. NorthWestCut uses them for two of its cuts.
+	 * NorthWest and PriorityMidpoint ignore both. NorthWestCut uses them for two of its cuts.
 	 */
 	virtual FSolidQuadTriangles Triangles(
 		ESolidBiome Preferred,
@@ -121,6 +129,27 @@ public:
  * other biome.
  */
 class SOLIDCORE1_API FSolidNorthWestCutSplit : public FSolidQuadSplit
+{
+public:
+	virtual const TCHAR* Name() const override;
+
+	virtual FSolidQuadTriangles Triangles(
+		ESolidBiome Preferred,
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11,
+		ESolidBiome WestOfNorthWest,
+		ESolidBiome SouthWestOfNorthWest) const override;
+};
+
+/**
+ * Four matching corners are two triangles of that corner.
+ * Three matching corners keep the odd one as the triangle from that corner to the
+ * midpoints of its two edges. The other three corners share the rest.
+ * Any other quad still takes the northwest corner.
+ */
+class SOLIDCORE1_API FSolidPriorityMidpointSplit : public FSolidQuadSplit
 {
 public:
 	virtual const TCHAR* Name() const override;

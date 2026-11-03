@@ -381,6 +381,61 @@ void ASolidTerrainChunk::BuildChunk(
 		return Slot;
 	};
 
+	TArray<int32> HorizontalMids;
+	TArray<int32> VerticalMids;
+	HorizontalMids.Init(INDEX_NONE, VertsPerSide * InQuadsPerSide);
+	VerticalMids.Init(INDEX_NONE, InQuadsPerSide * VertsPerSide);
+	auto SharedMidpoint = [&](const int32 GridA, const int32 GridB, TArray<int32>& Slots, const int32 Slot) -> int32
+	{
+		if (Slots[Slot] != INDEX_NONE)
+		{
+			return Slots[Slot];
+		}
+
+		const int32 NewIndex = Positions.Num();
+		Positions.Add((Positions[GridA] + Positions[GridB]) * 0.5f);
+		Normals.Add((Normals[GridA] + Normals[GridB]).GetSafeNormal());
+		FVector Tangent = (Tangents[GridA] + Tangents[GridB]).GetSafeNormal();
+		if (Tangent.IsNearlyZero())
+		{
+			Tangent = FVector::RightVector;
+		}
+		Tangents.Add(Tangent);
+		UVs.Add((UVs[GridA] + UVs[GridB]) * 0.5f);
+		Colors.Add((Colors[GridA] + Colors[GridB]) * 0.5f);
+		Slots[Slot] = NewIndex;
+		return NewIndex;
+	};
+	auto VertexFor = [&](const int32 Corner, const int32 QuadX, const int32 QuadY, const int32* Corners) -> int32
+	{
+		int32 End0 = 0;
+		int32 End1 = 0;
+		if (!FSolidQuadTriangle::MidpointEnds(Corner, End0, End1))
+		{
+			return Corners[FMath::Clamp(Corner, 0, 3)];
+		}
+
+		const int32 GridA = Corners[End0];
+		const int32 GridB = Corners[End1];
+		if (End0 == 0 && End1 == 1)
+		{
+			return SharedMidpoint(GridA, GridB, HorizontalMids, QuadY * InQuadsPerSide + QuadX);
+		}
+		if (End0 == 2 && End1 == 3)
+		{
+			return SharedMidpoint(GridA, GridB, HorizontalMids, (QuadY + 1) * InQuadsPerSide + QuadX);
+		}
+		if (End0 == 0 && End1 == 2)
+		{
+			return SharedMidpoint(GridA, GridB, VerticalMids, QuadY * VertsPerSide + QuadX);
+		}
+		if (End0 == 1 && End1 == 3)
+		{
+			return SharedMidpoint(GridA, GridB, VerticalMids, QuadY * VertsPerSide + (QuadX + 1));
+		}
+		return Corners[0];
+	};
+
 	for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
 	{
 		for (int32 X = 0; X < InQuadsPerSide; ++X)
@@ -431,9 +486,9 @@ void ASolidTerrainChunk::BuildChunk(
 			for (int32 TriangleIndex = 0; TriangleIndex < Picked.Count; ++TriangleIndex)
 			{
 				const FSolidQuadTriangle& Triangle = Picked.Triangles[TriangleIndex];
-				const int32 V0 = CornerVertex[Triangle.Corner0];
-				const int32 V1 = CornerVertex[Triangle.Corner1];
-				const int32 V2 = CornerVertex[Triangle.Corner2];
+				const int32 V0 = VertexFor(Triangle.Corner0, X, Y, CornerVertex);
+				const int32 V1 = VertexFor(Triangle.Corner1, X, Y, CornerVertex);
+				const int32 V2 = VertexFor(Triangle.Corner2, X, Y, CornerVertex);
 				Triangles.Add(V0);
 				Triangles.Add(V1);
 				Triangles.Add(V2);

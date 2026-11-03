@@ -3,6 +3,31 @@
 
 FSolidQuadSplit::~FSolidQuadSplit() = default;
 
+bool FSolidQuadTriangle::MidpointEnds(const int32 Corner, int32& OutEnd0, int32& OutEnd1)
+{
+	switch (Corner)
+	{
+	case 4:
+		OutEnd0 = 0;
+		OutEnd1 = 1;
+		return true;
+	case 5:
+		OutEnd0 = 2;
+		OutEnd1 = 3;
+		return true;
+	case 6:
+		OutEnd0 = 0;
+		OutEnd1 = 2;
+		return true;
+	case 7:
+		OutEnd0 = 1;
+		OutEnd1 = 3;
+		return true;
+	default:
+		return false;
+	}
+}
+
 ESolidQuadSplit FSolidQuadSplit::QuadSplit = ESolidQuadSplit::NorthWest;
 
 void FSolidQuadSplit::Cycle()
@@ -13,6 +38,9 @@ void FSolidQuadSplit::Cycle()
 		QuadSplit = ESolidQuadSplit::NorthWestCut;
 		break;
 	case ESolidQuadSplit::NorthWestCut:
+		QuadSplit = ESolidQuadSplit::PriorityMidpoint;
+		break;
+	case ESolidQuadSplit::PriorityMidpoint:
 	default:
 		QuadSplit = ESolidQuadSplit::NorthWest;
 		break;
@@ -27,6 +55,11 @@ const TCHAR* FSolidNorthWestSplit::Name() const
 const TCHAR* FSolidNorthWestCutSplit::Name() const
 {
 	return TEXT("NorthWestCut");
+}
+
+const TCHAR* FSolidPriorityMidpointSplit::Name() const
+{
+	return TEXT("PriorityMidpoint");
 }
 
 FString FSolidQuadSplit::Description(
@@ -56,10 +89,13 @@ const FSolidQuadSplit& FSolidQuadSplit::Of(const ESolidQuadSplit Method)
 {
 	static const FSolidNorthWestSplit NorthWest;
 	static const FSolidNorthWestCutSplit NorthWestCut;
+	static const FSolidPriorityMidpointSplit PriorityMidpoint;
 	switch (Method)
 	{
 	case ESolidQuadSplit::NorthWestCut:
 		return NorthWestCut;
+	case ESolidQuadSplit::PriorityMidpoint:
+		return PriorityMidpoint;
 	case ESolidQuadSplit::NorthWest:
 	default:
 		return NorthWest;
@@ -200,4 +236,87 @@ FSolidQuadTriangles FSolidNorthWestCutSplit::Triangles(
 		}
 	}
 	return TwoTriangles(First, Second, bFlip, B00, B10, B01, B11);
+}
+
+FSolidQuadTriangles FSolidPriorityMidpointSplit::Triangles(
+	const ESolidBiome Preferred,
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11,
+	const ESolidBiome /*WestOfNorthWest*/,
+	const ESolidBiome /*SouthWestOfNorthWest*/) const
+{
+	if (B00 == B10 && B10 == B01 && B01 == B11)
+	{
+		return TwoTriangles(B00, B00, false, B00, B10, B01, B11);
+	}
+
+	const ESolidBiome CornerBiome[4] = { B00, B10, B01, B11 };
+	int32 Odd = -1;
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		int32 Same = 0;
+		for (int32 Other = 0; Other < 4; ++Other)
+		{
+			if (CornerBiome[Other] == CornerBiome[Index])
+			{
+				++Same;
+			}
+		}
+		if (Same == 1)
+		{
+			if (Odd >= 0)
+			{
+				Odd = -1;
+				break;
+			}
+			Odd = Index;
+		}
+	}
+
+	if (Odd >= 0)
+	{
+		struct FCornerCut
+		{
+			int32 FirstMid;
+			int32 SecondMid;
+			int32 Opposite;
+			int32 FarEndOfFirst;
+			int32 FarEndOfSecond;
+		};
+		const FCornerCut Cuts[4] = {
+			{ 6, 4, 3, 2, 1 },
+			{ 4, 7, 2, 0, 3 },
+			{ 5, 6, 1, 3, 0 },
+			{ 7, 5, 0, 1, 2 },
+		};
+		const FCornerCut& Cut = Cuts[Odd];
+		FSolidQuadTriangles Out;
+		auto Append = [&](const ESolidBiome Material, const int32 A, const int32 B, const int32 C)
+		{
+			if (Out.Count >= FSolidQuadTriangles::Capacity)
+			{
+				return;
+			}
+			FSolidQuadTriangle& Triangle = Out.Triangles[Out.Count];
+			Triangle.Material = Material;
+			Triangle.Corner0 = A;
+			Triangle.Corner1 = B;
+			Triangle.Corner2 = C;
+			++Out.Count;
+		};
+		const ESolidBiome Majority = CornerBiome[Cut.Opposite];
+		Append(CornerBiome[Odd], Odd, Cut.FirstMid, Cut.SecondMid);
+		Append(Majority, Cut.Opposite, Cut.FirstMid, Cut.FarEndOfFirst);
+		Append(Majority, Cut.Opposite, Cut.SecondMid, Cut.FirstMid);
+		Append(Majority, Cut.Opposite, Cut.FarEndOfSecond, Cut.SecondMid);
+		return Out;
+	}
+
+	return TwoTriangles(
+		BorderBiome(Preferred, B00, B11, B10),
+		BorderBiome(Preferred, B00, B01, B11),
+		false,
+		B00, B10, B01, B11);
 }

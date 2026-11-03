@@ -445,6 +445,81 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		TEXT("a lone mountain corner leaves the grass triangle"),
 		FSolidQuadSplit::Of(ESolidQuadSplit::NorthWestCut).Triangles( Grass, Grass, Grass, Grass, Mountain, Grass, Grass),
 		true, Grass, Mountain);
+	Expect(
+		TEXT("four matching corners use that corner"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Forest, Grass, Grass, Grass, Grass, Desert, Town),
+		false, Grass, Grass);
+	Expect(
+		TEXT("a mixed quad still takes the northwest corner"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Forest, Town, Town, Forest, Forest, Forest, Town),
+		false, Forest, Forest);
+	Expect(
+		TEXT("two different corners stay on the northwest corner"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Forest, Town, Desert, Grass, Grass, Town, Town),
+		false, Forest, Forest);
+
+	const ESolidBiome OddQuads[4][4] = {
+		{ Desert, Grass, Grass, Grass },
+		{ Grass, Desert, Grass, Grass },
+		{ Grass, Grass, Desert, Grass },
+		{ Grass, Grass, Grass, Desert },
+	};
+	const int32 OddCuts[4][4][3] = {
+		{ { 0, 6, 4 }, { 3, 6, 2 }, { 3, 4, 6 }, { 3, 1, 4 } },
+		{ { 1, 4, 7 }, { 2, 4, 0 }, { 2, 7, 4 }, { 2, 3, 7 } },
+		{ { 2, 5, 6 }, { 1, 5, 3 }, { 1, 6, 5 }, { 1, 0, 6 } },
+		{ { 3, 7, 5 }, { 0, 7, 1 }, { 0, 5, 7 }, { 0, 2, 5 } },
+	};
+	const TCHAR* OddNames[4] = {
+		TEXT("southeast"), TEXT("southwest"), TEXT("northeast"), TEXT("northwest") };
+	for (int32 Case = 0; Case < 4; ++Case)
+	{
+		const FSolidQuadTriangles Tri = FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Forest,
+			OddQuads[Case][0], OddQuads[Case][1], OddQuads[Case][2], OddQuads[Case][3],
+			Town, Town);
+		TestEqual(*FString::Printf(TEXT("%s odd corner count"), OddNames[Case]), Tri.Count, 4);
+		if (Tri.Count < 4)
+		{
+			continue;
+		}
+		for (int32 Index = 0; Index < 4; ++Index)
+		{
+			const ESolidBiome Material = Index == 0 ? Desert : Grass;
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d"), OddNames[Case], Index),
+				static_cast<uint8>(Tri.Triangles[Index].Material),
+				static_cast<uint8>(Material));
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 0"), OddNames[Case], Index),
+				Tri.Triangles[Index].Corner0, OddCuts[Case][Index][0]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 1"), OddNames[Case], Index),
+				Tri.Triangles[Index].Corner1, OddCuts[Case][Index][1]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 2"), OddNames[Case], Index),
+				Tri.Triangles[Index].Corner2, OddCuts[Case][Index][2]);
+		}
+	}
+
+	int32 End0 = -1;
+	int32 End1 = -1;
+	TestTrue(TEXT("the south midpoint joins the south corners"), FSolidQuadTriangle::MidpointEnds(4, End0, End1));
+	TestEqual(TEXT("south end 0"), End0, 0);
+	TestEqual(TEXT("south end 1"), End1, 1);
+	TestTrue(TEXT("the north midpoint joins the north corners"), FSolidQuadTriangle::MidpointEnds(5, End0, End1));
+	TestEqual(TEXT("north end 0"), End0, 2);
+	TestEqual(TEXT("north end 1"), End1, 3);
+	TestTrue(TEXT("the east midpoint joins the east corners"), FSolidQuadTriangle::MidpointEnds(6, End0, End1));
+	TestEqual(TEXT("east end 0"), End0, 0);
+	TestEqual(TEXT("east end 1"), End1, 2);
+	TestTrue(TEXT("the west midpoint joins the west corners"), FSolidQuadTriangle::MidpointEnds(7, End0, End1));
+	TestEqual(TEXT("west end 0"), End0, 1);
+	TestEqual(TEXT("west end 1"), End1, 3);
+	TestFalse(TEXT("a grid corner is not a midpoint"), FSolidQuadTriangle::MidpointEnds(3, End0, End1));
 
 	FSolidQuadSplit::Cycle();
 	TestEqual(
@@ -455,6 +530,15 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		TEXT("the debug line names NorthWestCut"),
 		FString(FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()),
 		FString(TEXT("NorthWestCut")));
+	FSolidQuadSplit::Cycle();
+	TestEqual(
+		TEXT("the next split is PriorityMidpoint"),
+		static_cast<uint8>(FSolidQuadSplit::QuadSplit),
+		static_cast<uint8>(ESolidQuadSplit::PriorityMidpoint));
+	TestEqual(
+		TEXT("the debug line names PriorityMidpoint"),
+		FString(FSolidQuadSplit::Of(FSolidQuadSplit::QuadSplit).Name()),
+		FString(TEXT("PriorityMidpoint")));
 	FSolidQuadSplit::Cycle();
 	TestEqual(
 		TEXT("NorthWest follows the last method"),

@@ -1,6 +1,6 @@
 # Midpoint biome edges
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -13,8 +13,8 @@ The player looks across the ground where two biomes meet. Each 2 m square takes 
 - QuadSplit selects the method. It starts as NorthWest. Ctrl+Shift+M cycles the values while playing, the loaded ground rebuilds, and NorthWest is still one of the values. Selecting it again restores those two triangles.
 - PriorityMidpoint follows the split in the notes. An edge whose ends match adds no vertex. An edge whose ends differ gets one vertex in the middle, and the neighbouring quad uses that same vertex. The checker, and the two cases that look for the highest material, use the biome order.
 - On a checker, the biome further right in the order stays joined. The order, lowest first, is Sea, Grassland, Forest, Desert, Mountain, Town, River, Road. Swamp is not part of this story.
-- After the triangles are calculated, a triangle with a vertex on a higher shelf takes the material of its highest vertex.
-- The patch below shows all seven cases. A test of PriorityMidpoint checks that patch.
+- After the triangles are calculated, a triangle with a vertex on a higher shelf takes the material of its highest vertex. A midpoint is on the higher shelf of its two ends. The centre is on the higher shelf of the four corners.
+- The patch below is the picture of the seven cases. Each case is checked on its own quad. The patch is not a separate test.
 - The debug readout shows the name of the method in use.
 - In Play In Editor, with PriorityMidpoint selected, a biome boundary runs through those midpoints. With NorthWest selected, the ground keeps the corners it has now.
 
@@ -42,13 +42,13 @@ Walk one 2 m quad at a time. The corners are the four terrain points. The first 
 1. All four corners match. Two triangles, both of that material. The diagonal runs from the northwest corner to the southeast. No extra vertex.
 2. One side is a pair, and the opposite side is the other pair. North matches north and south matches south, or west matches west and east matches east. Put a vertex halfway along each of the two edges the boundary crosses. Each half is two triangles of that half's material.
 3. Both diagonals are pairs. Northwest matches southeast, and northeast matches southwest. This is a checker. The pair further right in the order becomes one band through the quad, four triangles of that material. Each of the other two corners becomes one triangle of its own material.
-4. Only one diagonal is a pair. That pair becomes the band. The other two corners keep one triangle each, so they may be two different materials.
+4. Only one diagonal is a pair, and the other two corners differ from that pair and from each other. That pair becomes the band. Each of those corners keeps one triangle. Three matching corners are case 5.
 5. Three corners match. The odd corner keeps the triangle between that corner and the midpoints of its two edges. The other three corners share the remaining piece, three triangles of their material.
 6. Two adjacent corners are the highest material, and the other two differ. The high pair takes that half of the quad, two triangles. The other half is split between the two lower materials. They meet at the middle of the cut.
 7. One corner is the highest material, and the opposite side is a matching pair. The high corner keeps its triangle. The matching pair takes the side it occupies. The remaining corner takes what is left beside the high triangle.
 
 The mesh and the debug line both read the method's triangles, so a method can return more than two. NorthWest and NorthWestCut keep returning two.
 
-Sea and river are the low shelf. Grassland, forest, desert, town, and road share the next shelf. Mountain is the highest. The shelf is the biome's height offset, not the noisy ground. A new vertex takes the height the map already has at that place. On an edge, that is the average of the two ends.
+Sea and river are the low shelf. Grassland, forest, desert, town, swamp, and road share the next shelf. Mountain is the highest. The shelf is the biome's height offset, not the noisy ground. A new vertex takes the height the map already has at that place. On an edge, that is the average of the two ends. The centre is the average of the four corners.
 
-In the seven cases, each triangle's terrain points are one biome. The shelf pass leaves that material in place. A triangle that does contain terrain points from two shelves takes the higher shelf.
+A midpoint takes the higher shelf of its ends. The centre takes the higher of the four corners. A triangle whose vertices sit on two shelves takes the higher shelf. One shelf leaves the material, so a road and the grassland beside it stay as the split painted them. A grass triangle that reaches a mountain midpoint takes the rock. A sea half that meets grass takes the grass.

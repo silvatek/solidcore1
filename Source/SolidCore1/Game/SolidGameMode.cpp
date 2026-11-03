@@ -18,7 +18,9 @@
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
+#include "Menus/SolidDebugShot.h"
 #include "Menus/SolidPortal.h"
+#include "TimerManager.h"
 #include "Towns/SolidBuilding.h"
 #include "Towns/SolidWallgate.h"
 #include "Towns/SolidTownBuildings.h"
@@ -1588,6 +1590,92 @@ bool ASolidGameMode::TeleportSquadToTown(const int32 TownId)
 		TEXT("Portal to %s (%d) at (%.0f, %.0f) Z=%.1f"),
 		*SolidTowns::NameFor(TownId), TownId, TownXY.X, TownXY.Y, NewLoc.Z);
 	return true;
+}
+
+void ASolidGameMode::RunDebugShot()
+{
+	EnsureCompanyAndSquad();
+	FireParadeEvents();
+	SyncBattlePlans();
+
+	if (Squad)
+	{
+		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+		{
+			const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(Slot);
+			if (Plan && Plan->Is(SolidDebugShot::FormationName))
+			{
+				SelectBattlePlanSlot(Slot);
+				break;
+			}
+		}
+		if (USolidCompany* Company = GetCompany())
+		{
+			const int32 Companion = Company->FindCompanionIndexByName(SolidDebugShot::CompanionName);
+			if (Companion != INDEX_NONE)
+			{
+				TArray<int32> Boxes;
+				Boxes.Add(Companion);
+				Squad->SetSelectedCompanions(Boxes);
+			}
+		}
+	}
+	EnsureCompanion();
+
+	UWorld* World = GetWorld();
+	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	ASolidCharacter* Captain = FindCaptain(World);
+	if (Captain)
+	{
+		Captain->SetSight(SolidDebugShot::Sight);
+	}
+	if (Streamer && Terrain && Terrain->IsBuilt() && WorldMap && WorldMap->IsLoaded() && Captain
+		&& Streamer->HasAttemptedStartTownRelocate())
+	{
+		FSolidWorldChartMark Mark;
+		FVector2D TownXY = FVector2D::ZeroVector;
+		if (WorldMap->FindTownMarker(SolidDebugShot::TownId, Mark)
+			&& WorldMap->TerrainPointToWorld(Mark.TerrainPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), TownXY))
+		{
+			TownXY.Y -= SolidDebugShot::SouthOfMarkCm;
+			const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), TownXY);
+			const float LandZ = Streamer->GetHeightAt(FVector(TownXY.X, TownXY.Y, 0.f)) + Streamer->CollisionHeightBias;
+			float CapsuleHalf = 96.f;
+			if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+			{
+				CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
+			}
+			const FVector NewLoc(TownXY.X, TownXY.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
+			Captain->ArriveByPortal(NewLoc, SolidDebugShot::FacingYawDeg);
+			Streamer->RelocateCompanionsByDelta(Delta);
+			for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
+			{
+				if (Companion)
+				{
+					Companion->SetActorRotation(FRotator(0.f, SolidDebugShot::FacingYawDeg, 0.f));
+				}
+			}
+		}
+	}
+
+	if (!World)
+	{
+		return;
+	}
+	FTimerHandle Handle;
+	World->GetTimerManager().SetTimer(
+		Handle,
+		FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (ASolidCharacter* ShotCaptain = FindCaptain(GetWorld()))
+			{
+				ShotCaptain->TakePlayshot();
+			}
+		}),
+		SolidDebugShot::CaptureDelaySeconds,
+		false);
 }
 
 bool ASolidGameMode::TeleportSquadToTunnelMouth(const TCHAR EndMarker)

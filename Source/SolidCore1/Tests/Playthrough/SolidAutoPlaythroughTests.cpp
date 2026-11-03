@@ -329,6 +329,7 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 		TEXT("Build squad"),
 		TEXT("Character editor"),
 		TEXT("Auto playthrough"),
+		TEXT("Debug Shot"),
 		TEXT("Credits"),
 		TEXT("Exit Game"),
 	};
@@ -338,6 +339,7 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 		ESolidMainMenuItem::BuildSquad,
 		ESolidMainMenuItem::CharacterEditor,
 		ESolidMainMenuItem::AutoPlaythrough,
+		ESolidMainMenuItem::DebugShot,
 		ESolidMainMenuItem::Credits,
 		ESolidMainMenuItem::ExitGame,
 	};
@@ -347,13 +349,14 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 		ESolidMainMenuAction::OpenSquad,
 		ESolidMainMenuAction::OpenCharacterEditor,
 		ESolidMainMenuAction::StartAutoPlaythrough,
+		ESolidMainMenuAction::TakeDebugShot,
 		ESolidMainMenuAction::ShowCredits,
 		ESolidMainMenuAction::Quit,
 	};
 
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	TestEqual(TEXT("seven rows"), Entries.Num(), static_cast<int32>(UE_ARRAY_COUNT(Labels)));
+	TestEqual(TEXT("eight rows"), Entries.Num(), static_cast<int32>(UE_ARRAY_COUNT(Labels)));
 	if (Entries.Num() != UE_ARRAY_COUNT(Labels))
 	{
 		return false;
@@ -374,14 +377,15 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("the row text"), FString(FSolidAutoPlaythrough::Label()), FString(TEXT("Auto playthrough")));
 	TestEqual(TEXT("key 5 is Auto playthrough"), Entries[4].Label, FString(TEXT("Auto playthrough")));
-	TestEqual(TEXT("key 6 is Credits"), Entries[5].Label, FString(TEXT("Credits")));
-	TestEqual(TEXT("key 7 is Exit Game"), Entries[6].Label, FString(TEXT("Exit Game")));
+	TestEqual(TEXT("key 6 is Debug Shot"), Entries[5].Label, FString(TEXT("Debug Shot")));
+	TestEqual(TEXT("key 7 is Credits"), Entries[6].Label, FString(TEXT("Credits")));
+	TestEqual(TEXT("key 8 is Exit Game"), Entries[7].Label, FString(TEXT("Exit Game")));
 	TestEqual(
 		TEXT("Credits stays immediately before Exit Game"),
-		static_cast<uint8>(Entries[5].Item),
+		static_cast<uint8>(Entries[6].Item),
 		static_cast<uint8>(ESolidMainMenuItem::Credits));
 	FSolidMainMenuEntry PastEnd;
-	TestFalse(TEXT("key 8 has no row"), SolidMainMenu::FindEntry(7, PastEnd));
+	TestFalse(TEXT("key 9 has no row"), SolidMainMenu::FindEntry(8, PastEnd));
 	return true;
 }
 

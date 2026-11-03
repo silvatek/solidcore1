@@ -1725,6 +1725,15 @@ void ASolidCharacter::MainMenuConfirm()
 		}
 		HUD->OpenSquadBuilder();
 		break;
+	case ESolidMainMenuAction::TakeDebugShot:
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				GameMode->RunDebugShot();
+			}
+		}
+		break;
 	case ESolidMainMenuAction::StartAutoPlaythrough:
 		if (UWorld* World = GetWorld())
 		{

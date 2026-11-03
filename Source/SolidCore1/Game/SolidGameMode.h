@@ -168,6 +168,12 @@ public:
 	bool TeleportSquadToTown(int32 TownId);
 
 	/**
+	 * Place the company for the current debug shot, then capture a playshot.
+	 * The place, the squad, the sight, and the facing live in SolidDebugShot.
+	 */
+	void RunDebugShot();
+
+	/**
 	 * Stand the squad on the grass just north of a tunnel mouth.
 	 * Records Driven from the village, including when its requirements have not fired.
 	 */

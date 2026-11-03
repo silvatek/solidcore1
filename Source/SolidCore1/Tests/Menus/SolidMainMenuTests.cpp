@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidHUD.h"
 #include "SolidMainMenu.h"
+#include "Menus/SolidDebugShot.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -196,7 +197,7 @@ bool FSolidMainMenuOrderTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Exit Game is last"), Entries.Last().Label, FString(TEXT("Exit Game")));
 	FSolidMainMenuEntry PastEnd;
 	TestFalse(TEXT("no row past the end"), SolidMainMenu::FindEntry(SolidMainMenu::EntryCount(), PastEnd));
-	TestFalse(TEXT("key 8 has no row"), SolidMainMenu::FindEntry(7, PastEnd));
+	TestFalse(TEXT("key 9 has no row"), SolidMainMenu::FindEntry(8, PastEnd));
 
 	int32 QuitRows = 0;
 	for (const FSolidMainMenuEntry& Entry : Entries)
@@ -235,6 +236,53 @@ bool FSolidMainMenuControllerKeyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("menu button opens the menu"), SolidMainMenu::ControllerKey() == EKeys::Gamepad_Special_Right);
 	TestFalse(TEXT("view stays inventory"), SolidMainMenu::ControllerKey() == EKeys::Gamepad_Special_Left);
 	TestFalse(TEXT("A stays jump"), SolidMainMenu::ControllerKey() == EKeys::Gamepad_FaceButton_Bottom);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidDebugShotRecipeTest,
+	"SolidCore1.MainMenu.DebugShot",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidDebugShotRecipeTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("the row is Debug Shot"), FString(SolidDebugShot::Label()), FString(TEXT("Debug Shot")));
+	TestEqual(TEXT("the town is Dragongate"), SolidDebugShot::TownId, SolidTowns::Dragongate);
+	TestEqual(TEXT("ten metres south"), SolidDebugShot::SouthOfMarkCm, 1000.f);
+	TestEqual(TEXT("the companion is Sam"), FString(SolidDebugShot::CompanionName), FString(TEXT("Sam")));
+	TestEqual(TEXT("the formation is Parade"), FString(SolidDebugShot::FormationName), FString(TEXT("Parade")));
+	TestEqual(TEXT("the sight is True"), static_cast<uint8>(SolidDebugShot::Sight), static_cast<uint8>(ESolidSight::True));
+	TestEqual(TEXT("facing south"), SolidDebugShot::FacingYawDeg, SolidTowns::SignFacesSouthYawDeg);
+	TestEqual(TEXT("the shot waits one second"), SolidDebugShot::CaptureDelaySeconds, 1.f);
+
+	TArray<FSolidMainMenuEntry> Entries;
+	SolidMainMenu::CollectEntries(Entries);
+	int32 ShotIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	{
+		if (Entries[Index].Item == ESolidMainMenuItem::DebugShot)
+		{
+			ShotIndex = Index;
+			break;
+		}
+	}
+	TestTrue(TEXT("Debug Shot is listed"), ShotIndex != INDEX_NONE);
+	if (ShotIndex == INDEX_NONE)
+	{
+		return false;
+	}
+	TestEqual(
+		TEXT("Debug Shot takes the shot"),
+		static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[ShotIndex].Item)),
+		static_cast<uint8>(ESolidMainMenuAction::TakeDebugShot));
+	TestTrue(TEXT("Credits follows Debug Shot"), Entries.IsValidIndex(ShotIndex + 1));
+	if (Entries.IsValidIndex(ShotIndex + 1))
+	{
+		TestEqual(
+			TEXT("the next row is Credits"),
+			static_cast<uint8>(Entries[ShotIndex + 1].Item),
+			static_cast<uint8>(ESolidMainMenuItem::Credits));
+	}
 	return true;
 }
 

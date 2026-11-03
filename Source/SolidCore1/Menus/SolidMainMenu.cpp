@@ -1,4 +1,5 @@
 #include "SolidMainMenu.h"
+#include "Menus/SolidDebugShot.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
 
 void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
@@ -9,6 +10,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
 	OutEntries.Add({ ESolidMainMenuItem::BuildSquad, TEXT("Build squad") });
 	OutEntries.Add({ ESolidMainMenuItem::CharacterEditor, TEXT("Character editor") });
 	OutEntries.Add({ ESolidMainMenuItem::AutoPlaythrough, FSolidAutoPlaythrough::Label() });
+	OutEntries.Add({ ESolidMainMenuItem::DebugShot, SolidDebugShot::Label() });
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
 	OutEntries.Add({ ESolidMainMenuItem::ExitGame, TEXT("Exit Game") });
 }
@@ -46,6 +48,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 		return ESolidMainMenuAction::OpenCharacterEditor;
 	case ESolidMainMenuItem::AutoPlaythrough:
 		return ESolidMainMenuAction::StartAutoPlaythrough;
+	case ESolidMainMenuItem::DebugShot:
+		return ESolidMainMenuAction::TakeDebugShot;
 	case ESolidMainMenuItem::Credits:
 		return ESolidMainMenuAction::ShowCredits;
 	case ESolidMainMenuItem::ExitGame:

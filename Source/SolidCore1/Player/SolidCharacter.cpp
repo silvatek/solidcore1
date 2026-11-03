@@ -2482,7 +2482,18 @@ void ASolidCharacter::UpdateCavePassageHover()
 	float GroundCm = 0.f;
 	const ASolidForagePile* Pile = NearestForagePile(GroundCm);
 	const bool bNamed = Pile && SolidForage::IsWithinReach(GroundCm);
-	HUD->SetForageTip(bNamed ? FString(SolidItemType::NameFor(Pile->GetItemId())) : FString());
+	if (bNamed)
+	{
+		HUD->SetForageTip(FString(SolidItemType::NameFor(Pile->GetItemId())));
+	}
+	else if (const ASolidStrongholdSite* Site = SiteUnderPointer())
+	{
+		HUD->SetForageTip(Site->Hover());
+	}
+	else
+	{
+		HUD->SetForageTip(FString());
+	}
 }
 
 bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const

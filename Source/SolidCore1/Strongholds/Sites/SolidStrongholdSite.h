@@ -13,7 +13,7 @@ struct FActorSpawnParameters;
 
 /**
  * A stronghold site in the world.
- * The site is drawn as a stone block.
+ * The site is a tall truncated pyramid. The base is a square, and the top square is shorter.
  * A click lists each size and type that is unlocked, larger than the company base, and already built.
  */
 UCLASS()
@@ -30,9 +30,12 @@ public:
 	void SetSite(FIntPoint TerrainPoint, ESolidStrongholdSize Size);
 	void BuildVisuals();
 
+	/** Pointer line while the cursor rests on this site. */
+	FString Hover() const;
+
 	/**
 	 * Spawns each stronghold site that has no exterior.
-	 * The site is drawn as a stone block.
+	 * The site is a tall truncated pyramid.
 	 */
 	static void Spawn(
 		UWorld* World,
@@ -42,8 +45,11 @@ public:
 		TArray<TObjectPtr<ASolidStrongholdSite>>& Sites,
 		bool& bSitesSpawned);
 
-	/** Edge length of the block, in centimetres. */
+	/** Base edge and height of the pyramid, in centimetres. */
 	static constexpr float BlockCm = 200.f;
+
+	/** Top edge, as a fraction of the base. 0.65 is 35% shorter. */
+	static constexpr float TopScale = 0.65f;
 
 	UStaticMeshComponent* GetBlockMesh() const { return BlockMesh; }
 	FIntPoint GetTerrainPoint() const { return TerrainPoint; }

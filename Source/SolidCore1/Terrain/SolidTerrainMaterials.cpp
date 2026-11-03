@@ -96,12 +96,30 @@ bool HasGrassFactor(UMaterialInterface* Material)
 	return false;
 }
 
-UMaterialInterface* DarkenGrass(UObject* Outer, UMaterialInterface* Grass, const FLinearColor& Factor)
+UMaterialInterface* DarkenGrass(
+	UObject* Outer,
+	UMaterialInterface* Grass,
+	const FLinearColor& Factor,
+	float Roughness,
+	float Specular)
 {
-	UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Grass, Outer);
+	// A dynamic instance of the grassland instance drops the grass texture and
+	// draws the engine checker. Parent on the same material grassland uses.
+	UMaterialInterface* Source = Grass;
+	if (const UMaterialInstance* Instance = Cast<UMaterialInstance>(Grass))
+	{
+		if (Instance->Parent)
+		{
+			Source = Instance->Parent;
+		}
+	}
+
+	UMaterialInterface* Matte = SolidTerrainMaterials::MakeMatteInstance(
+		Outer, Source, Roughness, Specular);
+	UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Matte);
 	if (!MID)
 	{
-		return Grass;
+		return Matte ? Matte : Grass;
 	}
 
 	TArray<FMaterialParameterInfo> Infos;
@@ -114,9 +132,8 @@ UMaterialInterface* DarkenGrass(UObject* Outer, UMaterialInterface* Grass, const
 			MID->SetVectorParameterValue(Info.Name, Factor);
 		}
 	}
-	MID->RecacheUniformExpressions(true);
-	UE_LOG(LogSolid, Warning, TEXT("Terrain material: darker grass factor (%.2f, %.2f, %.2f)"),
-		Factor.R, Factor.G, Factor.B);
+	UE_LOG(LogSolid, Warning, TEXT("Terrain material: darker grass factor (%.2f, %.2f, %.2f) on %s"),
+		Factor.R, Factor.G, Factor.B, *Source->GetName());
 	return MID;
 }
 }
@@ -363,7 +380,12 @@ UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 		const FLinearColor Authored(1.f, 1.f, 1.f, 1.f);
 		if (bCanTint && !Defined.GrassFactor.Equals(Authored))
 		{
-			Built = DarkenGrass(Params.Outer, Grass, Defined.GrassFactor);
+			Built = DarkenGrass(
+				Params.Outer,
+				Grass,
+				Defined.GrassFactor,
+				Params.GrassRoughness,
+				Params.GrassSpecular);
 		}
 		else if (!bCanTint && Biome != ESolidBiome::Grassland)
 		{

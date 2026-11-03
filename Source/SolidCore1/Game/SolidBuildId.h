@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0986")
+#define SOLID_BUILD_ID TEXT("SC1-0987")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Clothes use M_SolidCloth.")
+#define SOLID_BUILD_NOTE TEXT("Clothes use the raw M_SolidCloth asset.")
 #endif

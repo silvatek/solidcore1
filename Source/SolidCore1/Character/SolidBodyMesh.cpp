@@ -402,10 +402,9 @@ namespace
 	}
 
 	/**
-	 * M_SolidCloth, authored in the editor. Colour is its vector parameter. Roughness, specular,
-	 * and metallic stay as constants on that asset. The skeletal-mesh flag is saved on it.
+	 * M_SolidCloth as saved. Colour stays on the asset. The skeletal-mesh flag is saved on it.
 	 */
-	UMaterialInterface* CreateMatteCloth(UObject* Outer, const FLinearColor& Color)
+	UMaterialInterface* CreateMatteCloth()
 	{
 #if WITH_EDITOR
 		UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
@@ -421,11 +420,10 @@ namespace
 				Package->SetDirtyFlag(false);
 			}
 		}
-		if (UMaterialInstanceDynamic* MID = Parent ? UMaterialInstanceDynamic::Create(Parent, Outer) : nullptr)
+		if (Parent)
 		{
-			MID->SetVectorParameterValue(TEXT("Colour"), Color);
-			UE_LOG(LogSolid, Warning, TEXT("Clothing material: M_SolidCloth"));
-			return MID;
+			UE_LOG(LogSolid, Warning, TEXT("Clothing material: M_SolidCloth asset"));
+			return Parent;
 		}
 		UE_LOG(LogSolid, Error, TEXT("Clothing material: M_SolidCloth failed to load."));
 #endif
@@ -438,7 +436,7 @@ namespace
 		const FLinearColor& Color,
 		const TCHAR* DebugName)
 	{
-		if (UMaterialInterface* Cloth = CreateMatteCloth(Outer, Color))
+		if (UMaterialInterface* Cloth = CreateMatteCloth())
 		{
 			return Cloth;
 		}
@@ -464,6 +462,17 @@ namespace
 		// Overrides live on the component. The shared mesh keeps its slot names and is not recolored
 		// while a companion is already drawing it.
 		UMaterialInterface* Current = MeshComp->GetMaterial(Slot);
+		if (IsClothingSlot(Slot))
+		{
+			if (UMaterialInterface* Cloth = CreateMatteCloth())
+			{
+				if (Current != Cloth)
+				{
+					MeshComp->SetMaterial(Slot, Cloth);
+				}
+				return;
+			}
+		}
 		UMaterialInstanceDynamic* Existing = Cast<UMaterialInstanceDynamic>(Current);
 		if (Existing && Existing->GetOuter() == MeshComp)
 		{
@@ -910,7 +919,7 @@ void SolidBodyMesh::ApplyClothingSample(
 #if WITH_EDITOR
 	if (!bFlat && !bUnlit)
 	{
-		Created = CreateMatteCloth(Mesh, Color);
+		Created = CreateMatteCloth();
 	}
 	else if (!bFlat)
 	{

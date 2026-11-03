@@ -357,16 +357,11 @@ bool FSolidBodySkinSlotTest::RunTest(const FString& Parameters)
 #if WITH_EDITOR
 namespace
 {
-	bool ClothingUsesEditorCloth(UMaterialInterface* Material, const FLinearColor& Color)
+	bool ClothingUsesRawCloth(UMaterialInterface* Material)
 	{
-		UMaterial* Parent = Material ? Material->GetMaterial() : nullptr;
-		UMaterialInstanceDynamic* Mid = Cast<UMaterialInstanceDynamic>(Material);
-		FLinearColor Read = FLinearColor::Black;
-		return Parent
-			&& Parent->GetFName() == TEXT("M_SolidCloth")
-			&& Mid
-			&& Mid->GetVectorParameterValue(TEXT("Colour"), Read)
-			&& Read.Equals(Color);
+		return Material
+			&& Material->GetFName() == TEXT("M_SolidCloth")
+			&& Cast<UMaterialInstanceDynamic>(Material) == nullptr;
 	}
 }
 #endif
@@ -401,10 +396,8 @@ bool FSolidBodyClothingMatteTest::RunTest(const FString& Parameters)
 	}
 
 #if WITH_EDITOR
-	TestTrue(TEXT("shirt uses M_SolidCloth"), ClothingUsesEditorCloth(
-		Materials[0].MaterialInterface, FLinearColor(0.29f, 0.38f, 0.55f)));
-	TestTrue(TEXT("trousers use M_SolidCloth"), ClothingUsesEditorCloth(
-		Materials[1].MaterialInterface, FLinearColor(0.12f, 0.11f, 0.10f)));
+	TestTrue(TEXT("shirt uses M_SolidCloth"), ClothingUsesRawCloth(Materials[0].MaterialInterface));
+	TestTrue(TEXT("trousers use M_SolidCloth"), ClothingUsesRawCloth(Materials[1].MaterialInterface));
 	if (UMaterial* Shirt = Materials[0].MaterialInterface->GetMaterial())
 	{
 		TestTrue(TEXT("shirt is used on a skeletal mesh"), Shirt->GetUsageByFlag(MATUSAGE_SkeletalMesh));

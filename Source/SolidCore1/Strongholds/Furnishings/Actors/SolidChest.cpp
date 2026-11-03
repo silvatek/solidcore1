@@ -1,6 +1,43 @@
 #include "SolidChest.h"
 
+#include "SolidCore1.h"
+#include "SolidFabManifest.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+
+namespace
+{
+	UStaticMesh* LoadChestMesh()
+	{
+		const FString Manifest = SolidFabManifest::LoadManifest();
+		FString Recorded;
+		if (SolidFabManifest::ReadJsonStringField(
+			Manifest, TEXT("stylized-environment"), TEXT("Chest_Static.uasset"), Recorded))
+		{
+			if (UStaticMesh* Mesh = Cast<UStaticMesh>(
+				SolidFabManifest::TryLoadContentFile(Recorded, UStaticMesh::StaticClass())))
+			{
+				return Mesh;
+			}
+		}
+
+		FString Folder;
+		SolidFabManifest::ReadJsonStringField(
+			Manifest, TEXT("stylized-environment"), TEXT("resolvedFolder"), Folder);
+		if (Folder.IsEmpty())
+		{
+			Folder = TEXT("Content/StylizedEnvironment");
+		}
+		const FString Fallback = Folder / TEXT("Meshes") / TEXT("Chest_Static.uasset");
+		if (UStaticMesh* Mesh = Cast<UStaticMesh>(
+			SolidFabManifest::TryLoadContentFile(Fallback, UStaticMesh::StaticClass())))
+		{
+			SolidFabManifest::RememberResolvedPath(TEXT("stylized-environment"), Mesh);
+			return Mesh;
+		}
+		return nullptr;
+	}
+}
 
 ASolidChest::ASolidChest()
 {
@@ -30,25 +67,30 @@ float ASolidChest::LidRadiusCm() const
 
 void ASolidChest::BuildVisuals()
 {
-	const float Lift = FloorLiftCm();
-	PlacePart(
-		ChestMesh,
-		BasicCube(),
-		FVector(0.f, 0.f, Lift + BodyHeightCm() * 0.5f),
-		FRotator::ZeroRotator,
-		FVector(LengthCm(), WidthCm(), BodyHeightCm()),
-		FVector(100.f, 100.f, 100.f),
-		BeigeColor(),
-		TEXT("ChestBody"));
-	// Engine cylinder axis is local Z. Turn that axis along the chest so the dome is the lid.
-	const FRotator LidRotation = FRotationMatrix::MakeFromZ(FVector::ForwardVector).Rotator();
-	PlacePart(
-		Lid,
-		BasicCylinder(),
-		FVector(0.f, 0.f, Lift + BodyHeightCm()),
-		LidRotation,
-		FVector(LidRadiusCm() * 2.f, LidRadiusCm() * 2.f, LengthCm()),
-		FVector(100.f, 100.f, 100.f),
-		BeigeColor(),
-		TEXT("ChestLid"));
+	if (Lid)
+	{
+		Lid->SetStaticMesh(nullptr);
+		Lid->SetVisibility(false);
+		Lid->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	if (!ChestMesh)
+	{
+		return;
+	}
+
+	UStaticMesh* Mesh = LoadChestMesh();
+	if (!Mesh)
+	{
+		UE_LOG(LogSolid, Error, TEXT("SolidChest: chest mesh missing."));
+		return;
+	}
+
+	const FBox Box = Mesh->GetBounds().GetBox();
+	ChestMesh->SetStaticMesh(Mesh);
+	ChestMesh->SetRelativeScale3D(FVector::OneVector);
+	ChestMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	ChestMesh->SetRelativeLocation(FVector(0.f, 0.f, FloorLiftCm() - Box.Min.Z));
+	ChestMesh->EmptyOverrideMaterials();
+	ChestMesh->SetVisibility(true);
+	ChestMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }

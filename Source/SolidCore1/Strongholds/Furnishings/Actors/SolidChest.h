@@ -5,7 +5,7 @@
 
 class UStaticMeshComponent;
 
-/** A wooden chest with a half-cylinder lid. One hex. Holds items. */
+/** The stylized chest mesh. One hex. Holds items. The lid stays hidden. */
 UCLASS()
 class SOLIDCORE1_API ASolidChest : public ASolidFurnishing
 {

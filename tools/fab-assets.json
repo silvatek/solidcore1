@@ -103,9 +103,10 @@
         "Tree1.uasset": "Content/StylizedEnvironment/Meshes/Tree1.uasset",
         "Tree2.uasset": "Content/StylizedEnvironment/Meshes/Tree2.uasset",
         "Tree3.uasset": "Content/StylizedEnvironment/Meshes/Tree3.uasset",
-        "Campfire.uasset": "Content/StylizedEnvironment/Meshes/Campfire.uasset"
+        "Campfire.uasset": "Content/StylizedEnvironment/Meshes/Campfire.uasset",
+        "Chest_Static.uasset": "Content/StylizedEnvironment/Meshes/Chest_Static.uasset"
       },
-      "notes": "resolvedPaths are Tree1, Tree2, Tree3, and Campfire. They are tried first, then Meshes under resolvedFolder. A find is written back. Do not move the folder. Demo/Characters/Mannequins is the Epic mannequin and stays unused."
+      "notes": "resolvedPaths are Tree1, Tree2, Tree3, Campfire, and Chest_Static. They are tried first, then Meshes under resolvedFolder. A find is written back. Do not move the folder. Demo/Characters/Mannequins is the Epic mannequin and stays unused."
     }
   ]
 }

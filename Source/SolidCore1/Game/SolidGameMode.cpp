@@ -1948,7 +1948,6 @@ void ASolidGameMode::ChooseForagePiles(const USolidTerrainMap* Map)
 
 	SolidForestTrees::FScatterParams Trees;
 	Trees.Density = ForestTreeDensity;
-	Trees.MaxTrees = MaxForestTrees;
 	Trees.JitterCm = ForestTreeJitterCm;
 
 	TArray<int32> TreePoints;
@@ -2046,7 +2045,6 @@ int32 ASolidGameMode::PlaceEncounterMarks(const USolidTerrainMap* Map)
 
 	SolidForestTrees::FScatterParams Trees;
 	Trees.Density = ForestTreeDensity;
-	Trees.MaxTrees = MaxForestTrees;
 	Trees.JitterCm = ForestTreeJitterCm;
 
 	TArray<int32> TreePoints;
@@ -2343,7 +2341,6 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		SolidForestTrees::FScatterParams Scatter;
 		Scatter.Density = ForestTreeDensity;
-		Scatter.MaxTrees = MaxForestTrees;
 		Scatter.JitterCm = ForestTreeJitterCm;
 
 		TArray<FVector2D> Positions;
@@ -2373,8 +2370,8 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning,
-			TEXT("Spawned %d forest trees (density=%.2f max=%d)"),
-			Spawned, ForestTreeDensity, MaxForestTrees);
+			TEXT("Spawned %d forest trees (density=%.2f)"),
+			Spawned, ForestTreeDensity);
 	}
 
 	TArray<SolidTownSigns::FPlacement> SignPlacements;

@@ -11,8 +11,7 @@ namespace
 	{
 		OutIndices.Reset();
 		const float Density = FMath::Clamp(Params.Density, 0.f, 1.f);
-		const int32 MaxTrees = FMath::Max(Params.MaxTrees, 0);
-		if (MaxTrees == 0 || Density <= 0.f)
+		if (Density <= 0.f)
 		{
 			return 0;
 		}
@@ -32,7 +31,7 @@ namespace
 			return 0;
 		}
 
-		// Fisher–Yates so the cap does not bias toward map origin.
+		// Shuffle so the chosen points are not the first forest points on the map.
 		for (int32 I = ForestIndices.Num() - 1; I > 0; --I)
 		{
 			const int32 J = Rng.RandRange(0, I);
@@ -42,7 +41,7 @@ namespace
 		const int32 Target = FMath::Clamp(
 			FMath::RoundToInt(static_cast<float>(ForestIndices.Num()) * Density),
 			0,
-			FMath::Min(MaxTrees, ForestIndices.Num()));
+			ForestIndices.Num());
 		if (Target <= 0)
 		{
 			return 0;

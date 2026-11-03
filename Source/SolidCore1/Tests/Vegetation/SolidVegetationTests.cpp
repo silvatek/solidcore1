@@ -36,7 +36,6 @@ bool FSolidForestTreeScatterTest::RunTest(const FString& Parameters)
 
 	SolidForestTrees::FScatterParams Params;
 	Params.Density = 0.5f;
-	Params.MaxTrees = 64;
 	Params.JitterCm = 0.f; // exact grid points so biome checks stay crisp
 
 	TArray<FVector2D> PositionsA;
@@ -45,8 +44,10 @@ bool FSolidForestTreeScatterTest::RunTest(const FString& Parameters)
 	const int32 CountB = SolidForestTrees::CollectSpawnPositions(Map, 42, Params, PositionsB);
 	TestEqual(TEXT("same seed => same count"), CountA, CountB);
 	TestEqual(TEXT("positions filled"), PositionsA.Num(), CountA);
+	const int32 Expected = FMath::RoundToInt(static_cast<float>(ForestPoints) * Params.Density);
+	TestEqual(TEXT("density chooses that many"), CountA, Expected);
 	TestTrue(TEXT("spawned some trees"), CountA > 0);
-	TestTrue(TEXT("respects max"), CountA <= Params.MaxTrees);
+	TestTrue(TEXT("not every forest point"), CountA < ForestPoints);
 
 	for (int32 I = 0; I < PositionsA.Num(); ++I)
 	{

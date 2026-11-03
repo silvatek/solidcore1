@@ -158,7 +158,6 @@ bool FSolidForageScatterTest::RunTest(const FString& Parameters)
 	}
 	SolidForestTrees::FScatterParams TreeParams;
 	TreeParams.Density = 0.5f;
-	TreeParams.MaxTrees = 64;
 	TreeParams.JitterCm = 0.f;
 	TArray<int32> TreeIndices;
 	TArray<FVector2D> TreeXY;

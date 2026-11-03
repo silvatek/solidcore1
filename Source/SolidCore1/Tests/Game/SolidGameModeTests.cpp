@@ -21,9 +21,8 @@ bool FSolidGameModeDefaultsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("auto terrain streamer"), GameMode->bAutoSpawnTerrainStreamer);
 	TestTrue(TEXT("auto companion"), GameMode->bAutoSpawnCompanion);
 	TestTrue(TEXT("auto vegetation"), GameMode->bAutoSpawnVegetation);
-	TestTrue(TEXT("forest tree density in range"),
-		GameMode->ForestTreeDensity > 0.f && GameMode->ForestTreeDensity <= 1.f);
-	TestTrue(TEXT("max forest trees positive"), GameMode->MaxForestTrees > 0);
+	TestTrue(TEXT("forest tree density"),
+		FMath::IsNearlyEqual(GameMode->ForestTreeDensity, 0.02f));
 	TestTrue(TEXT("town building density in range"),
 		GameMode->TownBuildingDensity > 0.f && GameMode->TownBuildingDensity <= 1.f);
 	TestEqual(TEXT("default companion count Sam+Alex"), ASolidGameMode::DefaultCompanionCount, 2);

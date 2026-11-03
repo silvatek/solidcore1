@@ -67,7 +67,7 @@ tools\fab_mesh_info.bat Viking
 
 lists that pack's folders, mesh files (size and SKM / SK / PA), and animation names. It does not change `fab-assets.json`.
 
-The packs are not in git. `.gitignore` keeps `Content/Fab`, `Content/Viking`, and `Content/StylizedEnvironment` out of the repository, and also `Content/Medieval_Assassin_Girl` and `Content/Elf_Blacksmith`, so a leftover local copy of those packs is not committed. A clone does not contain the packs. Add to Project, then run `tools\fab_doctor.bat`. Do not commit a pack that lands under a different folder name. Viking and the Stylized Environment pack are Fab Standard, so their source files stay off the public repo. Grass is CC-BY.
+The packs are not in git. `.gitignore` keeps `Content/Fab`, `Content/Viking`, and `Content/StylizedEnvironment` out of the repository, and also `Content/Medieval_Assassin_Girl` and `Content/Elf_Blacksmith`, so a leftover local copy of those packs is not committed. A clone does not contain the packs. Add to Project, then run `tools\fab_doctor.bat`. Do not commit a pack that lands under a different folder name. Viking is Fab Standard, so its source files stay off the public repo. Grass and the Stylized Environment pack are CC-BY.
 
 Not yet covered (need PIE): character movement, companion steering on terrain, streamer chunk load/unload, HUD drawing.
 

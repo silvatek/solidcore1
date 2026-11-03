@@ -29,6 +29,7 @@ void SolidCredits::CollectLines(TArray<FString>& OutLines)
 	OutLines.Add(FString::Printf(TEXT("  %s"), VelociraptorListing));
 	OutLines.Add(FString::Printf(TEXT("Stylized Environment  %s"), StylizedEnvironmentCreator));
 	OutLines.Add(FString::Printf(TEXT("  %s"), StylizedEnvironmentLicense));
+	OutLines.Add(FString::Printf(TEXT("  %s"), CcByLicense));
 	OutLines.Add(FString::Printf(TEXT("  %s"), StylizedEnvironmentListing));
 	OutLines.Add(TEXT(""));
 	OutLines.Add(ToggleHint);

@@ -93,9 +93,10 @@
         "creator": "Forge of Fantasy",
         "sellerUrl": "https://www.fab.com/sellers/Forge%20of%20Fantasy",
         "source": "Fab",
-        "license": "Fab Standard (Personal / Professional)",
+        "license": "CC-BY",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "isFree": true,
-        "credit": "Stylized Environment Pack by Forge of Fantasy, used from Fab as an element of this project."
+        "credit": "Stylized Environment Pack by Forge of Fantasy, used from Fab (CC-BY). https://creativecommons.org/licenses/by/4.0/"
       },
       "resolvedFolder": "Content/StylizedEnvironment",
       "notes": "Add to Project lands at Content/StylizedEnvironment. Do not move the folder. The game does not load this pack yet. Demo/Characters/Mannequins is the Epic mannequin and stays unused."

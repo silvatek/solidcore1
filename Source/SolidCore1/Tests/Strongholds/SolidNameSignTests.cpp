@@ -238,7 +238,9 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 
 	Cave->Orientation = ESolidStrongholdOrientation::EastFace;
 	const FSolidNameSignPlace East = Dungeon.NameSign();
-	TestFalse(TEXT("east and north use different frame edges"), North.FrameEdgeCm.Equals(East.FrameEdgeCm, 1.f));
+	TestTrue(
+		TEXT("north and east share the actor frame edge"),
+		North.FrameEdgeCm.Equals(East.FrameEdgeCm, 1.f));
 	TestTrue(TEXT("the cave board faces the grass"), FMath::IsNearlyEqual(North.YawDeg, 0.f));
 
 	const SolidNameSigns::FWorldPlace World = SolidNameSigns::WorldPlace(*Cave, nullptr);

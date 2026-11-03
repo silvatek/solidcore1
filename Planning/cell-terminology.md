@@ -14,6 +14,8 @@ An inventory position is a slot. The pack, the chest, and the crafting grid say 
 
 A square of the fog curtain on a chunk is a chunk point. The curtain says chunk point.
 
+The search that listed these uses is `tools/cell_census.py`.
+
 This story introduces no new class.
 
 ## Acceptance
@@ -38,3 +40,5 @@ The struct comment on `FSolidWorldChartMark` says the position is the terrain po
 `FirstEmptyPackCell` and the pack cell, chest cell, and empty cell in the inventory are slots. A crafting slot already uses that word.
 
 `EdgeOf` takes `CellX` and `CellY`, the column and row of one curtain square inside the chunk. `SlotForCell` picks the material for that square. `FogCells` is how many of those squares run along the chunk edge. The mesh params call them "Cells along one chunk edge." `FogQuadsPerSide` says "Fog curtain cells per chunk edge." Each square is 2 m, the terrain-point step. The word on that square becomes chunk point.
+
+`tools/cell_census.py` scans `Source/` and `tools/dump-chart.bat`. A hit is the word cell, or a CamelCase segment such as `CellX`. It labels each hit World map cell, Hex cell, Lair cell, or Other. That label is the search. The names in this story are the ones the source should use. Run `python3 tools/cell_census.py`.

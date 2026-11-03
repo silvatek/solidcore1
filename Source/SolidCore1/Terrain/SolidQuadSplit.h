@@ -6,22 +6,8 @@
 /** How a quad's triangles choose a material. The chunk is built with one of these. */
 enum class ESolidQuadMaterial : uint8
 {
-	/** Both triangles take corner 11, northwest. A higher shelf still replaces it. */
 	NorthWest,
-	/** The single odd corner is cut off. Any other quad takes that northwest corner. */
 	OddCorner,
-	/**
-	 * Three cuts, and otherwise the northwest corner.
-	 * The other three match and differ from the northwest: the northwest triangle
-	 * keeps that corner, and the southeast triangle takes the other biome.
-	 * The south corner differs, the east and southeast match the northwest, and the
-	 * point west of the northwest matches the south corner: the southwest triangle
-	 * takes the south corner, and the northeast triangle takes the northwest corner.
-	 * The point west of the northwest differs, the east matches it, and the
-	 * south-west, south, and south-east match that west point: the northeast
-	 * triangle takes the northwest corner, and the southwest triangle takes the
-	 * other biome.
-	 */
 	NorthWestCut,
 };
 
@@ -72,6 +58,16 @@ public:
 		ESolidBiome WestOfNorthWest,
 		ESolidBiome SouthWestOfNorthWest) const = 0;
 
+	/** Material name of each triangle, in order, separated by a slash. The debug line prints this. */
+	FString Description(
+		ESolidBiome Preferred,
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11,
+		ESolidBiome WestOfNorthWest,
+		ESolidBiome SouthWestOfNorthWest) const;
+
 	/**
 	 * Texture for one terrain triangle. Preferred is the quad's current biome.
 	 * A corner on a higher shelf replaces it, so the cliff between a mountain and a
@@ -91,7 +87,7 @@ protected:
 		ESolidBiome B11) const;
 };
 
-/** Both triangles take the northwest corner. */
+/** Both triangles take corner 11, northwest. A higher shelf still replaces it. */
 class SOLIDCORE1_API FSolidNorthWestSplit : public FSolidQuadSplit
 {
 public:
@@ -134,7 +130,18 @@ public:
 		int32& OutCorner) const;
 };
 
-/** Three cuts, and otherwise the northwest corner. */
+/**
+ * Three cuts, and otherwise the northwest corner.
+ * The other three match and differ from the northwest: the northwest triangle
+ * keeps that corner, and the southeast triangle takes the other biome.
+ * The south corner differs, the east and southeast match the northwest, and the
+ * point west of the northwest matches the south corner: the southwest triangle
+ * takes the south corner, and the northeast triangle takes the northwest corner.
+ * The point west of the northwest differs, the east matches it, and the
+ * south-west, south, and south-east match that west point: the northeast
+ * triangle takes the northwest corner, and the southwest triangle takes the
+ * other biome.
+ */
 class SOLIDCORE1_API FSolidNorthWestCutSplit : public FSolidQuadSplit
 {
 public:

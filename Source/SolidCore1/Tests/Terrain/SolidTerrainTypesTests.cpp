@@ -490,6 +490,16 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		TEXT("the northwest method leaves the odd corner"),
 		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).Triangles( Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		false, Forest, Forest);
+	TestEqual(
+		TEXT("the debug line names both triangles"),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::OddCorner).Description(
+			Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		FString(TEXT("Forest / Desert")));
+	TestEqual(
+		TEXT("a matching pair is named twice"),
+		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWest).Description(
+			Forest, Forest, Forest, Forest, Desert, Forest, Forest),
+		FString(TEXT("Forest / Forest")));
 	Expect(
 		TEXT("a lone northwest corner is cut"),
 		FSolidQuadSplit::Of(ESolidQuadMaterial::NorthWestCut).Triangles( Desert, Forest, Forest, Forest, Desert, Forest, Forest),

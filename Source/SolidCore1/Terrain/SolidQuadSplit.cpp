@@ -3,6 +3,29 @@
 
 FSolidQuadSplit::~FSolidQuadSplit() = default;
 
+FString FSolidQuadSplit::Description(
+	const ESolidBiome Preferred,
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11,
+	const ESolidBiome WestOfNorthWest,
+	const ESolidBiome SouthWestOfNorthWest) const
+{
+	const FSolidQuadTriangles Picked = Triangles(
+		Preferred, B00, B10, B01, B11, WestOfNorthWest, SouthWestOfNorthWest);
+	FString Text;
+	for (int32 Index = 0; Index < Picked.Count; ++Index)
+	{
+		if (Index > 0)
+		{
+			Text += TEXT(" / ");
+		}
+		Text += SolidBiome::Of(Picked.Triangles[Index].Material).Name();
+	}
+	return Text;
+}
+
 const FSolidQuadSplit& FSolidQuadSplit::Of(const ESolidQuadMaterial Method)
 {
 	static const FSolidNorthWestSplit NorthWest;

@@ -2203,26 +2203,17 @@ void ASolidHUD::DrawHUD()
 					const ESolidBiome Preferred = Map->SamplePoint(CentreX, CentreY).Biome;
 					const ESolidBiome WestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY1).Biome;
 					const ESolidBiome SouthWestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY0).Biome;
-					const FSolidQuadTriangles Picked = FSolidQuadSplit::Of(FSolidQuadSplit::QuadMaterial).Triangles(
-						Preferred,
-						Corners[0], Corners[1], Corners[2], Corners[3],
-						WestOfNorthWest, SouthWestOfNorthWest);
-					FString Materials;
-					for (int32 TriangleIndex = 0; TriangleIndex < Picked.Count; ++TriangleIndex)
-					{
-						if (TriangleIndex > 0)
-						{
-							Materials += TEXT(" / ");
-						}
-						Materials += SolidBiome::Of(Picked.Triangles[TriangleIndex].Material).Name();
-					}
+					const FSolidQuadSplit& Split = FSolidQuadSplit::Of(FSolidQuadSplit::QuadMaterial);
 					Lines.Add(FString::Printf(
 						TEXT("Quad %s %s / %s %s  %s"),
 						SolidBiome::Of(Corners[0]).Name(),
 						SolidBiome::Of(Corners[1]).Name(),
 						SolidBiome::Of(Corners[2]).Name(),
 						SolidBiome::Of(Corners[3]).Name(),
-						*Materials));
+						*Split.Description(
+							Preferred,
+							Corners[0], Corners[1], Corners[2], Corners[3],
+							WestOfNorthWest, SouthWestOfNorthWest)));
 				}
 			}
 

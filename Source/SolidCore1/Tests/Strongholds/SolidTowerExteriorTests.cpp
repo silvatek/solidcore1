@@ -3,6 +3,7 @@
 #include "Strongholds/Tower/Actors/SolidTowerExterior.h"
 #include "SolidStronghold.h"
 #include "Strongholds/Tower/SolidTower.h"
+#include "SolidTerrainMap.h"
 #include "SolidWorldChart.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -205,19 +206,23 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("the tower stronghold builds the door"), Door);
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
-	SolidStrongholds::FGrassFace Face;
-	const bool bGrass = Map && SolidStrongholds::FindGrassFace(Map, ImperiousCell, Face);
-	const float GrassYaw = bGrass ? Face.FacingYawDeg : 0.f;
-	TestTrue(
-		TEXT("the tower exterior turns toward the site grass"),
-		Map && FMath::IsNearlyEqual(
-			Spire->ExteriorYawDeg(Map),
-			Facing.ExteriorYawDeg(GrassYaw),
-			0.01f));
-	if (Map)
+	USolidTerrainMap* Terrain = NewObject<USolidTerrainMap>();
+	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault() && Terrain);
+	if (Map && Terrain)
 	{
-		Spire->RememberExit(Map);
+		Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f, false, Map);
+		const FVector2D WorldMin = Terrain->GetWorldMinXY();
+		const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+		SolidStrongholds::FGrassFace Face;
+		const bool bGrass = SolidStrongholds::FindGrassFace(Map, ImperiousCell, Face, WorldMin, WorldMax);
+		const float GrassYaw = bGrass ? Face.FacingYawDeg : 0.f;
+		TestTrue(
+			TEXT("the tower exterior turns toward the site grass"),
+			bGrass && FMath::IsNearlyEqual(
+				Spire->ExteriorYawDeg(Map, WorldMin, WorldMax),
+				Facing.ExteriorYawDeg(GrassYaw),
+				0.01f));
+		Spire->RememberExit(Map, WorldMin, WorldMax);
 		TestEqual(
 			TEXT("the tower exit faces that grass"),
 			static_cast<uint8>(Spire->Orientation),

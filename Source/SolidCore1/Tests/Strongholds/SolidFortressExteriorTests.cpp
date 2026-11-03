@@ -4,6 +4,7 @@
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/SolidStronghold.h"
 #include "Components/StaticMeshComponent.h"
+#include "SolidTerrainMap.h"
 #include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -215,13 +216,23 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 	}
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
-	SolidStrongholds::FGrassFace Face;
-	const bool bGrass = Map && SolidStrongholds::FindGrassFace(Map, HumbleCell, Face);
-	const float GrassYaw = bGrass ? Face.FacingYawDeg : 0.f;
-	TestTrue(
-		TEXT("the fortress exterior turns toward the site grass"),
-		Map && FMath::IsNearlyEqual(Keep->ExteriorYawDeg(Map), FMath::UnwindDegrees(GrassYaw + 180.f), 0.01f));
+	USolidTerrainMap* Terrain = NewObject<USolidTerrainMap>();
+	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault() && Terrain);
+	if (Map && Terrain)
+	{
+		Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f, false, Map);
+		const FVector2D WorldMin = Terrain->GetWorldMinXY();
+		const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+		SolidStrongholds::FGrassFace Face;
+		const bool bGrass = SolidStrongholds::FindGrassFace(Map, HumbleCell, Face, WorldMin, WorldMax);
+		const float GrassYaw = bGrass ? Face.FacingYawDeg : 0.f;
+		TestTrue(
+			TEXT("the fortress exterior turns toward the site grass"),
+			bGrass && FMath::IsNearlyEqual(
+				Keep->ExteriorYawDeg(Map, WorldMin, WorldMax),
+				FMath::UnwindDegrees(GrassYaw + 180.f),
+				0.01f));
+	}
 
 	const FVector2D Stand = Fortress->OutsideGateXY(nullptr);
 	const FVector2D FromCenter = Stand - Fortress->Location;

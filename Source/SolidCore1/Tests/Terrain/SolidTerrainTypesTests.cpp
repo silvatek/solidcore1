@@ -451,9 +451,9 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 			Forest, Grass, Grass, Grass, Grass, Desert, Town),
 		false, Grass, Grass);
 	Expect(
-		TEXT("two different corners stay on the northwest corner"),
+		TEXT("four different corners stay on the northwest corner"),
 		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
-			Forest, Town, Desert, Grass, Grass, Town, Town),
+			Forest, Town, Desert, Forest, Grass, Town, Town),
 		false, Forest, Forest);
 
 	const int32 NorthSouthCorners[4][3] = {
@@ -635,6 +635,8 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 			Grass, Grass, Road, Forest, Road, Grass, Grass),
 		Road, Grass, Forest, WestHigh);
 
+	const int32 SouthEastHigh[5][3] = {
+		{ 0, 6, 4 }, { 2, 3, 7 }, { 2, 7, 6 }, { 1, 4, 6 }, { 1, 6, 7 } };
 	const int32 NorthEastHigh[5][3] = {
 		{ 2, 5, 6 }, { 0, 6, 7 }, { 0, 7, 1 }, { 3, 7, 6 }, { 3, 6, 5 } };
 	const int32 NorthWestHigh[5][3] = {
@@ -670,6 +672,11 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 				Tri.Triangles[Index].Corner2, Corners[Index][2]);
 		}
 	};
+	ExpectOpposite(
+		TEXT("a southeast town keeps its triangle above a grass pair"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Forest, Town, Desert, Grass, Grass, Town, Town),
+		Town, Grass, Desert, SouthEastHigh);
 	ExpectOpposite(
 		TEXT("a northeast road keeps its triangle above a grass pair"),
 		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(

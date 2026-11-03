@@ -112,6 +112,9 @@ public:
 		FVector2D WorldMaxXY,
 		FVector2D& OutXY);
 
+	/** Yaw at the Iglin start. North when the spawn is the marker. */
+	static float StartTownFacingYawDeg(FVector2D SpawnXY, FVector2D MarkXY);
+
 	/** Move the focus pawn once to the Iglin mark. */
 	void TryRelocateFocusToStartTown();
 

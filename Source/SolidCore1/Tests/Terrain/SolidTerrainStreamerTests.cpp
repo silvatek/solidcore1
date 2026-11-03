@@ -2,11 +2,31 @@
 #include "Misc/AutomationTest.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Strongholds/SolidStronghold.h"
 #include "Company/SolidCompanionCharacter.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStreamerStartTownFacingTest,
+	"SolidCore1.Streamer.StartTownFacing",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStreamerStartTownFacingTest::RunTest(const FString& Parameters)
+{
+	const float North = SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::NorthFace);
+	const FVector2D Mark(1000.f, 2000.f);
+	TestTrue(
+		TEXT("on the marker faces north"),
+		FMath::IsNearlyEqual(ASolidTerrainStreamer::StartTownFacingYawDeg(Mark, Mark), North, 0.1f));
+	const FVector2D South = Mark + FVector2D(0.f, -200.f);
+	TestTrue(
+		TEXT("south of the marker faces north"),
+		FMath::IsNearlyEqual(ASolidTerrainStreamer::StartTownFacingYawDeg(South, Mark), North, 0.1f));
+	return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStreamerNullWorldTest,

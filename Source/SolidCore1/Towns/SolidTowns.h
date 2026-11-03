@@ -19,8 +19,8 @@ namespace SolidTowns
 	 */
 	inline constexpr float DragongateSignNorthCm = 800.f;
 	inline constexpr float DragongateSignWestCm = 400.f;
-	/** Iglin's pole, 2 m north of the town marker. */
-	inline constexpr float IglinSignNorthCm = 200.f;
+	/** Iglin's pole, 4 m north of the town marker. */
+	inline constexpr float IglinSignNorthCm = 400.f;
 
 	enum class ETownType : uint8
 	{

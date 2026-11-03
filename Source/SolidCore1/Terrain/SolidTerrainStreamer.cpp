@@ -755,6 +755,16 @@ bool ASolidTerrainStreamer::StartTownSpawnXY(
 	return true;
 }
 
+float ASolidTerrainStreamer::StartTownFacingYawDeg(const FVector2D SpawnXY, const FVector2D MarkXY)
+{
+	const FVector2D ToTown = MarkXY - SpawnXY;
+	if (ToTown.IsNearlyZero())
+	{
+		return SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::NorthFace);
+	}
+	return FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));
+}
+
 void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 {
 	if (bDidRelocateToStartTown)
@@ -866,12 +876,8 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 			return;
 		}
 		PawnXY = SpawnXY;
-		const FVector2D ToTown = MarkXY - PawnXY;
-		if (!ToTown.IsNearlyZero())
-		{
-			FacingYawDeg = FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));
-			bHaveYaw = true;
-		}
+		FacingYawDeg = StartTownFacingYawDeg(PawnXY, MarkXY);
+		bHaveYaw = true;
 	}
 
 	const FVector OldLoc = Focus->GetActorLocation();

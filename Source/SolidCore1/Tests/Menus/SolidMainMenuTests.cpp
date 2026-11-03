@@ -251,10 +251,17 @@ bool FSolidDebugShotRecipeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("ten metres south"), SolidDebugShot::SouthOfMarkCm, 1000.f);
 	TestEqual(TEXT("four companions stand in the parade"), static_cast<int32>(UE_ARRAY_COUNT(SolidDebugShot::Wear)), 4);
 	TestEqual(TEXT("Sam is first"), FString(SolidDebugShot::Wear[0].Name), FString(TEXT("Sam")));
-	TestEqual(TEXT("Sam's shirt roughness is zero"), SolidDebugShot::Wear[0].Shirt.Roughness, 0.f);
-	TestEqual(TEXT("Sam's trouser roughness is one"), SolidDebugShot::Wear[0].Trousers.Roughness, 1.f);
-	TestTrue(TEXT("Max's shirt is unlit"), SolidDebugShot::Wear[1].Shirt.bUnlit);
-	TestTrue(TEXT("Max's trousers are flat"), SolidDebugShot::Wear[1].Trousers.bFlat);
+	for (const SolidDebugShot::FWear& Wear : SolidDebugShot::Wear)
+	{
+		TestEqual(TEXT("shirt specular is zero"), Wear.Shirt.Specular, 0.f);
+		TestEqual(TEXT("trouser specular is zero"), Wear.Trousers.Specular, 0.f);
+		TestEqual(TEXT("shirt metallic is zero"), Wear.Shirt.Metallic, 0.f);
+		TestEqual(TEXT("trouser metallic is zero"), Wear.Trousers.Metallic, 0.f);
+		TestFalse(TEXT("shirt stays lit"), Wear.Shirt.bUnlit);
+		TestFalse(TEXT("trousers stay lit"), Wear.Trousers.bUnlit);
+		TestFalse(TEXT("shirt is not the flat colour"), Wear.Shirt.bFlat);
+		TestFalse(TEXT("trousers are not the flat colour"), Wear.Trousers.bFlat);
+	}
 	TestEqual(TEXT("Morgan is third"), FString(SolidDebugShot::Wear[2].Name), FString(TEXT("Morgan")));
 	TestEqual(TEXT("Quinn is last"), FString(SolidDebugShot::Wear[3].Name), FString(TEXT("Quinn")));
 	TestEqual(TEXT("the formation is Parade"), FString(SolidDebugShot::FormationName), FString(TEXT("Parade")));

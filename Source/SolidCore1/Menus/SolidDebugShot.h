@@ -27,7 +27,7 @@ namespace SolidDebugShot
 	inline constexpr float SouthOfMarkCm = 1000.f;
 	inline const TCHAR* FormationName = TEXT("Parade");
 
-	/** One slot of the clothing comparison. Flat uses the flat colour. Unlit drops the light. */
+	/** Shirt or trousers. Specular 0 and metallic 0 is the parent that stayed matte. */
 	struct FCloth
 	{
 		float Roughness = 0.f;
@@ -37,6 +37,8 @@ namespace SolidDebugShot
 		bool bFlat = false;
 	};
 
+	inline constexpr FCloth MatteCloth{ 0.f, 0.f, 0.f, false, false };
+
 	/** One companion in the parade line. Shirt and trousers can wear different cloth. */
 	struct FWear
 	{
@@ -45,16 +47,12 @@ namespace SolidDebugShot
 		FCloth Trousers;
 	};
 
-	/**
-	 * Parade stands every one of these in front of the captain.
-	 * Sam compares roughness 0 with roughness 1. Max compares unlit with the flat colour.
-	 * Morgan compares specular 1 with metallic 1. Quinn compares specular 1 at roughness 1 with unlit.
-	 */
+	/** Parade stands every one of these in front of the captain, in their own colours, on the matte parent. */
 	inline const FWear Wear[] = {
-		{ TEXT("Sam"), { 0.f, 0.f, 0.f, false, false }, { 1.f, 0.f, 0.f, false, false } },
-		{ TEXT("Max"), { 0.f, 0.f, 0.f, true, false }, { 0.f, 0.f, 0.f, false, true } },
-		{ TEXT("Morgan"), { 0.f, 1.f, 0.f, false, false }, { 0.f, 0.f, 1.f, false, false } },
-		{ TEXT("Quinn"), { 1.f, 1.f, 0.f, false, false }, { 0.f, 0.f, 0.f, true, false } },
+		{ TEXT("Sam"), MatteCloth, MatteCloth },
+		{ TEXT("Max"), MatteCloth, MatteCloth },
+		{ TEXT("Morgan"), MatteCloth, MatteCloth },
+		{ TEXT("Quinn"), MatteCloth, MatteCloth },
 	};
 	inline constexpr ESolidSight Sight = ESolidSight::True;
 	inline constexpr float FacingYawDeg = SolidTowns::SignFacesSouthYawDeg;

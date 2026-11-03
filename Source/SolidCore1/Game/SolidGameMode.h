@@ -64,7 +64,7 @@ public:
 
 	/** Fraction of Forest TerrainPoints that get a tree [0, 1]. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float ForestTreeDensity = 0.02f;
+	float ForestTreeDensity = 0.08f;
 
 	/** Planar jitter around each forest grid point (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))

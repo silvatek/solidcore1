@@ -14,7 +14,7 @@ namespace SolidForestTrees
 	struct FScatterParams
 	{
 		/** Fraction of forest grid points that receive a tree [0, 1]. */
-		float Density = 0.02f;
+		float Density = 0.08f;
 		/** Planar jitter around each chosen grid point (cm). */
 		float JitterCm = 90.f;
 	};

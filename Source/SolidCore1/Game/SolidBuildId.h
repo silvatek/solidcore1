@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0968")
+#define SOLID_BUILD_ID TEXT("SC1-0969")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Density 0.02 places about 390 forest trees.")
+#define SOLID_BUILD_NOTE TEXT("Forest density 0.08 is about 1560 trees.")
 #endif

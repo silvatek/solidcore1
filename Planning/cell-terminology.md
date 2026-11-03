@@ -25,6 +25,8 @@ This story introduces no new class.
 
 `SolidStrongholdGrid::FCell` is the column and row of a floor hex. `SolidStrongholdGrid::FHex` is the hex already placed, with its centre. The cell word on `FCell` becomes hex. `FCell` does not become the existing `FHex` type. The floor those pieces occupy is that placement, including a stair, a hole, a landing, and the door hex.
 
-`SolidLair::CellCm` is the slab width, 200 cm. `CellOf`, `CellCenter`, `IsOpenCell`, and `LairCells` are that plan. `StrongholdCell` on a passage is the world map cell of a stronghold opening, so it follows the first rule.
+`SolidLair::CellCm` is the slab width, 200 cm. `CellOf`, `CellCenter`, `IsOpenCell`, and `LairCells` are that plan.
+
+`FSolidStronghold::Cell` stores the terrain point of the chart marker. A marker records that terrain point. The world chart has no cells. The exterior, the interior, and the passage hit copy that point as `StrongholdCell`. The word cell on that point goes. The point stays the terrain point.
 
 `FirstEmptyPackCell` and the pack cell, chest cell, and empty cell in the inventory are slots. A crafting slot already uses that word.

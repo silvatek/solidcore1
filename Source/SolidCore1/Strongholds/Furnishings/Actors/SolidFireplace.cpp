@@ -97,10 +97,12 @@ void ASolidFireplace::BuildVisuals()
 	}
 
 	const FBox Box = Mesh->GetBounds().GetBox();
+	// Ten percent under the pack size. The bottom stays on the floor.
+	const float Scale = 0.9f;
 	Hearth->SetStaticMesh(Mesh);
-	Hearth->SetRelativeScale3D(FVector::OneVector);
+	Hearth->SetRelativeScale3D(FVector(Scale));
 	Hearth->SetRelativeRotation(FRotator::ZeroRotator);
-	Hearth->SetRelativeLocation(FVector(0.f, 0.f, FloorLiftCm() - Box.Min.Z));
+	Hearth->SetRelativeLocation(FVector(0.f, 0.f, FloorLiftCm() - Box.Min.Z * Scale));
 	Hearth->EmptyOverrideMaterials();
 	Hearth->SetVisibility(true);
 	Hearth->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);

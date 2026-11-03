@@ -777,7 +777,18 @@ void ASolidCharacter::TakePlayshot()
 		{
 			PlayshotHUD->NotePlayshotCaptured();
 		}
-		if (Text.IsEmpty() || SolidPlayshot::StampHudFile(FilePath, Text))
+		const bool bStamped = Text.IsEmpty() || SolidPlayshot::StampHudFile(FilePath, Text);
+		if (ASolidCharacter* ShotCaptain = Self.Get())
+		{
+			if (UWorld* ShotWorld = ShotCaptain->GetWorld())
+			{
+				if (ASolidGameMode* GameMode = ShotWorld->GetAuthGameMode<ASolidGameMode>())
+				{
+					GameMode->NotePlayshotWritten();
+				}
+			}
+		}
+		if (bStamped)
 		{
 			return;
 		}

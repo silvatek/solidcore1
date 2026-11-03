@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/Parse.h"
 #include "SolidSight.h"
 #include "Towns/SolidTowns.h"
 
@@ -13,6 +14,12 @@ namespace SolidDebugShot
 	inline const TCHAR* Label()
 	{
 		return TEXT("Debug Shot");
+	}
+
+	/** True when the editor was started with -DebugShot. The shot runs, then the editor quits. */
+	inline bool RequestsLaunch(const TCHAR* CommandLine)
+	{
+		return CommandLine && FParse::Param(CommandLine, TEXT("DebugShot"));
 	}
 
 	inline constexpr int32 TownId = SolidTowns::Dragongate;
@@ -51,5 +58,5 @@ namespace SolidDebugShot
 	};
 	inline constexpr ESolidSight Sight = ESolidSight::True;
 	inline constexpr float FacingYawDeg = SolidTowns::SignFacesSouthYawDeg;
-	inline constexpr float CaptureDelaySeconds = 3.f;
+	inline constexpr float CaptureDelaySeconds = 4.f;
 }

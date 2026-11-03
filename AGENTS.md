@@ -81,7 +81,7 @@ In Play In Editor the developer presses Alt-P. The game writes one PNG in `Saved
 
 ### solidcore1-ue agents
 
-These agents run on the Windows worker. They have access to C++ and Unreal Engine. One coding agent is this worker. It edits this checkout, bumps the build id, builds with `tools\build.bat`, and runs the tests with `tools\test.bat`. A pass pushes `main`. Do not run PIE.
+These agents run on the Windows worker. They have access to C++ and Unreal Engine. One coding agent is this worker. It edits this checkout, bumps the build id, builds with `tools\build.bat`, and runs the tests with `tools\test.bat`. A pass pushes `main`. Do not run an open-ended Play In Editor session. `tools\pie.bat -DebugShot` is the exception in the Debugging section.
 
 `tools\pie.bat` reads `ue.lock` in the repo root before it launches. A missing file, or the word `Free`, lets it start. It writes `PIE`, launches Play In Editor, waits until the Unreal Editor process has closed, then writes `Free`. Any other word leaves the file unchanged and the editor is not started. The file is gitignored.
 
@@ -99,15 +99,15 @@ In Play In Editor the developer presses Alt-P. The game writes one PNG in `Saved
 
 ## Debugging
 
-The agent decides how to find out what the game is doing. Three tools are available: a log, the debug shot, and an automated test. The agent picks the tool, writes it, and reads the result. The one step it asks for is play. It asks the developer to run Play In Editor and choose Debug Shot. The Windows agent then reads the log and the new playshot. A cloud agent has no copy of either file.
+The agent decides how to find out what the game is doing. Three tools are available: a log, the debug shot, and an automated test. The agent picks the tool, writes it, and reads the result. When the picture is the tool, the Windows agent runs `tools\pie.bat -DebugShot`. When a log needs ordinary play, it asks the developer to run Play In Editor. A cloud agent has no copy of the log or the playshot.
 
 A log is `UE_LOG` on `LogSolid`, declared in `Source/SolidCore1/SolidCore1.h`. A trace uses `Warning`, which is the level the game already uses. The line names what happened and the values that answer the question. Play writes `Saved/Logs/SolidCore1.log`. When the developer says they have played, the Windows agent reads the new lines. It does not wait in a loop. A log added only to answer the current question comes out once that answer is in the change. A log the game already keeps stays.
 
-The F10 row **Debug Shot** places the company, waits, and then takes a playshot. The place, the companion, the formation, the sight, the facing, and the wait live in `Source/SolidCore1/Menus/SolidDebugShot.h`. The agent sets those values for the picture this question needs, and changes the recipe test in `Source/SolidCore1/Tests/Menus/SolidMainMenuTests.cpp` in the same commit. South of a town mark is negative Y. The south yaw is `SolidTowns::SignFacesSouthYawDeg`. `CaptureDelaySeconds` is the wait so the company can finish arriving. Lengthen it when the picture is taken before they are in place. The developer opens the menu with F10 and chooses Debug Shot. The menu closes, the company moves, and after that wait the game writes one PNG in `Saved/Playshots`, the same capture Alt-P uses. The Windows agent lists that folder for the build id and reads the new PNG when the developer says the shot is ready. It does not wait in a loop. The next question rewrites the recipe.
+The F10 row **Debug Shot** places the company, waits, and then takes a playshot. The place, the companion, the formation, the sight, the facing, and the wait live in `Source/SolidCore1/Menus/SolidDebugShot.h`. The agent sets those values for the picture this question needs, and changes the recipe test in `Source/SolidCore1/Tests/Menus/SolidMainMenuTests.cpp` in the same commit. South of a town mark is negative Y. The south yaw is `SolidTowns::SignFacesSouthYawDeg`. `CaptureDelaySeconds` is the wait so the company can finish arriving. Lengthen it when the picture is taken before they are in place. The developer opens the menu with F10 and chooses Debug Shot. The menu closes, the company moves, and after that wait the game writes one PNG in `Saved/Playshots`, the same capture Alt-P uses. F10 leaves the editor open. `tools\pie.bat -DebugShot` forwards that switch to the editor. Once the world is ready the game runs the same shot, writes the PNG, and quits. `pie.bat` waits until the editor has exited, then the lock is Free. The Windows agent reads the new PNG after that exit. It does not wait in a loop. The next question rewrites the recipe.
 
 An automated test pins the behaviour in code. The agent adds the test, and the Tests section says which filter runs. A test that answers the question stays.
 
-A log or a debug-shot change is product C++. It bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, then the build runs. A test follows the Tests section. The developer plays when the agent asked for the debug shot.
+A log or a debug-shot change is product C++. It bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, then the build runs. A test follows the Tests section. After that build, a debug shot is `tools\pie.bat -DebugShot`.
 
 ## Cursor Cloud
 

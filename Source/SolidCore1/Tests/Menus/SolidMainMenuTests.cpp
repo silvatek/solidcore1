@@ -260,7 +260,11 @@ bool FSolidDebugShotRecipeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the formation is Parade"), FString(SolidDebugShot::FormationName), FString(TEXT("Parade")));
 	TestEqual(TEXT("the sight is True"), static_cast<uint8>(SolidDebugShot::Sight), static_cast<uint8>(ESolidSight::True));
 	TestEqual(TEXT("facing south"), SolidDebugShot::FacingYawDeg, SolidTowns::SignFacesSouthYawDeg);
-	TestEqual(TEXT("the shot waits three seconds"), SolidDebugShot::CaptureDelaySeconds, 3.f);
+	TestEqual(TEXT("the shot waits four seconds"), SolidDebugShot::CaptureDelaySeconds, 4.f);
+	TestTrue(TEXT("-DebugShot requests a launch"), SolidDebugShot::RequestsLaunch(TEXT("-DebugShot")));
+	TestTrue(TEXT("the switch can sit among other arguments"), SolidDebugShot::RequestsLaunch(TEXT("-log -DebugShot")));
+	TestFalse(TEXT("an ordinary launch does not take the shot"), SolidDebugShot::RequestsLaunch(TEXT("-log")));
+	TestFalse(TEXT("a missing command line does not take the shot"), SolidDebugShot::RequestsLaunch(nullptr));
 
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);

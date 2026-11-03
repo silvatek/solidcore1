@@ -10,6 +10,10 @@ rem
 rem Usage:
 rem   tools\pie.bat
 rem   tools\pie.bat -log
+rem   tools\pie.bat -DebugShot
+rem
+rem -DebugShot runs the current debug shot once the world is ready, writes the
+rem playshot, and quits the editor. The lock is released when the process exits.
 rem
 rem Optional env:
 rem   UE_ROOT   Engine root (default: C:\Program Files\Epic Games\UE_5.8)

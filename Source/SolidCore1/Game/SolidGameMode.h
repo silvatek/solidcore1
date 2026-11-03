@@ -173,6 +173,9 @@ public:
 	 */
 	void RunDebugShot();
 
+	/** After a playshot file is written. A -DebugShot launch quits play and closes the editor. */
+	void NotePlayshotWritten();
+
 	/**
 	 * Stand the squad on the grass just north of a tunnel mouth.
 	 * Records Driven from the village, including when its requirements have not fired.
@@ -397,6 +400,10 @@ protected:
 	TArray<TObjectPtr<ASolidBridge>> SpawnedBridges;
 
 	FTimerHandle EventRefreshTimer;
+	/** -DebugShot has already started its one shot. */
+	bool bCommandDebugShotStarted = false;
+	/** Quit after the playshot this launch requested. F10 leaves the editor open. */
+	bool bQuitAfterDebugShot = false;
 	FTimerHandle VegetationSpawnTimer;
 	FTimerHandle CaptainArrivalTimer;
 

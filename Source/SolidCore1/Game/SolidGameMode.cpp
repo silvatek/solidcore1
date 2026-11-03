@@ -19,7 +19,9 @@
 #include "Terrain/SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
 #include "Menus/SolidDebugShot.h"
+#include "Menus/SolidExit.h"
 #include "Menus/SolidPortal.h"
+#include "Misc/CommandLine.h"
 #include "TimerManager.h"
 #include "Towns/SolidBuilding.h"
 #include "Towns/SolidWallgate.h"
@@ -1326,6 +1328,23 @@ void ASolidGameMode::RefreshEvents()
 		Terrain->GetWorldMaxXY());
 	NoteTownEntry(TownId);
 	EnsureCompanion();
+	if (!bCommandDebugShotStarted && SolidDebugShot::RequestsLaunch(FCommandLine::Get()))
+	{
+		bCommandDebugShotStarted = true;
+		bQuitAfterDebugShot = true;
+		RunDebugShot();
+	}
+}
+
+void ASolidGameMode::NotePlayshotWritten()
+{
+	if (!bQuitAfterDebugShot)
+	{
+		return;
+	}
+	bQuitAfterDebugShot = false;
+	APlayerController* Player = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	SolidExit::Perform(this, Player);
 }
 
 void ASolidGameMode::NoteTownEntry(const int32 TownId)

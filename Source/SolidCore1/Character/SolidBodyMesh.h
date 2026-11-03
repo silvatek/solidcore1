@@ -159,6 +159,21 @@ namespace SolidBodyMesh
 	inline constexpr uint8 SkinMaterialSlot = 2;
 	static_assert(ShirtMaterialSlot == 0 && TrouserMaterialSlot == 1 && SkinMaterialSlot == 2, "body material slots stay in order");
 
+	/**
+	 * One clothing sample on one slot.
+	 * bFlat uses the flat colour. Otherwise the clothing parent takes these constants.
+	 * bUnlit drops the lighting. The component override leaves the shared mesh alone.
+	 */
+	void ApplyClothingSample(
+		USkeletalMeshComponent* Mesh,
+		int32 Slot,
+		const FLinearColor& Color,
+		float Roughness,
+		float Specular,
+		float Metallic,
+		bool bUnlit,
+		bool bFlat);
+
 	/** The three bones named by the hip piece. The mesh itself is the length of spine_01. */
 	inline const TCHAR* HipLeftBone = TEXT("thigh_l");
 	inline const TCHAR* HipRightBone = TEXT("thigh_r");
@@ -317,7 +332,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Replace the component mesh with a low-poly body.
-	 * Shirt and trousers use roughness 0 for this shot. Skin stays a flat colour. The same proportions reuse one mesh.
+	 * Shirt and trousers use the clothing parent. Skin stays a flat colour. The same proportions reuse one mesh.
 	 * Seed is the name id written to the log. Params is the body that is built.
 	 * Leaves the current mesh when the body cannot be built.
 	 * The captain does not call this.

@@ -283,18 +283,38 @@ namespace
 	}
 
 	/**
-	 * Parent for shirt and trousers.
+	 * One clothing parent. Each roughness, specular, metallic, and lit-or-unlit combination is its own material.
 	 * Play In Editor will not set the skeletal-mesh usage flag, and the mesh then draws the default grey.
-	 * The flag is set here. The front node takes Base Color, roughness 0, specular 0, and metallic 0.
-	 * Roughness 0 is this shot. A mirror means the pin reaches the shader.
+	 * The flag is set here. The front node takes Base Color and the constants for this combination.
 	 */
-	UMaterial* ClothingMaterial()
+	UMaterial* ClothingMaterial(
+		const float RoughnessValue,
+		const float SpecularValue,
+		const float MetallicValue,
+		const bool bUnlit)
 	{
 #if WITH_EDITOR
-		static TStrongObjectPtr<UMaterial> Cached;
-		if (UMaterial* Existing = Cached.Get())
+		struct FParent
 		{
-			return Existing;
+			float Roughness = 0.f;
+			float Specular = 0.f;
+			float Metallic = 0.f;
+			bool bUnlit = false;
+			TStrongObjectPtr<UMaterial> Material;
+		};
+		static TArray<FParent> Cached;
+		for (FParent& Entry : Cached)
+		{
+			if (Entry.bUnlit == bUnlit
+				&& Entry.Roughness == RoughnessValue
+				&& Entry.Specular == SpecularValue
+				&& Entry.Metallic == MetallicValue)
+			{
+				if (UMaterial* Existing = Entry.Material.Get())
+				{
+					return Existing;
+				}
+			}
 		}
 
 		UMaterial* Material = NewObject<UMaterial>(GetTransientPackage(), NAME_None, RF_Transient);
@@ -306,7 +326,8 @@ namespace
 		Material->MaterialDomain = MD_Surface;
 		Material->BlendMode = BLEND_Opaque;
 		Material->bScreenSpaceReflections = false;
-		Material->SetShadingModel(MSM_DefaultLit);
+		const EMaterialShadingModel Model = bUnlit ? MSM_Unlit : MSM_DefaultLit;
+		Material->SetShadingModel(Model);
 
 		UMaterialEditorOnlyData* EditorData = Material->GetEditorOnlyData();
 		if (!EditorData)
@@ -325,26 +346,26 @@ namespace
 
 		UMaterialExpressionConstant* Roughness = NewObject<UMaterialExpressionConstant>(Material);
 		Roughness->Material = Material;
-		Roughness->R = 0.f;
+		Roughness->R = RoughnessValue;
 		Roughness->MaterialExpressionEditorX = -700;
 		Roughness->MaterialExpressionEditorY = 180;
 
 		UMaterialExpressionConstant* Specular = NewObject<UMaterialExpressionConstant>(Material);
 		Specular->Material = Material;
-		Specular->R = 0.f;
+		Specular->R = SpecularValue;
 		Specular->MaterialExpressionEditorX = -700;
 		Specular->MaterialExpressionEditorY = 320;
 
 		UMaterialExpressionConstant* Metallic = NewObject<UMaterialExpressionConstant>(Material);
 		Metallic->Material = Material;
-		Metallic->R = 0.f;
+		Metallic->R = MetallicValue;
 		Metallic->MaterialExpressionEditorX = -700;
 		Metallic->MaterialExpressionEditorY = 460;
 
 		UMaterialExpressionSubstrateShadingModels* Shading =
 			NewObject<UMaterialExpressionSubstrateShadingModels>(Material);
 		Shading->Material = Material;
-		Shading->ShadingModelOverride = MSM_DefaultLit;
+		Shading->ShadingModelOverride = Model;
 		Shading->MaterialExpressionEditorX = -280;
 		Shading->MaterialExpressionEditorY = 0;
 		Shading->BaseColor.Connect(0, ColorParam);
@@ -368,7 +389,12 @@ namespace
 		Material->PreEditChange(nullptr);
 		Material->PostEditChange();
 
-		Cached.Reset(Material);
+		FParent& Stored = Cached.AddDefaulted_GetRef();
+		Stored.Roughness = RoughnessValue;
+		Stored.Specular = SpecularValue;
+		Stored.Metallic = MetallicValue;
+		Stored.bUnlit = bUnlit;
+		Stored.Material.Reset(Material);
 		return Material;
 #else
 		return nullptr;
@@ -382,7 +408,7 @@ namespace
 		const TCHAR* DebugName)
 	{
 #if WITH_EDITOR
-		if (UMaterial* Parent = ClothingMaterial())
+		if (UMaterial* Parent = ClothingMaterial(0.f, 0.f, 0.f, false))
 		{
 			if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, Outer))
 			{
@@ -840,6 +866,45 @@ namespace
 	}
 }
 #endif
+
+void SolidBodyMesh::ApplyClothingSample(
+	USkeletalMeshComponent* Mesh,
+	const int32 Slot,
+	const FLinearColor& Color,
+	const float Roughness,
+	const float Specular,
+	const float Metallic,
+	const bool bUnlit,
+	const bool bFlat)
+{
+	if (!Mesh)
+	{
+		return;
+	}
+	UMaterialInterface* Created = nullptr;
+#if WITH_EDITOR
+	if (!bFlat)
+	{
+		if (UMaterial* Parent = ClothingMaterial(Roughness, Specular, Metallic, bUnlit))
+		{
+			if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, Mesh))
+			{
+				MID->SetVectorParameterValue(TEXT("Base Color"), Color);
+				MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
+				Created = MID;
+			}
+		}
+	}
+#endif
+	if (!Created)
+	{
+		Created = SolidMaterials::CreateSolidColor(Mesh, Color, TEXT("ClothFlat"), 1.f);
+	}
+	if (Created)
+	{
+		Mesh->SetMaterial(Slot, Created);
+	}
+}
 
 USkeletalMesh* SolidBodyMesh::Build(
 	const USkeletalMesh* Source,

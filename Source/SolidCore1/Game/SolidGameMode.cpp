@@ -1611,11 +1611,17 @@ void ASolidGameMode::RunDebugShot()
 		}
 		if (USolidCompany* Company = GetCompany())
 		{
-			const int32 Companion = Company->FindCompanionIndexByName(SolidDebugShot::CompanionName);
-			if (Companion != INDEX_NONE)
+			TArray<int32> Boxes;
+			for (const SolidDebugShot::FWear& Wear : SolidDebugShot::Wear)
 			{
-				TArray<int32> Boxes;
-				Boxes.Add(Companion);
+				const int32 Companion = Company->FindCompanionIndexByName(Wear.Name);
+				if (Companion != INDEX_NONE)
+				{
+					Boxes.Add(Companion);
+				}
+			}
+			if (Boxes.Num() > 0)
+			{
 				Squad->SetSelectedCompanions(Boxes);
 			}
 		}
@@ -1658,6 +1664,49 @@ void ASolidGameMode::RunDebugShot()
 				}
 			}
 		}
+	}
+
+	for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
+	{
+		if (!Companion)
+		{
+			continue;
+		}
+		const SolidDebugShot::FWear* Wear = nullptr;
+		for (const SolidDebugShot::FWear& Candidate : SolidDebugShot::Wear)
+		{
+			if (Companion->GetCharacterDisplayName().Equals(Candidate.Name, ESearchCase::IgnoreCase))
+			{
+				Wear = &Candidate;
+				break;
+			}
+		}
+		if (!Wear)
+		{
+			continue;
+		}
+		FLinearColor Torso = FLinearColor::White;
+		FLinearColor Legs = FLinearColor::White;
+		FLinearColor Skin = FLinearColor::White;
+		SolidCompanionColors::ColorsForName(Companion->GetCharacterDisplayName(), Torso, Legs, Skin);
+		SolidBodyMesh::ApplyClothingSample(
+			Companion->GetMesh(),
+			SolidBodyMesh::ShirtMaterialSlot,
+			Torso,
+			Wear->Shirt.Roughness,
+			Wear->Shirt.Specular,
+			Wear->Shirt.Metallic,
+			Wear->Shirt.bUnlit,
+			Wear->Shirt.bFlat);
+		SolidBodyMesh::ApplyClothingSample(
+			Companion->GetMesh(),
+			SolidBodyMesh::TrouserMaterialSlot,
+			Legs,
+			Wear->Trousers.Roughness,
+			Wear->Trousers.Specular,
+			Wear->Trousers.Metallic,
+			Wear->Trousers.bUnlit,
+			Wear->Trousers.bFlat);
 	}
 
 	if (!World)

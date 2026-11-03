@@ -249,7 +249,14 @@ bool FSolidDebugShotRecipeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the row is Debug Shot"), FString(SolidDebugShot::Label()), FString(TEXT("Debug Shot")));
 	TestEqual(TEXT("the town is Dragongate"), SolidDebugShot::TownId, SolidTowns::Dragongate);
 	TestEqual(TEXT("ten metres south"), SolidDebugShot::SouthOfMarkCm, 1000.f);
-	TestEqual(TEXT("the companion is Sam"), FString(SolidDebugShot::CompanionName), FString(TEXT("Sam")));
+	TestEqual(TEXT("four companions stand in the parade"), static_cast<int32>(UE_ARRAY_COUNT(SolidDebugShot::Wear)), 4);
+	TestEqual(TEXT("Sam is first"), FString(SolidDebugShot::Wear[0].Name), FString(TEXT("Sam")));
+	TestEqual(TEXT("Sam's shirt roughness is zero"), SolidDebugShot::Wear[0].Shirt.Roughness, 0.f);
+	TestEqual(TEXT("Sam's trouser roughness is one"), SolidDebugShot::Wear[0].Trousers.Roughness, 1.f);
+	TestTrue(TEXT("Max's shirt is unlit"), SolidDebugShot::Wear[1].Shirt.bUnlit);
+	TestTrue(TEXT("Max's trousers are flat"), SolidDebugShot::Wear[1].Trousers.bFlat);
+	TestEqual(TEXT("Morgan is third"), FString(SolidDebugShot::Wear[2].Name), FString(TEXT("Morgan")));
+	TestEqual(TEXT("Quinn is last"), FString(SolidDebugShot::Wear[3].Name), FString(TEXT("Quinn")));
 	TestEqual(TEXT("the formation is Parade"), FString(SolidDebugShot::FormationName), FString(TEXT("Parade")));
 	TestEqual(TEXT("the sight is True"), static_cast<uint8>(SolidDebugShot::Sight), static_cast<uint8>(ESolidSight::True));
 	TestEqual(TEXT("facing south"), SolidDebugShot::FacingYawDeg, SolidTowns::SignFacesSouthYawDeg);

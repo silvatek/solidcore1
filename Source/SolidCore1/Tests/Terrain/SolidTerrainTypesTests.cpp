@@ -157,6 +157,23 @@ bool FSolidBiomeColorTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("the map asks the biome"),
 		USolidWorldChart::DefaultColorForBiome(ESolidBiome::River).Equals(River));
+
+	TestTrue(TEXT("grassland references its material"),
+		&SolidBiome::Of(ESolidBiome::Grassland).Material() == &SolidTerrainMaterials::Grassland);
+	TestTrue(TEXT("forest references its material"),
+		&SolidBiome::Of(ESolidBiome::Forest).Material() == &SolidTerrainMaterials::Forest);
+	TestTrue(TEXT("town references its material"),
+		&SolidBiome::Of(ESolidBiome::Town).Material() == &SolidTerrainMaterials::Town);
+	TestTrue(TEXT("grassland uses the grass texture"),
+		SolidTerrainMaterials::Grassland.bGrassTexture);
+	TestTrue(TEXT("forest uses the grass texture"),
+		SolidTerrainMaterials::Forest.bGrassTexture);
+	TestFalse(TEXT("town stays a flat colour"),
+		SolidTerrainMaterials::Town.bGrassTexture);
+	TestTrue(TEXT("forest grass is darker"),
+		SolidTerrainMaterials::Forest.GrassFactor.R < SolidTerrainMaterials::Grassland.GrassFactor.R
+		&& SolidTerrainMaterials::Forest.GrassFactor.G < SolidTerrainMaterials::Grassland.GrassFactor.G
+		&& SolidTerrainMaterials::Forest.GrassFactor.B < SolidTerrainMaterials::Grassland.GrassFactor.B);
 	return true;
 }
 

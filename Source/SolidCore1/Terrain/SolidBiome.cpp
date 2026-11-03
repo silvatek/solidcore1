@@ -1,7 +1,8 @@
 #include "SolidBiome.h"
+#include "SolidTerrainMaterials.h"
 
 FSolidBiome::FSolidBiome(
-	const FLinearColor InColor,
+	const SolidTerrainMaterials::FBiomeMaterial& Material,
 	const TCHAR* InName,
 	const float InHeightOffsetCm,
 	const float InHeightVarianceCm,
@@ -10,7 +11,7 @@ FSolidBiome::FSolidBiome(
 	const bool bInImpassable,
 	const bool bInPaintable,
 	const bool bInFlatColour)
-	: Tint(InColor)
+	: Ground(Material)
 	, Label(InName)
 	, ShelfCm(InHeightOffsetCm)
 	, VarianceCm(InHeightVarianceCm)
@@ -24,7 +25,12 @@ FSolidBiome::FSolidBiome(
 
 FLinearColor FSolidBiome::Color() const
 {
-	return Tint;
+	return Ground.Color;
+}
+
+const SolidTerrainMaterials::FBiomeMaterial& FSolidBiome::Material() const
+{
+	return Ground;
 }
 
 const TCHAR* FSolidBiome::Name() const
@@ -70,25 +76,25 @@ bool FSolidBiome::FlatColour() const
 const FSolidBiome& SolidBiome::Of(const ESolidBiome Biome)
 {
 	static const FSolidBiome Grassland(
-		FLinearColor(0.45f, 0.72f, 0.28f), TEXT("Grassland"), 100.f, 3000.f, 0, TEXT('.'), false, true, false);
+		SolidTerrainMaterials::Grassland, TEXT("Grassland"), 100.f, 3000.f, 0, TEXT('.'), false, true, false);
 	static const FSolidBiome Forest(
-		FLinearColor(0.08f, 0.28f, 0.08f), TEXT("Forest"), 100.f, 3000.f, 2, TEXT('#'), false, true, true);
+		SolidTerrainMaterials::Forest, TEXT("Forest"), 100.f, 3000.f, 2, TEXT('#'), false, true, true);
 	static const FSolidBiome Mountain(
-		FLinearColor(0.16f, 0.16f, 0.18f), TEXT("Mountain"), 1000.f, 3000.f, 4, TEXT('M'), true, true, false);
+		SolidTerrainMaterials::Mountain, TEXT("Mountain"), 1000.f, 3000.f, 4, TEXT('M'), true, true, false);
 	static const FSolidBiome Town(
-		FLinearColor(0.45f, 0.28f, 0.12f), TEXT("Town"), 100.f, 3000.f, 0, TEXT('o'), false, true, true);
+		SolidTerrainMaterials::Town, TEXT("Town"), 100.f, 3000.f, 0, TEXT('o'), false, true, true);
 	static const FSolidBiome Desert(
-		FLinearColor(0.85f, 0.75f, 0.32f), TEXT("Desert"), 100.f, 3000.f, 2, TEXT('^'), false, true, true);
+		SolidTerrainMaterials::Desert, TEXT("Desert"), 100.f, 3000.f, 2, TEXT('^'), false, true, true);
 	static const FSolidBiome Swamp(
-		FLinearColor(0.22f, 0.32f, 0.18f), TEXT("Swamp"), 100.f, 3000.f, 0, TEXT('S'), false, false, true);
+		SolidTerrainMaterials::Swamp, TEXT("Swamp"), 100.f, 3000.f, 0, TEXT('S'), false, false, true);
 	static const FSolidBiome Sea(
-		FLinearColor(0.15f, 0.35f, 0.75f), TEXT("Sea"), 0.f, 3000.f, 8, TEXT('~'), true, true, true);
+		SolidTerrainMaterials::Sea, TEXT("Sea"), 0.f, 3000.f, 8, TEXT('~'), true, true, true);
 	static const FSolidBiome River(
-		FLinearColor(0.15f, 0.35f, 0.75f), TEXT("River"), 0.f, 3000.f, 6, TEXT('*'), true, true, true);
+		SolidTerrainMaterials::River, TEXT("River"), 0.f, 3000.f, 6, TEXT('*'), true, true, true);
 	static const FSolidBiome Road(
-		FLinearColor(0.52f, 0.38f, 0.20f), TEXT("Road"), 100.f, 3000.f, 0, TEXT('R'), false, false, false);
+		SolidTerrainMaterials::Road, TEXT("Road"), 100.f, 3000.f, 0, TEXT('R'), false, false, false);
 	static const FSolidBiome Unknown(
-		FLinearColor(0.4f, 0.4f, 0.4f), TEXT("Unknown"), 100.f, 3000.f, 1, TEXT('.'), false, false, false);
+		SolidTerrainMaterials::Unknown, TEXT("Unknown"), 100.f, 3000.f, 1, TEXT('.'), false, false, false);
 
 	switch (Biome)
 	{

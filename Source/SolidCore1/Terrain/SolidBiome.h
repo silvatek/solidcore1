@@ -3,17 +3,22 @@
 #include "CoreMinimal.h"
 #include "SolidTerrainTypes.h"
 
+namespace SolidTerrainMaterials
+{
+	struct FBiomeMaterial;
+}
+
 /**
  * One kind of ground. A terrain point and the world chart store ESolidBiome.
  * This object answers for that token: its colour, its name, its shelf, its
  * height variance, its chart letter, whether that ground is open or paintable,
- * and whether it is a flat colour.
+ * and whether it is a flat colour. Its material is a SolidTerrainMaterials definition.
  */
 class SOLIDCORE1_API FSolidBiome
 {
 public:
 	explicit FSolidBiome(
-		FLinearColor InColor,
+		const SolidTerrainMaterials::FBiomeMaterial& Material,
 		const TCHAR* InName,
 		float InHeightOffsetCm,
 		float InHeightVarianceCm,
@@ -23,8 +28,11 @@ public:
 		bool bInPaintable,
 		bool bInFlatColour);
 
-	/** Tint for this ground. Grassland's mesh stays the Fab grass. */
+	/** Tint for this ground. The same colour as its material definition. */
 	FLinearColor Color() const;
+
+	/** How this ground is drawn. Grassland and forest reference the grass texture. */
+	const SolidTerrainMaterials::FBiomeMaterial& Material() const;
 
 	/** The word for this ground. Unknown when the token is not a biome. */
 	const TCHAR* Name() const;
@@ -59,12 +67,12 @@ public:
 
 	/**
 	 * Forest, town, desert, swamp, sea, and river.
-	 * The flat-colour fade blends two of these on one shelf.
+	 * The quad split treats these as flat colours. Forest's material is the darker grass.
 	 */
 	bool FlatColour() const;
 
 private:
-	FLinearColor Tint;
+	const SolidTerrainMaterials::FBiomeMaterial& Ground;
 	const TCHAR* Label;
 	float ShelfCm;
 	float VarianceCm;

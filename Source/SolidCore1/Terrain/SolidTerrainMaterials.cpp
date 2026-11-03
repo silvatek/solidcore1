@@ -16,6 +16,20 @@
 #include "Materials/MaterialExpressionVertexColor.h"
 #endif
 
+namespace SolidTerrainMaterials
+{
+	const FBiomeMaterial Grassland{FLinearColor(0.45f, 0.72f, 0.28f), true, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial Forest{FLinearColor(0.08f, 0.28f, 0.08f), true, FLinearColor(0.40f, 0.40f, 0.40f, 1.f)};
+	const FBiomeMaterial Mountain{FLinearColor(0.16f, 0.16f, 0.18f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial Town{FLinearColor(0.45f, 0.28f, 0.12f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial Desert{FLinearColor(0.85f, 0.75f, 0.32f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial Swamp{FLinearColor(0.22f, 0.32f, 0.18f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial Sea{FLinearColor(0.15f, 0.35f, 0.75f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial River{FLinearColor(0.15f, 0.35f, 0.75f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial Road{FLinearColor(0.52f, 0.38f, 0.20f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+	const FBiomeMaterial Unknown{FLinearColor(0.4f, 0.4f, 0.4f), false, FLinearColor(1.f, 1.f, 1.f, 1.f)};
+}
+
 namespace
 {
 	UMaterialInterface* FindGrassInPackages(const TArray<FName>& PackagePaths)
@@ -61,6 +75,50 @@ namespace
 		}
 		return nullptr;
 	}
+
+bool HasGrassFactor(UMaterialInterface* Material)
+{
+	if (!Material)
+	{
+		return false;
+	}
+
+	TArray<FMaterialParameterInfo> Infos;
+	TArray<FGuid> Ids;
+	Material->GetAllVectorParameterInfo(Infos, Ids);
+	for (const FMaterialParameterInfo& Info : Infos)
+	{
+		if (Info.Name == TEXT("BaseColorFactor") || Info.Name == TEXT("BaseColorFactor_RGB"))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+UMaterialInterface* DarkenGrass(UObject* Outer, UMaterialInterface* Grass, const FLinearColor& Factor)
+{
+	UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Grass, Outer);
+	if (!MID)
+	{
+		return Grass;
+	}
+
+	TArray<FMaterialParameterInfo> Infos;
+	TArray<FGuid> Ids;
+	MID->GetAllVectorParameterInfo(Infos, Ids);
+	for (const FMaterialParameterInfo& Info : Infos)
+	{
+		if (Info.Name == TEXT("BaseColorFactor") || Info.Name == TEXT("BaseColorFactor_RGB"))
+		{
+			MID->SetVectorParameterValue(Info.Name, Factor);
+		}
+	}
+	MID->RecacheUniformExpressions(true);
+	UE_LOG(LogSolid, Warning, TEXT("Terrain material: darker grass factor (%.2f, %.2f, %.2f)"),
+		Factor.R, Factor.G, Factor.B);
+	return MID;
+}
 }
 
 UMaterialInterface* SolidTerrainMaterials::FindFabGrass()
@@ -278,11 +336,6 @@ UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 	TObjectPtr<UMaterialInterface>& InOutGrassCached,
 	TMap<ESolidBiome, TObjectPtr<UMaterialInterface>>& InOutBiomeMaterials)
 {
-	if (Biome == ESolidBiome::Grassland)
-	{
-		return Resolve(Params, InOutGrassCached);
-	}
-
 	if (TObjectPtr<UMaterialInterface>* Existing = InOutBiomeMaterials.Find(Biome))
 	{
 		if (Existing->Get())
@@ -296,9 +349,37 @@ UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 		return nullptr;
 	}
 
+	const FBiomeMaterial& Defined = SolidBiome::Of(Biome).Material();
+	if (Defined.bGrassTexture)
+	{
+		UMaterialInterface* Grass = Resolve(Params, InOutGrassCached);
+		if (!Grass)
+		{
+			return nullptr;
+		}
+
+		UMaterialInterface* Built = Grass;
+		const bool bCanTint = HasGrassFactor(Grass);
+		const FLinearColor Authored(1.f, 1.f, 1.f, 1.f);
+		if (bCanTint && !Defined.GrassFactor.Equals(Authored))
+		{
+			Built = DarkenGrass(Params.Outer, Grass, Defined.GrassFactor);
+		}
+		else if (!bCanTint && Biome != ESolidBiome::Grassland)
+		{
+			Built = SolidMaterials::CreateSolidColor(
+				Params.Outer,
+				Defined.Color,
+				SolidBiome::Of(Biome).Name(),
+				Params.GrassRoughness);
+		}
+		InOutBiomeMaterials.Add(Biome, Built);
+		return Built;
+	}
+
 	const FLinearColor Color = WorldMap
 		? WorldMap->GetBiomeColor(Biome)
-		: USolidWorldChart::DefaultColorForBiome(Biome);
+		: Defined.Color;
 
 	UMaterialInterface* Solid = SolidMaterials::CreateSolidColor(
 		Params.Outer,

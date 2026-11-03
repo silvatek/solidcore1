@@ -9,11 +9,35 @@ class UObject;
 class USolidWorldChart;
 
 /**
- * Terrain material resolution: grassland (Fab/FlatCol) + solid-color biomes from WorldMap.
+ * Terrain material resolution. Grassland and forest use the Fab grass texture.
+ * Forest multiplies that texture by its darker factor. Other biomes are flat colours.
  * Used by ASolidTerrainStreamer; keeps AssetRegistry / MID spraying out of the streamer.
  */
 namespace SolidTerrainMaterials
 {
+	/**
+	 * Colour of one ground, and whether its mesh is the grass texture.
+	 * Grassland and forest use the grass texture. GrassFactor multiplies that
+	 * texture. Every other ground is a flat colour painted with Color.
+	 */
+	struct FBiomeMaterial
+	{
+		FLinearColor Color;
+		bool bGrassTexture;
+		FLinearColor GrassFactor;
+	};
+
+	SOLIDCORE1_API extern const FBiomeMaterial Grassland;
+	SOLIDCORE1_API extern const FBiomeMaterial Forest;
+	SOLIDCORE1_API extern const FBiomeMaterial Mountain;
+	SOLIDCORE1_API extern const FBiomeMaterial Town;
+	SOLIDCORE1_API extern const FBiomeMaterial Desert;
+	SOLIDCORE1_API extern const FBiomeMaterial Swamp;
+	SOLIDCORE1_API extern const FBiomeMaterial Sea;
+	SOLIDCORE1_API extern const FBiomeMaterial River;
+	SOLIDCORE1_API extern const FBiomeMaterial Road;
+	SOLIDCORE1_API extern const FBiomeMaterial Unknown;
+
 	struct FResolveParams
 	{
 		UObject* Outer = nullptr;
@@ -44,8 +68,9 @@ namespace SolidTerrainMaterials
 	UMaterialInterface* Resolve(const FResolveParams& Params, TObjectPtr<UMaterialInterface>& InOutCached);
 
 	/**
-	 * Material for a biome. Grassland uses Resolve(); others use FlatCol tinted by WorldMap
-	 * key color (or built-in defaults). Results cached in InOutBiomeMaterials.
+	 * Material for a biome. Grassland and forest use the grass texture from Resolve().
+	 * Forest multiplies it by its GrassFactor. Other biomes use FlatCol tinted by the
+	 * world-map colour, which is the biome material's Color. Results are cached.
 	 */
 	UMaterialInterface* ResolveForBiome(
 		ESolidBiome Biome,

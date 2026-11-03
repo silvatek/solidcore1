@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0962")
+#define SOLID_BUILD_ID TEXT("SC1-0963")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("PriorityMidpoint is the split the ground starts on.")
+#define SOLID_BUILD_NOTE TEXT("Forest uses a darker grass material.")
 #endif

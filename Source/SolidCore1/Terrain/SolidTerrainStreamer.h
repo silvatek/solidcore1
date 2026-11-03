@@ -291,7 +291,7 @@ protected:
 	AActor* ResolveFocusActor() const;
 	/** Resolve via SolidTerrainMaterials (override → Fab grass → FlatCol); caches result. */
 	UMaterialInterface* ResolveMaterial() const;
-	/** Grassland → ResolveMaterial(); other biomes → FlatCol tinted by WorldMap key color. */
+	/** Grassland and forest use the grass texture. Forest is the darker factor. Other biomes are flat colours. */
 	UMaterialInterface* ResolveBiomeMaterial(ESolidBiome Biome) const;
 	void CollectBiomeMaterials(TMap<ESolidBiome, UMaterialInterface*>& OutMaterials) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;

@@ -86,7 +86,7 @@
       "title": "Stylized Environment Pack",
       "listingUuid": "ba992476-1ad4-4138-b2b0-abc92326fa6e",
       "listing": "https://www.fab.com/listings/ba992476-1ad4-4138-b2b0-abc92326fa6e",
-      "required": false,
+      "required": true,
       "format": "unreal-engine",
       "engine": "5.8",
       "attribution": {
@@ -99,7 +99,12 @@
         "credit": "Stylized Environment Pack by Forge of Fantasy, used from Fab (CC-BY). https://creativecommons.org/licenses/by/4.0/"
       },
       "resolvedFolder": "Content/StylizedEnvironment",
-      "notes": "Add to Project lands at Content/StylizedEnvironment. Do not move the folder. The game does not load this pack yet. Demo/Characters/Mannequins is the Epic mannequin and stays unused."
+      "resolvedPaths": {
+        "Tree1.uasset": "Content/StylizedEnvironment/Meshes/Tree1.uasset",
+        "Tree2.uasset": "Content/StylizedEnvironment/Meshes/Tree2.uasset",
+        "Tree3.uasset": "Content/StylizedEnvironment/Meshes/Tree3.uasset"
+      },
+      "notes": "resolvedPaths are Tree1, Tree2, and Tree3. They are tried first, then Meshes under resolvedFolder. A find is written back. Do not move the folder. Demo/Characters/Mannequins is the Epic mannequin and stays unused."
     }
   ]
 }

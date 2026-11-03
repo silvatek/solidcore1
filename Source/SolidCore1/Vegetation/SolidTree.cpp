@@ -1,11 +1,51 @@
 #include "SolidTree.h"
 #include "SolidCore1.h"
-#include "SolidMaterials.h"
+#include "SolidFabManifest.h"
 #include "Terrain/SolidTerrainSeat.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInterface.h"
+
+namespace
+{
+	const TCHAR* TreeFileNames[ASolidTree::MeshCount] = {
+		TEXT("Tree1.uasset"),
+		TEXT("Tree2.uasset"),
+		TEXT("Tree3.uasset"),
+	};
+
+	UStaticMesh* LoadStylizedTree(const int32 Index)
+	{
+		const int32 Chosen = FMath::Clamp(Index, 0, ASolidTree::MeshCount - 1);
+		const FString Manifest = SolidFabManifest::LoadManifest();
+		FString Recorded;
+		if (SolidFabManifest::ReadJsonStringField(
+			Manifest, TEXT("stylized-environment"), TreeFileNames[Chosen], Recorded))
+		{
+			if (UStaticMesh* Mesh = Cast<UStaticMesh>(
+				SolidFabManifest::TryLoadContentFile(Recorded, UStaticMesh::StaticClass())))
+			{
+				return Mesh;
+			}
+		}
+
+		FString Folder;
+		SolidFabManifest::ReadJsonStringField(
+			Manifest, TEXT("stylized-environment"), TEXT("resolvedFolder"), Folder);
+		if (Folder.IsEmpty())
+		{
+			Folder = TEXT("Content/StylizedEnvironment");
+		}
+		const FString Fallback = Folder / TEXT("Meshes") / TreeFileNames[Chosen];
+		if (UStaticMesh* Mesh = Cast<UStaticMesh>(
+			SolidFabManifest::TryLoadContentFile(Fallback, UStaticMesh::StaticClass())))
+		{
+			SolidFabManifest::RememberResolvedPath(TEXT("stylized-environment"), Mesh);
+			return Mesh;
+		}
+		return nullptr;
+	}
+}
 
 ASolidTree::ASolidTree()
 {
@@ -22,9 +62,9 @@ ASolidTree::ASolidTree()
 
 	CanopyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CanopyMesh"));
 	CanopyMesh->SetupAttachment(SceneRoot);
-	CanopyMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	CanopyMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	CanopyMesh->SetCastShadow(true);
+	CanopyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CanopyMesh->SetVisibility(false);
+	CanopyMesh->SetCastShadow(false);
 }
 
 void ASolidTree::OnConstruction(const FTransform& Transform)
@@ -41,77 +81,48 @@ void ASolidTree::BeginPlay()
 
 void ASolidTree::ApplyRandomVariation(FRandomStream& Rng)
 {
-	const float Overall = Rng.FRandRange(0.62f, 1.55f);
-	const float TrunkFat = Rng.FRandRange(0.70f, 1.45f);
-	const float TrunkTall = Rng.FRandRange(0.75f, 1.40f);
-	const float CanopyWide = Rng.FRandRange(0.65f, 1.50f);
-	const float CanopyTall = Rng.FRandRange(0.70f, 1.40f);
-
-	TrunkHeightCm = 280.f * Overall * TrunkTall;
-	TrunkRadiusCm = FMath::Max(8.f, 28.f * Overall * TrunkFat);
-	CanopyHeightCm = 320.f * Overall * CanopyTall;
-	CanopyRadiusCm = FMath::Max(40.f, 180.f * Overall * CanopyWide);
-
-	const float TrunkTint = Rng.FRandRange(-0.04f, 0.05f);
-	TrunkColor = FLinearColor(
-		FMath::Clamp(0.28f + TrunkTint, 0.12f, 0.40f),
-		FMath::Clamp(0.16f + TrunkTint * 0.5f, 0.06f, 0.24f),
-		FMath::Clamp(0.07f + TrunkTint * 0.25f, 0.03f, 0.14f));
-
-	const float LeafTint = Rng.FRandRange(-0.05f, 0.08f);
-	CanopyColor = FLinearColor(
-		FMath::Clamp(0.10f + LeafTint * 0.3f, 0.04f, 0.18f),
-		FMath::Clamp(0.32f + LeafTint, 0.16f, 0.48f),
-		FMath::Clamp(0.08f + LeafTint * 0.2f, 0.03f, 0.16f));
+	MeshIndex = Rng.RandRange(0, MeshCount - 1);
 }
 
 void ASolidTree::BuildVisuals()
 {
-	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(
-		nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-	UStaticMesh* Cone = LoadObject<UStaticMesh>(
-		nullptr, TEXT("/Engine/BasicShapes/Cone.Cone"));
-
-	if (!Cylinder || !Cone)
+	if (CanopyMesh)
 	{
-		UE_LOG(LogSolid, Error,
-			TEXT("SolidTree: missing Engine BasicShapes (Cylinder=%s Cone=%s)."),
-			Cylinder ? TEXT("ok") : TEXT("null"),
-			Cone ? TEXT("ok") : TEXT("null"));
+		CanopyMesh->SetStaticMesh(nullptr);
+		CanopyMesh->SetVisibility(false);
+		CanopyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	if (!TrunkMesh)
+	{
 		return;
 	}
 
-	// Engine cylinder/cone are ~100cm tall with ~50cm radius, pivot at center.
-	constexpr float ShapeHalfWidth = 50.f;
-	constexpr float ShapeHeight = 100.f;
-
-	TrunkMesh->SetStaticMesh(Cylinder);
-	TrunkMesh->SetRelativeLocation(FVector(0.f, 0.f, TrunkHeightCm * 0.5f));
-	TrunkMesh->SetRelativeScale3D(FVector(
-		TrunkRadiusCm / ShapeHalfWidth,
-		TrunkRadiusCm / ShapeHalfWidth,
-		TrunkHeightCm / ShapeHeight));
-	if (UMaterialInterface* TrunkMat =
-			SolidMaterials::CreateSolidColor(this, TrunkColor, TEXT("TreeTrunk"), 0.95f))
+	UStaticMesh* Mesh = LoadStylizedTree(MeshIndex);
+	if (!Mesh)
 	{
-		TrunkMesh->SetMaterial(0, TrunkMat);
+		UE_LOG(LogSolid, Error, TEXT("SolidTree: stylized tree mesh %d missing."), MeshIndex);
+		return;
 	}
 
-	CanopyMesh->SetStaticMesh(Cone);
-	CanopyMesh->SetRelativeLocation(FVector(0.f, 0.f, TrunkHeightCm + CanopyHeightCm * 0.5f));
-	CanopyMesh->SetRelativeScale3D(FVector(
-		CanopyRadiusCm / ShapeHalfWidth,
-		CanopyRadiusCm / ShapeHalfWidth,
-		CanopyHeightCm / ShapeHeight));
-	if (UMaterialInterface* CanopyMat =
-			SolidMaterials::CreateSolidColor(this, CanopyColor, TEXT("TreeCanopy"), 0.95f))
-	{
-		CanopyMesh->SetMaterial(0, CanopyMat);
-	}
+	TrunkMesh->SetStaticMesh(Mesh);
+	TrunkMesh->SetRelativeScale3D(FVector::OneVector);
+	TrunkMesh->EmptyOverrideMaterials();
 
+	const FBox Box = Mesh->GetBounds().GetBox();
+	const float Radius = FMath::Max(
+		FMath::Max(FMath::Abs(Box.Min.X), FMath::Abs(Box.Max.X)),
+		FMath::Max(FMath::Abs(Box.Min.Y), FMath::Abs(Box.Max.Y)));
 	SolidTerrainSeat::FFootprint Seat;
 	Seat.bRound = true;
-	Seat.HalfXCm = TrunkRadiusCm;
+	Seat.HalfXCm = Radius;
 	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
-	SolidTerrainSeat::BuryCentered(TrunkMesh, 0.f, TrunkHeightCm, Drop, ShapeHeight);
+	TrunkMesh->SetRelativeLocation(FVector(0.f, 0.f, -Drop - Box.Min.Z));
+
+	static bool bLoggedSize = false;
+	if (!bLoggedSize)
+	{
+		bLoggedSize = true;
+		UE_LOG(LogSolid, Warning, TEXT("SolidTree: %s bounds Z %.0f to %.0f, radius %.0f"),
+			*Mesh->GetName(), Box.Min.Z, Box.Max.Z, Radius);
+	}
 }

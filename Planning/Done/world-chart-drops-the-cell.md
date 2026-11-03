@@ -1,10 +1,10 @@
 # The World chart drops the cell
 
-Status: Ready
+Status: Done
 
 ## Story
 
-This story depends on [A road finds its way](road-finds-its-way.md). That story ships first.
+This story depends on [A road finds its way](../road-finds-its-way.md). That story ships first.
 
 The developer works in the World chart mode. Paint already stamps terrain points, 2 m apart. The chart still draws a hard outline around each cell, in that cell's colour, about 80 cm above the ground. View and Place still use that cell. The cursor box is the cell, the hover line describes the cell, and a click places the mark on the cell.
 
@@ -41,4 +41,4 @@ The chart's cell array is `USolidWorldChart::Cells`. `SolidRoad::FRoute::Cells` 
 
 The World chart section of `AGENTS.md` says the grid is 128 columns by 64 rows, and that a cell holds a marker biome. This story replaces that description with the terrain points. The fog note about per-cell lattices stays.
 
-How a road chooses its route is [A road finds its way](road-finds-its-way.md). This story runs that route on the terrain points.
+How a road chooses its route is [A road finds its way](../road-finds-its-way.md). This story runs that route on the terrain points.

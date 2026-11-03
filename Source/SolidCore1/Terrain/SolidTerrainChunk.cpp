@@ -383,8 +383,10 @@ void ASolidTerrainChunk::BuildChunk(
 
 	TArray<int32> HorizontalMids;
 	TArray<int32> VerticalMids;
+	TArray<int32> Centres;
 	HorizontalMids.Init(INDEX_NONE, VertsPerSide * InQuadsPerSide);
 	VerticalMids.Init(INDEX_NONE, InQuadsPerSide * VertsPerSide);
+	Centres.Init(INDEX_NONE, InQuadsPerSide * InQuadsPerSide);
 	auto SharedMidpoint = [&](const int32 GridA, const int32 GridB, TArray<int32>& Slots, const int32 Slot) -> int32
 	{
 		if (Slots[Slot] != INDEX_NONE)
@@ -406,8 +408,48 @@ void ASolidTerrainChunk::BuildChunk(
 		Slots[Slot] = NewIndex;
 		return NewIndex;
 	};
+	auto SharedCentre = [&](const int32 QuadX, const int32 QuadY, const int32* Corners) -> int32
+	{
+		const int32 Slot = QuadY * InQuadsPerSide + QuadX;
+		if (Centres[Slot] != INDEX_NONE)
+		{
+			return Centres[Slot];
+		}
+
+		FVector Position = FVector::ZeroVector;
+		FVector Normal = FVector::ZeroVector;
+		FVector TangentSum = FVector::ZeroVector;
+		FVector2D UV = FVector2D::ZeroVector;
+		FLinearColor Color = FLinearColor(0.f, 0.f, 0.f, 0.f);
+		for (int32 Index = 0; Index < 4; ++Index)
+		{
+			const int32 Grid = Corners[Index];
+			Position += Positions[Grid];
+			Normal += Normals[Grid];
+			TangentSum += Tangents[Grid];
+			UV += UVs[Grid];
+			Color += Colors[Grid];
+		}
+		const int32 NewIndex = Positions.Num();
+		Positions.Add(Position * 0.25f);
+		Normals.Add(Normal.GetSafeNormal());
+		FVector Tangent = TangentSum.GetSafeNormal();
+		if (Tangent.IsNearlyZero())
+		{
+			Tangent = FVector::RightVector;
+		}
+		Tangents.Add(Tangent);
+		UVs.Add(UV * 0.25f);
+		Colors.Add(Color * 0.25f);
+		Centres[Slot] = NewIndex;
+		return NewIndex;
+	};
 	auto VertexFor = [&](const int32 Corner, const int32 QuadX, const int32 QuadY, const int32* Corners) -> int32
 	{
+		if (Corner == FSolidQuadTriangle::Centre)
+		{
+			return SharedCentre(QuadX, QuadY, Corners);
+		}
 		int32 End0 = 0;
 		int32 End1 = 0;
 		if (!FSolidQuadTriangle::MidpointEnds(Corner, End0, End1))

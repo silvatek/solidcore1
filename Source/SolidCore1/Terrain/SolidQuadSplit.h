@@ -15,6 +15,7 @@ enum class ESolidQuadSplit : uint8
  * One triangle.
  * Corners 0-3 are mesh order 00, 10, 01, 11.
  * 4, 5, 6, and 7 are the midpoints of the south, north, east, and west edges.
+ * 8 is the centre of the quad.
  */
 struct FSolidQuadTriangle
 {
@@ -22,6 +23,7 @@ struct FSolidQuadTriangle
 	int32 Corner0 = 0;
 	int32 Corner1 = 0;
 	int32 Corner2 = 0;
+	static constexpr int32 Centre = 8;
 
 	/** True when Corner is an edge midpoint. The ends are grid corners 0-3. */
 	static bool MidpointEnds(int32 Corner, int32& OutEnd0, int32& OutEnd1);
@@ -145,7 +147,7 @@ public:
 
 /**
  * The seven cases in the midpoint notes, tried in that order.
- * 1, 2, 3, and 5 are implemented. 4, 6, and 7 are not, so those quads take the northwest corner.
+ * A quad that matches none of them takes the northwest corner.
  */
 class SOLIDCORE1_API FSolidPriorityMidpointSplit : public FSolidQuadSplit
 {
@@ -189,8 +191,29 @@ private:
 		ESolidBiome B01,
 		ESolidBiome B11) const;
 
+	/** 4. One diagonal is a pair. That pair is the band. Each other corner keeps its own triangle. */
+	FSolidQuadTriangles OneDiagonal(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11) const;
+
 	/** 5. Three corners match. The odd corner is cut off at the midpoints of its two edges. */
 	FSolidQuadTriangles ThreeMatchingCorners(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11) const;
+
+	/** 6. Two adjacent corners are the highest material. That half is two triangles. The other half splits at the centre. */
+	FSolidQuadTriangles HighestAdjacent(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11) const;
+
+	/** 7. One corner is the highest material, and the opposite side is a matching pair. The high corner keeps its triangle. The pair takes that half. The remaining corner takes what is left. */
+	FSolidQuadTriangles HighestOpposite(
 		ESolidBiome B00,
 		ESolidBiome B10,
 		ESolidBiome B01,

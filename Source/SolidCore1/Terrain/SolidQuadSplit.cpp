@@ -354,6 +354,38 @@ FSolidQuadTriangles FSolidPriorityMidpointSplit::Checker(
 	return Out;
 }
 
+// 4. One diagonal is a pair.
+FSolidQuadTriangles FSolidPriorityMidpointSplit::OneDiagonal(
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11) const
+{
+	FSolidQuadTriangles Out;
+	const bool bAcross = B00 == B11 && B10 != B01 && B10 != B00 && B01 != B00;
+	if (bAcross)
+	{
+		AppendTriangle(Out, B00, 0, 7, 4);
+		AppendTriangle(Out, B00, 0, 3, 7);
+		AppendTriangle(Out, B00, 0, 6, 3);
+		AppendTriangle(Out, B00, 6, 5, 3);
+		AppendTriangle(Out, B10, 1, 4, 7);
+		AppendTriangle(Out, B01, 2, 5, 6);
+		return Out;
+	}
+	const bool bOther = B10 == B01 && B00 != B11 && B00 != B10 && B11 != B10;
+	if (bOther)
+	{
+		AppendTriangle(Out, B10, 1, 4, 6);
+		AppendTriangle(Out, B10, 1, 6, 2);
+		AppendTriangle(Out, B10, 1, 5, 7);
+		AppendTriangle(Out, B10, 1, 2, 5);
+		AppendTriangle(Out, B00, 0, 6, 4);
+		AppendTriangle(Out, B11, 3, 7, 5);
+	}
+	return Out;
+}
+
 // 5. Three corners match.
 FSolidQuadTriangles FSolidPriorityMidpointSplit::ThreeMatchingCorners(
 	const ESolidBiome B00,
@@ -413,6 +445,146 @@ FSolidQuadTriangles FSolidPriorityMidpointSplit::ThreeMatchingCorners(
 	return Out;
 }
 
+// 6. Two adjacent corners are the highest material.
+FSolidQuadTriangles FSolidPriorityMidpointSplit::HighestAdjacent(
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11) const
+{
+	FSolidQuadTriangles Out;
+	const int32 Rank00 = BiomeRank(B00);
+	const int32 Rank10 = BiomeRank(B10);
+	const int32 Rank01 = BiomeRank(B01);
+	const int32 Rank11 = BiomeRank(B11);
+	const int32 Centre = FSolidQuadTriangle::Centre;
+	const bool bSouth = B00 == B10 && B01 != B11 && Rank00 >= 0 && Rank01 >= 0 && Rank11 >= 0
+		&& Rank00 > Rank01 && Rank00 > Rank11;
+	if (bSouth)
+	{
+		AppendTriangle(Out, B00, 0, 6, 7);
+		AppendTriangle(Out, B00, 0, 7, 1);
+		AppendTriangle(Out, B01, 2, Centre, 6);
+		AppendTriangle(Out, B01, 2, 5, Centre);
+		AppendTriangle(Out, B11, 3, 7, Centre);
+		AppendTriangle(Out, B11, 3, Centre, 5);
+		return Out;
+	}
+	const bool bNorth = B01 == B11 && B00 != B10 && Rank01 >= 0 && Rank00 >= 0 && Rank10 >= 0
+		&& Rank01 > Rank00 && Rank01 > Rank10;
+	if (bNorth)
+	{
+		AppendTriangle(Out, B01, 2, 3, 7);
+		AppendTriangle(Out, B01, 2, 7, 6);
+		AppendTriangle(Out, B00, 0, 6, Centre);
+		AppendTriangle(Out, B00, 0, Centre, 4);
+		AppendTriangle(Out, B10, 1, 4, Centre);
+		AppendTriangle(Out, B10, 1, Centre, 7);
+		return Out;
+	}
+	const bool bEast = B00 == B01 && B10 != B11 && Rank00 >= 0 && Rank10 >= 0 && Rank11 >= 0
+		&& Rank00 > Rank10 && Rank00 > Rank11;
+	if (bEast)
+	{
+		AppendTriangle(Out, B00, 0, 2, 5);
+		AppendTriangle(Out, B00, 0, 5, 4);
+		AppendTriangle(Out, B10, 1, 4, Centre);
+		AppendTriangle(Out, B10, 1, Centre, 7);
+		AppendTriangle(Out, B11, 3, 7, Centre);
+		AppendTriangle(Out, B11, 3, Centre, 5);
+		return Out;
+	}
+	const bool bWest = B10 == B11 && B00 != B01 && Rank10 >= 0 && Rank00 >= 0 && Rank01 >= 0
+		&& Rank10 > Rank00 && Rank10 > Rank01;
+	if (bWest)
+	{
+		AppendTriangle(Out, B10, 1, 5, 3);
+		AppendTriangle(Out, B10, 1, 4, 5);
+		AppendTriangle(Out, B00, 0, 6, Centre);
+		AppendTriangle(Out, B00, 0, Centre, 4);
+		AppendTriangle(Out, B01, 2, Centre, 6);
+		AppendTriangle(Out, B01, 2, 5, Centre);
+	}
+	return Out;
+}
+
+// 7. One corner is the highest, and the opposite side is a pair.
+FSolidQuadTriangles FSolidPriorityMidpointSplit::HighestOpposite(
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11) const
+{
+	const ESolidBiome Corner[4] = { B00, B10, B01, B11 };
+	const int32 Rank[4] = {
+		BiomeRank(B00), BiomeRank(B10), BiomeRank(B01), BiomeRank(B11) };
+	int32 High = -1;
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		if (Rank[Index] < 0)
+		{
+			continue;
+		}
+		bool bHighest = true;
+		for (int32 Other = 0; Other < 4; ++Other)
+		{
+			if (Other != Index && (Rank[Other] < 0 || Rank[Index] <= Rank[Other]))
+			{
+				bHighest = false;
+			}
+		}
+		if (bHighest)
+		{
+			High = Index;
+		}
+	}
+
+	FSolidQuadTriangles Out;
+	if (High < 0)
+	{
+		return Out;
+	}
+
+	struct FCut
+	{
+		int32 HighCorner;
+		int32 Pair0;
+		int32 Pair1;
+		int32 Remaining;
+		int32 Tri[5][3];
+	};
+	// Corner order is southeast, southwest, northeast, northwest.
+	// Each row is one opposite side: the high triangle, the pair's half, then the remainder.
+	const FCut Cuts[] = {
+		{ 0, 2, 3, 1, { { 0, 6, 4 }, { 2, 3, 7 }, { 2, 7, 6 }, { 1, 4, 6 }, { 1, 6, 7 } } },
+		{ 0, 1, 3, 2, { { 0, 6, 4 }, { 1, 5, 3 }, { 1, 4, 5 }, { 2, 4, 6 }, { 2, 5, 4 } } },
+		{ 1, 2, 3, 0, { { 1, 4, 7 }, { 2, 3, 7 }, { 2, 7, 6 }, { 0, 6, 7 }, { 0, 7, 4 } } },
+		{ 1, 0, 2, 3, { { 1, 4, 7 }, { 0, 2, 5 }, { 0, 5, 4 }, { 3, 7, 4 }, { 3, 4, 5 } } },
+		{ 2, 0, 1, 3, { { 2, 5, 6 }, { 0, 6, 7 }, { 0, 7, 1 }, { 3, 7, 6 }, { 3, 6, 5 } } },
+		{ 2, 1, 3, 0, { { 2, 5, 6 }, { 1, 5, 3 }, { 1, 4, 5 }, { 0, 6, 5 }, { 0, 5, 4 } } },
+		{ 3, 0, 1, 2, { { 3, 7, 5 }, { 0, 6, 7 }, { 0, 7, 1 }, { 2, 5, 7 }, { 2, 7, 6 } } },
+		{ 3, 0, 2, 1, { { 3, 7, 5 }, { 0, 2, 5 }, { 0, 5, 4 }, { 1, 4, 5 }, { 1, 5, 7 } } },
+	};
+	for (const FCut& Cut : Cuts)
+	{
+		if (Cut.HighCorner != High)
+		{
+			continue;
+		}
+		if (Corner[Cut.Pair0] != Corner[Cut.Pair1] || Corner[Cut.Remaining] == Corner[Cut.Pair0])
+		{
+			continue;
+		}
+		AppendTriangle(Out, Corner[High], Cut.Tri[0][0], Cut.Tri[0][1], Cut.Tri[0][2]);
+		AppendTriangle(Out, Corner[Cut.Pair0], Cut.Tri[1][0], Cut.Tri[1][1], Cut.Tri[1][2]);
+		AppendTriangle(Out, Corner[Cut.Pair0], Cut.Tri[2][0], Cut.Tri[2][1], Cut.Tri[2][2]);
+		AppendTriangle(Out, Corner[Cut.Remaining], Cut.Tri[3][0], Cut.Tri[3][1], Cut.Tri[3][2]);
+		AppendTriangle(Out, Corner[Cut.Remaining], Cut.Tri[4][0], Cut.Tri[4][1], Cut.Tri[4][2]);
+		return Out;
+	}
+	return Out;
+}
+
 FSolidQuadTriangles FSolidPriorityMidpointSplit::Triangles(
 	const ESolidBiome Preferred,
 	const ESolidBiome B00,
@@ -440,15 +612,31 @@ FSolidQuadTriangles FSolidPriorityMidpointSplit::Triangles(
 	{
 		return Band;
 	}
-	// 4. One diagonal is a pair. Not implemented.
+	// 4. One diagonal is a pair.
+	const FSolidQuadTriangles Diagonal = OneDiagonal(B00, B10, B01, B11);
+	if (Diagonal.Count > 0)
+	{
+		return Diagonal;
+	}
 	// 5. Three corners match.
 	const FSolidQuadTriangles Three = ThreeMatchingCorners(B00, B10, B01, B11);
 	if (Three.Count > 0)
 	{
 		return Three;
 	}
-	// 6. Two adjacent corners are the highest material. Not implemented.
-	// 7. One corner is the highest, and the opposite side is a pair. Not implemented.
+	// 6. Two adjacent corners are the highest material.
+	const FSolidQuadTriangles High = HighestAdjacent(B00, B10, B01, B11);
+	if (High.Count > 0)
+	{
+		return High;
+	}
+	// 7. One corner is the highest, and the opposite side is a pair.
+	const FSolidQuadTriangles Opposite = HighestOpposite(B00, B10, B01, B11);
+	if (Opposite.Count > 0)
+	{
+		return Opposite;
+	}
+	// None of the seven cases. The northwest corner.
 	return TwoTriangles(
 		BorderBiome(Preferred, B00, B11, B10),
 		BorderBiome(Preferred, B00, B01, B11),

@@ -545,6 +545,141 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
 			Grass, Grass, Forest, Forest, Grass, Town, Town),
 		Forest, Grass, OtherBand);
+	auto ExpectOneDiagonal = [this](
+		const TCHAR* What,
+		const FSolidQuadTriangles& Tri,
+		const ESolidBiome Band,
+		const ESolidBiome FirstCorner,
+		const ESolidBiome SecondCorner,
+		const int32 Corners[6][3])
+	{
+		TestEqual(*FString::Printf(TEXT("%s count"), What), Tri.Count, 6);
+		if (Tri.Count < 6)
+		{
+			return;
+		}
+		const ESolidBiome Materials[6] = { Band, Band, Band, Band, FirstCorner, SecondCorner };
+		for (int32 Index = 0; Index < 6; ++Index)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d"), What, Index),
+				static_cast<uint8>(Tri.Triangles[Index].Material),
+				static_cast<uint8>(Materials[Index]));
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 0"), What, Index),
+				Tri.Triangles[Index].Corner0, Corners[Index][0]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 1"), What, Index),
+				Tri.Triangles[Index].Corner1, Corners[Index][1]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 2"), What, Index),
+				Tri.Triangles[Index].Corner2, Corners[Index][2]);
+		}
+	};
+	ExpectOneDiagonal(
+		TEXT("the northwest diagonal is the only pair"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Forest, Forest, Grass, Town, Forest, Town, Town),
+		Forest, Grass, Town, AcrossBand);
+	ExpectOneDiagonal(
+		TEXT("the other diagonal is the only pair"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Grass, Grass, Town, Town, Desert, Town, Town),
+		Town, Grass, Desert, OtherBand);
+
+	const ESolidBiome Road = ESolidBiome::Road;
+	const int32 Centre = FSolidQuadTriangle::Centre;
+	const int32 SouthHigh[6][3] = {
+		{ 0, 6, 7 }, { 0, 7, 1 }, { 2, Centre, 6 }, { 2, 5, Centre }, { 3, 7, Centre }, { 3, Centre, 5 } };
+	const int32 WestHigh[6][3] = {
+		{ 1, 5, 3 }, { 1, 4, 5 }, { 0, 6, Centre }, { 0, Centre, 4 }, { 2, Centre, 6 }, { 2, 5, Centre } };
+	auto ExpectHigh = [this](
+		const TCHAR* What,
+		const FSolidQuadTriangles& Tri,
+		const ESolidBiome High,
+		const ESolidBiome Low0,
+		const ESolidBiome Low1,
+		const int32 Corners[6][3])
+	{
+		TestEqual(*FString::Printf(TEXT("%s count"), What), Tri.Count, 6);
+		if (Tri.Count < 6)
+		{
+			return;
+		}
+		const ESolidBiome Materials[6] = { High, High, Low0, Low0, Low1, Low1 };
+		for (int32 Index = 0; Index < 6; ++Index)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d"), What, Index),
+				static_cast<uint8>(Tri.Triangles[Index].Material),
+				static_cast<uint8>(Materials[Index]));
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 0"), What, Index),
+				Tri.Triangles[Index].Corner0, Corners[Index][0]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 1"), What, Index),
+				Tri.Triangles[Index].Corner1, Corners[Index][1]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 2"), What, Index),
+				Tri.Triangles[Index].Corner2, Corners[Index][2]);
+		}
+	};
+	ExpectHigh(
+		TEXT("a south road splits the two biomes above it"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Grass, Road, Road, Grass, Town, Grass, Grass),
+		Road, Grass, Town, SouthHigh);
+	ExpectHigh(
+		TEXT("a west road splits the two biomes to the east"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Grass, Grass, Road, Forest, Road, Grass, Grass),
+		Road, Grass, Forest, WestHigh);
+
+	const int32 NorthEastHigh[5][3] = {
+		{ 2, 5, 6 }, { 0, 6, 7 }, { 0, 7, 1 }, { 3, 7, 6 }, { 3, 6, 5 } };
+	const int32 NorthWestHigh[5][3] = {
+		{ 3, 7, 5 }, { 0, 2, 5 }, { 0, 5, 4 }, { 1, 4, 5 }, { 1, 5, 7 } };
+	auto ExpectOpposite = [this](
+		const TCHAR* What,
+		const FSolidQuadTriangles& Tri,
+		const ESolidBiome High,
+		const ESolidBiome Pair,
+		const ESolidBiome Remaining,
+		const int32 Corners[5][3])
+	{
+		TestEqual(*FString::Printf(TEXT("%s count"), What), Tri.Count, 5);
+		if (Tri.Count < 5)
+		{
+			return;
+		}
+		const ESolidBiome Materials[5] = { High, Pair, Pair, Remaining, Remaining };
+		for (int32 Index = 0; Index < 5; ++Index)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d"), What, Index),
+				static_cast<uint8>(Tri.Triangles[Index].Material),
+				static_cast<uint8>(Materials[Index]));
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 0"), What, Index),
+				Tri.Triangles[Index].Corner0, Corners[Index][0]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 1"), What, Index),
+				Tri.Triangles[Index].Corner1, Corners[Index][1]);
+			TestEqual(
+				*FString::Printf(TEXT("%s triangle %d corner 2"), What, Index),
+				Tri.Triangles[Index].Corner2, Corners[Index][2]);
+		}
+	};
+	ExpectOpposite(
+		TEXT("a northeast road keeps its triangle above a grass pair"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Grass, Grass, Grass, Road, Forest, Grass, Grass),
+		Road, Grass, Forest, NorthEastHigh);
+	ExpectOpposite(
+		TEXT("a northwest road keeps its triangle beside an east grass pair"),
+		FSolidQuadSplit::Of(ESolidQuadSplit::PriorityMidpoint).Triangles(
+			Grass, Grass, Town, Grass, Road, Grass, Grass),
+		Road, Grass, Town, NorthWestHigh);
 
 	const ESolidBiome OddQuads[4][4] = {
 		{ Desert, Grass, Grass, Grass },

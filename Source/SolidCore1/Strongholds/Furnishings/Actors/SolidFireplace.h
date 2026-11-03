@@ -5,7 +5,7 @@
 
 class UStaticMeshComponent;
 
-/** Grey hearth and a low red disc of embers. One hex. */
+/** The stylized campfire mesh. One hex. The ember disc stays hidden. */
 UCLASS()
 class SOLIDCORE1_API ASolidFireplace : public ASolidFurnishing
 {

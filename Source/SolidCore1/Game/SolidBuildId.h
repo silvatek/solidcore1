@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0976")
+#define SOLID_BUILD_ID TEXT("SC1-0977")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Shirt and trousers are matte.")
+#define SOLID_BUILD_NOTE TEXT("Clothes are marked for the skeletal mesh.")
 #endif

@@ -11,6 +11,8 @@
 #if WITH_EDITOR
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionSubstrate.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
 #endif
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -355,24 +357,30 @@ bool FSolidBodySkinSlotTest::RunTest(const FString& Parameters)
 #if WITH_EDITOR
 namespace
 {
+	bool ConstantIs(const FExpressionInput& Input, const float Value)
+	{
+		const UMaterialExpressionConstant* Node = Cast<UMaterialExpressionConstant>(Input.Expression);
+		return Node && Node->R == Value;
+	}
+
 	bool ClothingParentIsMatte(UMaterialInterface* Material)
 	{
 		UMaterial* Parent = Material ? Material->GetMaterial() : nullptr;
 		UMaterialEditorOnlyData* EditorData = Parent ? Parent->GetEditorOnlyData() : nullptr;
-		if (!EditorData)
+		const UMaterialExpressionSubstrateShadingModels* Shading = EditorData
+			? Cast<UMaterialExpressionSubstrateShadingModels>(EditorData->FrontMaterial.Expression)
+			: nullptr;
+		if (!Shading)
 		{
 			return false;
 		}
-		const UMaterialExpressionConstant* Roughness =
-			Cast<UMaterialExpressionConstant>(EditorData->Roughness.Expression);
-		const UMaterialExpressionConstant* Specular =
-			Cast<UMaterialExpressionConstant>(EditorData->Specular.Expression);
-		const UMaterialExpressionConstant* Metallic =
-			Cast<UMaterialExpressionConstant>(EditorData->Metallic.Expression);
-		return Roughness && Specular && Metallic
-			&& Roughness->R == 1.f
-			&& Specular->R == 0.f
-			&& Metallic->R == 0.f;
+		const UMaterialExpressionVectorParameter* Color =
+			Cast<UMaterialExpressionVectorParameter>(Shading->BaseColor.Expression);
+		return Color
+			&& Color->ParameterName == TEXT("Base Color")
+			&& ConstantIs(Shading->Roughness, 1.f)
+			&& ConstantIs(Shading->Specular, 0.f)
+			&& ConstantIs(Shading->Metallic, 0.f);
 	}
 }
 #endif
@@ -409,6 +417,14 @@ bool FSolidBodyClothingMatteTest::RunTest(const FString& Parameters)
 #if WITH_EDITOR
 	TestTrue(TEXT("shirt is matte"), ClothingParentIsMatte(Materials[0].MaterialInterface));
 	TestTrue(TEXT("trousers are matte"), ClothingParentIsMatte(Materials[1].MaterialInterface));
+	if (UMaterial* Shirt = Materials[0].MaterialInterface->GetMaterial())
+	{
+		TestTrue(TEXT("shirt is used on a skeletal mesh"), Shirt->GetUsageByFlag(MATUSAGE_SkeletalMesh));
+	}
+	if (UMaterial* Trousers = Materials[1].MaterialInterface->GetMaterial())
+	{
+		TestTrue(TEXT("trousers are used on a skeletal mesh"), Trousers->GetUsageByFlag(MATUSAGE_SkeletalMesh));
+	}
 	if (Materials.Num() >= 3 && Materials[2].MaterialInterface)
 	{
 		UMaterial* SkinParent = Materials[2].MaterialInterface->GetMaterial();

@@ -25,6 +25,7 @@
 #if WITH_EDITOR
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionSubstrate.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #endif
 
@@ -283,8 +284,8 @@ namespace
 
 	/**
 	 * Parent for shirt and trousers.
-	 * M_FlatCol has no roughness parameter, so a colour instance of it keeps the default specular.
-	 * This parent pins roughness at 1, specular at 0, and metallic at 0, and exposes Base Color.
+	 * Play In Editor will not set the skeletal-mesh usage flag, and the mesh then draws the default grey.
+	 * The flag is set here. The front node takes Base Color, roughness 1, specular 0, and metallic 0.
 	 */
 	UMaterial* ClothingMaterial()
 	{
@@ -315,36 +316,54 @@ namespace
 
 		UMaterialExpressionVectorParameter* ColorParam =
 			NewObject<UMaterialExpressionVectorParameter>(Material);
+		ColorParam->Material = Material;
 		ColorParam->ParameterName = TEXT("Base Color");
 		ColorParam->DefaultValue = FLinearColor::White;
-		ColorParam->MaterialExpressionEditorX = -380;
+		ColorParam->MaterialExpressionEditorX = -700;
 		ColorParam->MaterialExpressionEditorY = 0;
 
 		UMaterialExpressionConstant* Roughness = NewObject<UMaterialExpressionConstant>(Material);
+		Roughness->Material = Material;
 		Roughness->R = 1.f;
-		Roughness->MaterialExpressionEditorX = -380;
+		Roughness->MaterialExpressionEditorX = -700;
 		Roughness->MaterialExpressionEditorY = 180;
 
 		UMaterialExpressionConstant* Specular = NewObject<UMaterialExpressionConstant>(Material);
+		Specular->Material = Material;
 		Specular->R = 0.f;
-		Specular->MaterialExpressionEditorX = -380;
+		Specular->MaterialExpressionEditorX = -700;
 		Specular->MaterialExpressionEditorY = 320;
 
 		UMaterialExpressionConstant* Metallic = NewObject<UMaterialExpressionConstant>(Material);
+		Metallic->Material = Material;
 		Metallic->R = 0.f;
-		Metallic->MaterialExpressionEditorX = -380;
+		Metallic->MaterialExpressionEditorX = -700;
 		Metallic->MaterialExpressionEditorY = 460;
+
+		UMaterialExpressionSubstrateShadingModels* Shading =
+			NewObject<UMaterialExpressionSubstrateShadingModels>(Material);
+		Shading->Material = Material;
+		Shading->ShadingModelOverride = MSM_DefaultLit;
+		Shading->MaterialExpressionEditorX = -280;
+		Shading->MaterialExpressionEditorY = 0;
+		Shading->BaseColor.Connect(0, ColorParam);
+		Shading->Roughness.Connect(0, Roughness);
+		Shading->Specular.Connect(0, Specular);
+		Shading->Metallic.Connect(0, Metallic);
 
 		EditorData->ExpressionCollection.Expressions.Add(ColorParam);
 		EditorData->ExpressionCollection.Expressions.Add(Roughness);
 		EditorData->ExpressionCollection.Expressions.Add(Specular);
 		EditorData->ExpressionCollection.Expressions.Add(Metallic);
-		EditorData->BaseColor.Expression = ColorParam;
-		EditorData->Roughness.Expression = Roughness;
-		EditorData->Specular.Expression = Specular;
-		EditorData->Metallic.Expression = Metallic;
+		EditorData->ExpressionCollection.Expressions.Add(Shading);
+		EditorData->BaseColor.Connect(0, ColorParam);
+		EditorData->Roughness.Connect(0, Roughness);
+		EditorData->Specular.Connect(0, Specular);
+		EditorData->Metallic.Connect(0, Metallic);
+		EditorData->FrontMaterial.Connect(0, Shading);
 
-		Material->SetMaterialUsage(MATUSAGE_SkeletalMesh);
+		// SetMaterialUsage refuses the flag during Play In Editor, and the mesh then draws the default material.
+		Material->SetUsageByFlag(MATUSAGE_SkeletalMesh, true);
 		Material->PreEditChange(nullptr);
 		Material->PostEditChange();
 

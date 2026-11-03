@@ -35,9 +35,14 @@ bool FSolidCreditsCopyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("credits the Velociraptor creator"), Joined.Contains(SolidCredits::VelociraptorCreator));
 	TestTrue(TEXT("credits the Velociraptor license"), Joined.Contains(SolidCredits::VelociraptorLicense));
 	TestTrue(TEXT("credits the Velociraptor listing"), Joined.Contains(SolidCredits::VelociraptorListing));
+	TestTrue(TEXT("credits the Stylized Environment creator"), Joined.Contains(SolidCredits::StylizedEnvironmentCreator));
+	TestTrue(TEXT("credits the Stylized Environment license"), Joined.Contains(SolidCredits::StylizedEnvironmentLicense));
+	TestTrue(TEXT("credits the Stylized Environment listing"), Joined.Contains(SolidCredits::StylizedEnvironmentListing));
 	const int32 GrassAt = Joined.Find(SolidCredits::GrassListing);
 	const int32 RaptorAt = Joined.Find(SolidCredits::VelociraptorListing);
+	const int32 EnvironmentAt = Joined.Find(SolidCredits::StylizedEnvironmentListing);
 	TestTrue(TEXT("the Velociraptor block follows the grass listing"), GrassAt != INDEX_NONE && RaptorAt > GrassAt);
+	TestTrue(TEXT("the Stylized Environment block follows the Velociraptor listing"), RaptorAt != INDEX_NONE && EnvironmentAt > RaptorAt);
 	TestTrue(TEXT("mentions F10"), Joined.Contains(TEXT("F10")));
 	TestTrue(TEXT("Unreal engine notice"), Joined.Contains(SolidCredits::EngineNotice));
 	TestTrue(TEXT("Unreal trademark notice"), Joined.Contains(SolidCredits::EngineTrademark));

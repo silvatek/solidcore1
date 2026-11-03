@@ -47,6 +47,7 @@ Grass and Viking come from Fab. There is **no official download API**. Native UE
 | Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `SK_Viking` + `Anim_Viking_*` (captain and companion clips) |
 | 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | Yes | `Mat_025_grass` |
 | PBR Velociraptor (Animated) (Ferocious Industries) | [fab.com/listings/5d5fa3d3-…](https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c) | Yes | Green skin, in-place idle. Add to Project at `Content/Fab/PBR_Velociraptor__Animated_` |
+| Stylized Environment Pack (Forge of Fantasy) | [fab.com/listings/ba992476-…](https://www.fab.com/listings/ba992476-1ad4-4138-b2b0-abc92326fa6e) | No | Add to Project at `Content/StylizedEnvironment`. The game does not load it yet. |
 
 **Restore (Launcher + UE 5.8):**
 
@@ -66,7 +67,7 @@ tools\fab_mesh_info.bat Viking
 
 lists that pack's folders, mesh files (size and SKM / SK / PA), and animation names. It does not change `fab-assets.json`.
 
-The packs are not in git. `.gitignore` keeps `Content/Fab` and `Content/Viking` out of the repository, and also `Content/Medieval_Assassin_Girl` and `Content/Elf_Blacksmith`, so a leftover local copy of those packs is not committed. A clone does not contain the packs. Add to Project, then run `tools\fab_doctor.bat`. Do not commit a pack that lands under a different folder name. Viking is Fab Standard, so its source files stay off the public repo. Grass is CC-BY.
+The packs are not in git. `.gitignore` keeps `Content/Fab`, `Content/Viking`, and `Content/StylizedEnvironment` out of the repository, and also `Content/Medieval_Assassin_Girl` and `Content/Elf_Blacksmith`, so a leftover local copy of those packs is not committed. A clone does not contain the packs. Add to Project, then run `tools\fab_doctor.bat`. Do not commit a pack that lands under a different folder name. Viking and the Stylized Environment pack are Fab Standard, so their source files stay off the public repo. Grass is CC-BY.
 
 Not yet covered (need PIE): character movement, companion steering on terrain, streamer chunk load/unload, HUD drawing.
 

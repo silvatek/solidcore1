@@ -45,5 +45,10 @@ namespace SolidCredits
 	inline constexpr const TCHAR* VelociraptorListing =
 		TEXT("https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c");
 
+	inline constexpr const TCHAR* StylizedEnvironmentCreator = TEXT("Forge of Fantasy");
+	inline constexpr const TCHAR* StylizedEnvironmentLicense = TEXT("Fab Standard (Personal / Professional)");
+	inline constexpr const TCHAR* StylizedEnvironmentListing =
+		TEXT("https://www.fab.com/listings/ba992476-1ad4-4138-b2b0-abc92326fa6e");
+
 	void CollectLines(TArray<FString>& OutLines);
 }

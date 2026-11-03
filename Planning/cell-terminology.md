@@ -1,0 +1,30 @@
+# Cell Terminology
+
+Status: New
+
+## Story
+
+The developer reads the source and the tests. Cell means a world map cell, the old rectangle that held a biome. That use is deprecated. The source drops it, apart from a limited reference to the historical grid.
+
+A stronghold piece sits on a hex. Furniture placement says hex.
+
+A lair layout is made of slabs. The plan says slab.
+
+An inventory position is a slot. The pack, the chest, and the crafting grid say slot.
+
+This story introduces no new class.
+
+## Acceptance
+
+- A use of cell for a world map cell is gone from the product source and the tests, apart from a limited reference to the historical grid.
+- Stronghold furniture placement says hex where it said cell.
+- A lair layout says slab where it said cell.
+- An inventory position says slot where it said cell.
+
+## Implementation notes
+
+`SolidStrongholdGrid::FCell` is the column and row of a floor hex. `SolidStrongholdGrid::FHex` is the hex already placed, with its centre. The cell word on `FCell` becomes hex. `FCell` does not become the existing `FHex` type. The floor those pieces occupy is that placement, including a stair, a hole, a landing, and the door hex.
+
+`SolidLair::CellCm` is the slab width, 200 cm. `CellOf`, `CellCenter`, `IsOpenCell`, and `LairCells` are that plan. `StrongholdCell` on a passage is the world map cell of a stronghold opening, so it follows the first rule.
+
+`FirstEmptyPackCell` and the pack cell, chest cell, and empty cell in the inventory are slots. A crafting slot already uses that word.

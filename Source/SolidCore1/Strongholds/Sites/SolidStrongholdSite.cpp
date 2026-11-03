@@ -122,7 +122,7 @@ void ASolidStrongholdSite::Spawn(
 			const FSolidStronghold* Owned = nullptr;
 			for (const FSolidStronghold* Stronghold : Company)
 			{
-				if (Stronghold && Stronghold->Location.Equals(SiteXY, 1.f))
+				if (Stronghold && Stronghold->Cell == Mark.TerrainPoint)
 				{
 					Owned = Stronghold;
 					break;

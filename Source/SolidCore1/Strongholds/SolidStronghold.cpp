@@ -56,18 +56,9 @@ FSolidNameSignPlace FSolidStronghold::NameSign() const
 	return Place;
 }
 
-namespace
-{
-	/** A column is 4 terrain steps. A row is 8. */
-	FIntPoint StrongholdCellCentrePoint(const int32 X, const int32 Y)
-	{
-		return FIntPoint(510 - 4 * X, 508 - 8 * Y);
-	}
-}
-
 namespace SolidStronghold
 {
-	FVector2D TerrainPointXY(const FIntPoint TerrainPoint)
+	FVector2D WorldXY(const FIntPoint TerrainPoint)
 	{
 		constexpr float PointSpacing = 200.f;
 		constexpr int32 Grid = 513;
@@ -77,26 +68,23 @@ namespace SolidStronghold
 			-Half + static_cast<float>(TerrainPoint.Y) * PointSpacing);
 	}
 
-	FVector2D WorldXY(const FIntPoint Cell)
+	bool Place(
+		FSolidStronghold& Stronghold,
+		const USolidWorldChart& Chart,
+		const FVector2D WorldMinXY,
+		const FVector2D WorldMaxXY)
 	{
-		return TerrainPointXY(StrongholdCellCentrePoint(Cell.X, Cell.Y));
-	}
-
-	float CellExtentAlongExitCm(const ESolidStrongholdOrientation Orientation)
-	{
-		const FVector2D Origin = WorldXY(FIntPoint(0, 0));
-		const float EastCm = FMath::Abs(Origin.X - WorldXY(FIntPoint(1, 0)).X);
-		const float NorthCm = FMath::Abs(Origin.Y - WorldXY(FIntPoint(0, 1)).Y);
-		switch (Orientation)
+		if (!Chart.IsLoaded())
 		{
-		case ESolidStrongholdOrientation::EastFace:
-		case ESolidStrongholdOrientation::WestFace:
-			return EastCm;
-		case ESolidStrongholdOrientation::NorthFace:
-		case ESolidStrongholdOrientation::SouthFace:
-		default:
-			return NorthCm;
+			return false;
 		}
+		FVector2D World = FVector2D::ZeroVector;
+		if (!Chart.TerrainPointToWorld(Stronghold.Cell, WorldMinXY, WorldMaxXY, World))
+		{
+			return false;
+		}
+		Stronghold.Location = World;
+		return true;
 	}
 
 	FString DefaultName(const FSolidStronghold& Stronghold)
@@ -176,12 +164,14 @@ namespace SolidStronghold
 
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
 		USolidWorldChart* Map = Terrain->GetWorldMap();
+		const FVector2D WorldMin = Terrain->GetWorldMinXY();
+		const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 		if (Exteriors.Num() == 0 && Map && Map->IsLoaded())
 		{
 			int32 Spawned = 0;
 			for (FSolidStronghold* Stronghold : Company)
 			{
-				if (!Stronghold)
+				if (!Stronghold || !Place(*Stronghold, *Map, WorldMin, WorldMax))
 				{
 					continue;
 				}
@@ -212,28 +202,6 @@ namespace SolidStronghold
 				UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold exteriors"), Spawned);
 			}
 		}
-	}
-}
-
-namespace
-{
-	/** Row +1 is south, so the north neighbor is the row above. */
-	const FIntPoint NorthStep(0, -1);
-
-	bool InBounds(const int32 X, const int32 Y)
-	{
-		const FIntPoint Point = StrongholdCellCentrePoint(X, Y);
-		return Point.X >= 0 && Point.Y >= 0
-			&& Point.X < USolidWorldChart::PointAxis
-			&& Point.Y < USolidWorldChart::PointAxis;
-	}
-
-	float YawFacingGrass(const FIntPoint& Step)
-	{
-		// Column +1 is world -X, which is east. Row +1 is world -Y, which is south.
-		const float WorldX = -static_cast<float>(Step.X);
-		const float WorldY = -static_cast<float>(Step.Y);
-		return FMath::RadiansToDegrees(FMath::Atan2(WorldY, WorldX));
 	}
 }
 
@@ -273,7 +241,7 @@ bool SolidStrongholds::MakeEntrance(
 
 bool SolidStrongholds::FindGrassFace(
 	const USolidWorldChart* WorldMap,
-	const FIntPoint Cell,
+	const FIntPoint TerrainPoint,
 	FGrassFace& Out)
 {
 	Out = FGrassFace();
@@ -282,13 +250,16 @@ bool SolidStrongholds::FindGrassFace(
 		return false;
 	}
 
-	const FIntPoint GrassCell(Cell.X + NorthStep.X, Cell.Y + NorthStep.Y);
-	if (!InBounds(Cell.X, Cell.Y) || !InBounds(GrassCell.X, GrassCell.Y))
+	const FIntPoint GrassPoint(TerrainPoint.X, TerrainPoint.Y + 1);
+	if (TerrainPoint.X < 0 || TerrainPoint.Y < 0
+		|| GrassPoint.X >= USolidWorldChart::PointAxis
+		|| GrassPoint.Y >= USolidWorldChart::PointAxis)
 	{
 		return false;
 	}
-	Out.GrassCell = GrassCell;
-	Out.FacingYawDeg = YawFacingGrass(NorthStep);
+	Out.GrassPoint = GrassPoint;
+	const FVector2D TowardGrass(0.f, 1.f);
+	Out.FacingYawDeg = FMath::RadiansToDegrees(FMath::Atan2(TowardGrass.Y, TowardGrass.X));
 	return true;
 }
 
@@ -506,7 +477,7 @@ bool SolidStrongholdTransition::Move(
 		Type,
 		Size,
 		SiteCell,
-		SolidStronghold::TerrainPointXY(SiteCell)));
+		FVector2D::ZeroVector));
 	if (FSolidStronghold* Next = Company.GetStronghold())
 	{
 		Next->Furnishings = MoveTemp(Moved);

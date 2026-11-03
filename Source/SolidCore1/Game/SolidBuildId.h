@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0948")
+#define SOLID_BUILD_ID TEXT("SC1-0949")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The cave stands on its chart marker, and the old map counts are gone.")
+#define SOLID_BUILD_NOTE TEXT("A stronghold is placed from its chart marker, and the cave face uses the point spacing.")
 #endif

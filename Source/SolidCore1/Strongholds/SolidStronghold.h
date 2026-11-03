@@ -248,17 +248,18 @@ namespace SolidStronghold
 	/** The subclass for this enum. The same instance on every call. */
 	const FSolidStronghold& TypeOf(ESolidStrongholdType Type);
 
-	/** World centimetres of the terrain point at that cell's centre. */
-	FVector2D WorldXY(FIntPoint Cell);
-
-	/** World centimetres of a terrain point. The grid is 513 points at 200 cm, centered on the origin. */
-	FVector2D TerrainPointXY(FIntPoint TerrainPoint);
+	/** World centimetres of a terrain point on the centred 513-point grid. */
+	FVector2D WorldXY(FIntPoint TerrainPoint);
 
 	/**
-	 * Full size of one map cell along an exit, in centimetres.
-	 * North and south use the taller cell. East and west use the shorter one.
+	 * Writes Location from the chart for this stronghold's terrain point.
+	 * The terrain map supplies the world rectangle.
 	 */
-	float CellExtentAlongExitCm(ESolidStrongholdOrientation Orientation);
+	bool Place(
+		FSolidStronghold& Stronghold,
+		const USolidWorldChart& Chart,
+		FVector2D WorldMinXY,
+		FVector2D WorldMaxXY);
 
 	/**
 	 * Spawns the exterior of each company stronghold.
@@ -659,14 +660,14 @@ namespace SolidStrongholds
 		FIntPoint TerrainPoint,
 		FEntrance& OutEntrance);
 
-	/** The cell north of one map cell. The door faces that way. */
+	/** The next terrain point north. The door faces that way. */
 	struct FGrassFace
 	{
-		FIntPoint GrassCell = FIntPoint::ZeroValue;
+		FIntPoint GrassPoint = FIntPoint::ZeroValue;
 		float FacingYawDeg = 0.f;
 	};
 
-	bool FindGrassFace(const USolidWorldChart* WorldMap, FIntPoint Cell, FGrassFace& Out);
+	bool FindGrassFace(const USolidWorldChart* WorldMap, FIntPoint TerrainPoint, FGrassFace& Out);
 }
 
 /**

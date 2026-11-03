@@ -253,22 +253,26 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 			ESolidStrongholdType::Dungeon,
 			Cave));
 	TestEqual(TEXT("a new game stands on the cave marker"), StartingCave->Cell, Cave.TerrainPoint);
-	const FVector2D StartingXY = SolidStronghold::TerrainPointXY(Cave.TerrainPoint);
 	TestTrue(
-		TEXT("a new game stands at the marker"),
-		StartingCave->Location.Equals(StartingXY, 0.01f));
+		TEXT("a new game has no world position until it is placed"),
+		StartingCave->Location.IsNearlyZero(0.01f));
 	USolidTerrainMap* Terrain = NewObject<USolidTerrainMap>();
 	TestNotNull(TEXT("terrain"), Terrain);
 	if (Terrain && Map)
 	{
 		Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f);
+		FSolidStronghold* PlacedCave = Company->GetStronghold();
+		TestTrue(
+			TEXT("the cave places on the chart"),
+			PlacedCave && SolidStronghold::Place(
+				*PlacedCave, *Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY()));
 		FVector2D Projected = FVector2D::ZeroVector;
 		TestTrue(
 			TEXT("the cave marker projects"),
 			Map->TerrainPointToWorld(Cave.TerrainPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Projected));
 		TestTrue(
 			TEXT("that projection is the stronghold location"),
-			StartingCave->Location.Equals(Projected, 0.01f));
+			PlacedCave && PlacedCave->Location.Equals(Projected, 0.01f));
 	}
 	TestTrue(
 		TEXT("a new game has reached Meagre"),

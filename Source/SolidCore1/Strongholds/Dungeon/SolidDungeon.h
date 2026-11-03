@@ -34,9 +34,9 @@ namespace SolidStronghold
 		/** How far the slope runs back from the front face to the ground. Twice the face height. */
 		float SlopeRunCm() const;
 		/**
-		 * How far the front face sits in front of the cell center, along the exit.
-		 * The face stays just inside the next cell. North and south use the taller cell.
-		 * East and west use the shorter one. The actor yaw turns that into a world direction.
+		 * How far the front face sits in front of the stronghold, along the exit.
+		 * The face stays one gap short of the next terrain point.
+		 * The actor yaw turns that into a world direction.
 		 */
 		float FaceForwardCm(ESolidStrongholdOrientation InOrientation) const;
 		/**

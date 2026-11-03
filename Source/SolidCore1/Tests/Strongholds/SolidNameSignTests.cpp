@@ -71,7 +71,7 @@ bool FSolidNameSignDefaultTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdSize::Meagre,
 		CaveMark.TerrainPoint,
-		SolidStronghold::TerrainPointXY(CaveMark.TerrainPoint));
+		FVector2D::ZeroVector);
 	TestEqual(TEXT("Make does not write The Cave"), UnnamedStart->Name, FString(TEXT("Meagre Dungeon")));
 	TestEqual(
 		TEXT("the cave marker's Meagre Dungeon defaults to The Cave"),

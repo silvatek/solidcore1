@@ -204,7 +204,7 @@ void USolidCompany::InitializeStartingStronghold()
 		Mark.StrongholdType,
 		Mark.StrongholdSize,
 		Mark.TerrainPoint,
-		SolidStronghold::TerrainPointXY(Mark.TerrainPoint));
+		FVector2D::ZeroVector);
 	if (ActiveStronghold)
 	{
 		ActiveStronghold->Orientation = ESolidStrongholdOrientation::NorthFace;

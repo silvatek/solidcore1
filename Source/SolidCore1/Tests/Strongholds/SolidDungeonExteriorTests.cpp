@@ -314,21 +314,16 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		TEXT("the slope runs twice the face height"),
 		FMath::IsNearlyEqual(Dungeon.SlopeRunCm(), 2.f * Dungeon.FaceHeightCm(), 0.01f));
 
-	const float NorthHalf = SolidStronghold::CellExtentAlongExitCm(ESolidStrongholdOrientation::NorthFace) * 0.5f;
-	const float EastHalf = SolidStronghold::CellExtentAlongExitCm(ESolidStrongholdOrientation::EastFace) * 0.5f;
+	constexpr float PointSpacing = 200.f;
 	const float NorthForward = Dungeon.FaceForwardCm(ESolidStrongholdOrientation::NorthFace);
 	const float EastForward = Dungeon.FaceForwardCm(ESolidStrongholdOrientation::EastFace);
-	TestTrue(TEXT("a north-south cell is taller"), NorthHalf > EastHalf);
+	const float ShortOfNextPoint = PointSpacing - SolidStrongholds::MouthBorderGapCm;
 	TestTrue(
-		TEXT("the north face sits just inside the next cell"),
-		NorthForward < NorthHalf
-			&& NorthForward > NorthHalf - SolidStrongholds::MouthBorderGapCm - 1.f);
+		TEXT("the face is the same toward each neighbour"),
+		FMath::IsNearlyEqual(NorthForward, EastForward, 0.1f));
 	TestTrue(
-		TEXT("the east face uses the shorter cell"),
-		FMath::IsNearlyEqual(EastForward, EastHalf - SolidStrongholds::MouthBorderGapCm, 0.1f));
-	TestTrue(
-		TEXT("the north face uses the taller cell"),
-		FMath::IsNearlyEqual(NorthForward, NorthHalf - SolidStrongholds::MouthBorderGapCm, 0.1f));
+		TEXT("the face sits one gap short of the next terrain point"),
+		FMath::IsNearlyEqual(NorthForward, ShortOfNextPoint, 0.1f));
 
 	const float NorthLateral = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::NorthFace);
 	const float EastLateral = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::EastFace);

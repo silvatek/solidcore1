@@ -773,7 +773,9 @@ void ASolidGameMode::ShowOpenStronghold()
 
 	USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
 	USolidWorldChart* Map = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!bDrawn && Stronghold->ExteriorClass())
+	const bool bPlaced = Map && SolidStronghold::Place(
+		*Stronghold, *Map, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY());
+	if (!bDrawn && bPlaced && Stronghold->ExteriorClass())
 	{
 		Stronghold->RememberExit(Map);
 		FActorSpawnParameters SpawnParams;
@@ -792,7 +794,7 @@ void ASolidGameMode::ShowOpenStronghold()
 	}
 
 	ASolidCharacter* Captain = FindCaptain(World);
-	if (!Captain || Stronghold->Type != ESolidStrongholdType::Fortress)
+	if (!bPlaced || !Captain || Stronghold->Type != ESolidStrongholdType::Fortress)
 	{
 		return;
 	}

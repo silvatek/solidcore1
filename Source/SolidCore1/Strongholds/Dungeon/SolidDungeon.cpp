@@ -96,10 +96,10 @@ namespace SolidStronghold
 		return 2.f * FaceHeightCm();
 	}
 
-	float FSolidDungeon::FaceForwardCm(const ESolidStrongholdOrientation InOrientation) const
+	float FSolidDungeon::FaceForwardCm(const ESolidStrongholdOrientation) const
 	{
-		const float HalfCell = CellExtentAlongExitCm(InOrientation) * 0.5f;
-		return FMath::Max(0.f, HalfCell - SolidStrongholds::MouthBorderGapCm);
+		constexpr float PointSpacing = 200.f;
+		return FMath::Max(0.f, PointSpacing - SolidStrongholds::MouthBorderGapCm);
 	}
 
 	float FSolidDungeon::ShelfLateralCm(const ESolidStrongholdOrientation InOrientation) const

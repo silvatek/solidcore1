@@ -22,6 +22,11 @@
 #include "SkeletalMeshAttributes.h"
 #include "UObject/StrongObjectPtr.h"
 #endif
+#if WITH_EDITOR
+#include "Materials/Material.h"
+#include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
+#endif
 
 SolidBodyMesh::FSolidBodyMesh::FSolidBodyMesh(const FSolidBodyMesh& Other)
 	: OriginalBones(Other.OriginalBones)
@@ -276,6 +281,105 @@ namespace
 		}
 	}
 
+	/**
+	 * Parent for shirt and trousers.
+	 * M_FlatCol has no roughness parameter, so a colour instance of it keeps the default specular.
+	 * This parent pins roughness at 1, specular at 0, and metallic at 0, and exposes Base Color.
+	 */
+	UMaterial* ClothingMaterial()
+	{
+#if WITH_EDITOR
+		static TStrongObjectPtr<UMaterial> Cached;
+		if (UMaterial* Existing = Cached.Get())
+		{
+			return Existing;
+		}
+
+		UMaterial* Material = NewObject<UMaterial>(GetTransientPackage(), NAME_None, RF_Transient);
+		if (!Material)
+		{
+			return nullptr;
+		}
+
+		Material->MaterialDomain = MD_Surface;
+		Material->BlendMode = BLEND_Opaque;
+		Material->bScreenSpaceReflections = false;
+		Material->SetShadingModel(MSM_DefaultLit);
+
+		UMaterialEditorOnlyData* EditorData = Material->GetEditorOnlyData();
+		if (!EditorData)
+		{
+			UE_LOG(LogSolid, Error, TEXT("Clothing material: GetEditorOnlyData() null."));
+			return nullptr;
+		}
+
+		UMaterialExpressionVectorParameter* ColorParam =
+			NewObject<UMaterialExpressionVectorParameter>(Material);
+		ColorParam->ParameterName = TEXT("Base Color");
+		ColorParam->DefaultValue = FLinearColor::White;
+		ColorParam->MaterialExpressionEditorX = -380;
+		ColorParam->MaterialExpressionEditorY = 0;
+
+		UMaterialExpressionConstant* Roughness = NewObject<UMaterialExpressionConstant>(Material);
+		Roughness->R = 1.f;
+		Roughness->MaterialExpressionEditorX = -380;
+		Roughness->MaterialExpressionEditorY = 180;
+
+		UMaterialExpressionConstant* Specular = NewObject<UMaterialExpressionConstant>(Material);
+		Specular->R = 0.f;
+		Specular->MaterialExpressionEditorX = -380;
+		Specular->MaterialExpressionEditorY = 320;
+
+		UMaterialExpressionConstant* Metallic = NewObject<UMaterialExpressionConstant>(Material);
+		Metallic->R = 0.f;
+		Metallic->MaterialExpressionEditorX = -380;
+		Metallic->MaterialExpressionEditorY = 460;
+
+		EditorData->ExpressionCollection.Expressions.Add(ColorParam);
+		EditorData->ExpressionCollection.Expressions.Add(Roughness);
+		EditorData->ExpressionCollection.Expressions.Add(Specular);
+		EditorData->ExpressionCollection.Expressions.Add(Metallic);
+		EditorData->BaseColor.Expression = ColorParam;
+		EditorData->Roughness.Expression = Roughness;
+		EditorData->Specular.Expression = Specular;
+		EditorData->Metallic.Expression = Metallic;
+
+		Material->SetMaterialUsage(MATUSAGE_SkeletalMesh);
+		Material->PreEditChange(nullptr);
+		Material->PostEditChange();
+
+		Cached.Reset(Material);
+		return Material;
+#else
+		return nullptr;
+#endif
+	}
+
+	/** Shirt or trousers. Falls back to a flat colour when the matte parent cannot be built. */
+	UMaterialInterface* CreateClothingColor(
+		UObject* Outer,
+		const FLinearColor& Color,
+		const TCHAR* DebugName)
+	{
+#if WITH_EDITOR
+		if (UMaterial* Parent = ClothingMaterial())
+		{
+			if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, Outer))
+			{
+				MID->SetVectorParameterValue(TEXT("Base Color"), Color);
+				MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
+				return MID;
+			}
+		}
+#endif
+		return SolidMaterials::CreateSolidColor(Outer, Color, DebugName, 1.f);
+	}
+
+	bool IsClothingSlot(const int32 Slot)
+	{
+		return Slot == SolidBodyMesh::ShirtMaterialSlot || Slot == SolidBodyMesh::TrouserMaterialSlot;
+	}
+
 	void PaintSlot(
 		USkeletalMeshComponent* MeshComp,
 		const int32 Slot,
@@ -299,7 +403,10 @@ namespace
 			return;
 		}
 
-		if (UMaterialInterface* Created = SolidMaterials::CreateSolidColor(MeshComp, Color, DebugName, 1.f))
+		UMaterialInterface* Created = IsClothingSlot(Slot)
+			? CreateClothingColor(MeshComp, Color, DebugName)
+			: SolidMaterials::CreateSolidColor(MeshComp, Color, DebugName, 1.f);
+		if (Created)
 		{
 			MeshComp->SetMaterial(Slot, Created);
 		}
@@ -322,10 +429,8 @@ namespace
 		const FLinearColor& Legs,
 		const FLinearColor& Skin)
 	{
-		UMaterialInterface* TorsoMat = SolidMaterials::CreateSolidColor(
-			Mesh, Torso, TEXT("BodyTorso"), 1.f);
-		UMaterialInterface* LegMat = SolidMaterials::CreateSolidColor(
-			Mesh, Legs, TEXT("BodyLegs"), 1.f);
+		UMaterialInterface* TorsoMat = CreateClothingColor(Mesh, Torso, TEXT("BodyTorso"));
+		UMaterialInterface* LegMat = CreateClothingColor(Mesh, Legs, TEXT("BodyLegs"));
 		UMaterialInterface* SkinMat = SolidMaterials::CreateSolidColor(
 			Mesh, Skin, TEXT("BodySkin"), 1.f);
 		if (!TorsoMat && !LegMat && !SkinMat)

@@ -8,6 +8,10 @@
 #include "MeshDescription.h"
 #include "ReferenceSkeleton.h"
 #include "Rendering/SkeletalMeshRenderData.h"
+#if WITH_EDITOR
+#include "Materials/Material.h"
+#include "Materials/MaterialExpressionConstant.h"
+#endif
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -345,6 +349,76 @@ bool FSolidBodySkinSlotTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("trouser slot stays second"), Materials[1].MaterialSlotName, FName(TEXT("Legs")));
 	}
+	return true;
+}
+
+#if WITH_EDITOR
+namespace
+{
+	bool ClothingParentIsMatte(UMaterialInterface* Material)
+	{
+		UMaterial* Parent = Material ? Material->GetMaterial() : nullptr;
+		UMaterialEditorOnlyData* EditorData = Parent ? Parent->GetEditorOnlyData() : nullptr;
+		if (!EditorData)
+		{
+			return false;
+		}
+		const UMaterialExpressionConstant* Roughness =
+			Cast<UMaterialExpressionConstant>(EditorData->Roughness.Expression);
+		const UMaterialExpressionConstant* Specular =
+			Cast<UMaterialExpressionConstant>(EditorData->Specular.Expression);
+		const UMaterialExpressionConstant* Metallic =
+			Cast<UMaterialExpressionConstant>(EditorData->Metallic.Expression);
+		return Roughness && Specular && Metallic
+			&& Roughness->R == 1.f
+			&& Specular->R == 0.f
+			&& Metallic->R == 0.f;
+	}
+}
+#endif
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyClothingMatteTest,
+	"SolidCore1.Body.ClothingMatte",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyClothingMatteTest::RunTest(const FString& Parameters)
+{
+	USkeletalMesh* Source = SolidContentLookup::FindVikingMesh();
+	TestNotNull(TEXT("SK_Viking"), Source);
+	if (!Source)
+	{
+		return false;
+	}
+
+	const FSolidBodyParams Params = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Sam")));
+	USkeletalMesh* Body = SolidBodyMesh::Build(Source, Params, GetTransientPackage());
+	TestNotNull(TEXT("body"), Body);
+	if (!Body)
+	{
+		return false;
+	}
+
+	const TArray<FSkeletalMaterial>& Materials = Body->GetMaterials();
+	TestTrue(TEXT("shirt and trousers have slots"), Materials.Num() >= 2);
+	if (Materials.Num() < 2)
+	{
+		return false;
+	}
+
+#if WITH_EDITOR
+	TestTrue(TEXT("shirt is matte"), ClothingParentIsMatte(Materials[0].MaterialInterface));
+	TestTrue(TEXT("trousers are matte"), ClothingParentIsMatte(Materials[1].MaterialInterface));
+	if (Materials.Num() >= 3 && Materials[2].MaterialInterface)
+	{
+		UMaterial* SkinParent = Materials[2].MaterialInterface->GetMaterial();
+		TestNotNull(TEXT("skin parent"), SkinParent);
+		if (SkinParent)
+		{
+			TestEqual(TEXT("skin stays on FlatCol"), SkinParent->GetFName(), FName(TEXT("M_FlatCol")));
+		}
+	}
+#endif
 	return true;
 }
 

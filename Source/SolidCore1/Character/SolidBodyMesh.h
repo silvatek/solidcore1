@@ -317,7 +317,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Replace the component mesh with a low-poly body.
-	 * Shirt, trouser, and skin colors are plain matte materials. The same proportions reuse one mesh.
+	 * Shirt and trousers are a matte colour. Skin stays a flat colour. The same proportions reuse one mesh.
 	 * Seed is the name id written to the log. Params is the body that is built.
 	 * Leaves the current mesh when the body cannot be built.
 	 * The captain does not call this.

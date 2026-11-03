@@ -97,6 +97,16 @@ The developer runs `tools\editor.bat` to open the editor without play, and `tool
 
 In Play In Editor the developer presses Alt-P. The game writes one PNG in `Saved/Playshots`. The name is the running build id, an underscore, and the play machine's local time: `SC1-0667_20261027-124701.png`. A second press in that same second writes `SC1-0667_20261027-124701_2.png`, and the next writes `_3`. When the developer says they are testing in Play In Editor, the solidcore1-ue worker lists that folder for the build id in `Source/SolidCore1/Game/SolidBuildId.h` and reads the new PNGs. It lists again when the developer says they pressed Alt-P. It does not wait in a loop. A cloud agent has no copy of these files. A World Editor screenshot stays with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS. The mouse has to move to take the screenshot. Ignore the pointer position, and ignore a hover line that follows it, unless the user says that position is the subject.
 
+## Debugging
+
+When the code does not show what the game is doing, the agent adds a log, changes the debug shot, or both. The agent does not run Play In Editor. The developer plays. The Windows agent then reads the log and any new playshot. A cloud agent has no copy of either file.
+
+A log is `UE_LOG` on `LogSolid`, declared in `Source/SolidCore1/SolidCore1.h`. A trace uses `Warning`, which is the level the game already uses. The line names what happened and the values that answer the question. Play writes `Saved/Logs/SolidCore1.log`. When the developer says they have played, the Windows agent reads the new lines. It does not wait in a loop. A log added only to answer the current question comes out once that answer is in the change. A log the game already keeps stays.
+
+The F10 row **Debug Shot** places the company, waits, and then takes a playshot. The place, the companion, the formation, the sight, the facing, and the wait live in `Source/SolidCore1/Menus/SolidDebugShot.h`. Those values are the current picture. Change them for the picture this question needs, and change the recipe test in `Source/SolidCore1/Tests/Menus/SolidMainMenuTests.cpp` in the same commit. South of a town mark is negative Y. The south yaw is `SolidTowns::SignFacesSouthYawDeg`. `CaptureDelaySeconds` is the wait so the company can finish arriving. Lengthen it when the picture is taken before they are in place. The developer opens the menu with F10 and chooses Debug Shot. The menu closes, the company moves, and after that wait the game writes one PNG in `Saved/Playshots`, the same capture Alt-P uses. The Windows agent lists that folder for the build id and reads the new PNG when the developer says the shot is ready. It does not wait in a loop. The next question rewrites the recipe.
+
+A log or a debug-shot change is product C++. It bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, then the build runs, and the developer plays that checkout.
+
 ## Cursor Cloud
 
 Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They do not replace the Windows Unreal machine. A solidcore1-ue agent runs on that machine and follows the section above.

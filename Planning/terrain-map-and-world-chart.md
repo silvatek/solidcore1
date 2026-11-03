@@ -8,7 +8,7 @@ The developer has one runtime object for the world the game stands on. Today `US
 
 The saved asset `/Game/World/WorldChart` stays the chart the World chart editor writes. Play loads that asset. Height and fog are not written back into it.
 
-Marks and the solved roads stay on that same runtime object. This story introduces no new class. It does not drop the cell grid. That work is [The World chart drops the cell](world-chart-drops-the-cell.md).
+Marks and the solved roads stay on that same runtime object. This story introduces no new class. It does not drop the cell grid. That work is [The World chart drops the cell](Done/world-chart-drops-the-cell.md).
 
 ## Acceptance
 

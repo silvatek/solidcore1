@@ -84,7 +84,7 @@ namespace SolidTerrainTypes
 		ESolidBiome B11,
 		int32& OutCorner);
 
-	/** How a quad's two triangles choose a material. The chunk is built with one of these. */
+	/** How a quad's triangles choose a material. The chunk is built with one of these. */
 	enum class ESolidQuadMaterial : uint8
 	{
 		/** Both triangles take corner 11, northwest. A higher shelf still replaces it. */
@@ -109,12 +109,21 @@ namespace SolidTerrainTypes
 	/** Change this and rebuild. The mesh and the debug line both use it. */
 	inline constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::NorthWest;
 
-	/** Materials for the quad's two triangles, and whether the mesh diagonal is flipped. */
+	/** One triangle. Corners are indexes in mesh order 00, 10, 01, 11. */
+	struct FSolidQuadTriangle
+	{
+		ESolidBiome Material = ESolidBiome::Grassland;
+		int32 Corner0 = 0;
+		int32 Corner1 = 0;
+		int32 Corner2 = 0;
+	};
+
+	/** The triangles one method returns for a quad. */
 	struct FSolidQuadTriangles
 	{
-		ESolidBiome First = ESolidBiome::Grassland;
-		ESolidBiome Second = ESolidBiome::Grassland;
-		bool bFlip = false;
+		static constexpr int32 Capacity = 8;
+		FSolidQuadTriangle Triangles[Capacity] = {};
+		int32 Count = 0;
 	};
 
 	/**

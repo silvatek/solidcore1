@@ -431,15 +431,34 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	auto Expect = [this](const TCHAR* What, const SolidTerrainTypes::FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{
-		TestEqual(What, Tri.bFlip, bFlip);
+		TestEqual(*FString::Printf(TEXT("%s count"), What), Tri.Count, 2);
+		if (Tri.Count < 2)
+		{
+			return;
+		}
+
+		const int32 FirstCorner[3] = {
+			bFlip ? 1 : 0,
+			bFlip ? 0 : 3,
+			bFlip ? 2 : 1 };
+		const int32 SecondCorner[3] = {
+			bFlip ? 1 : 0,
+			2,
+			3 };
 		TestEqual(
 			*FString::Printf(TEXT("%s first"), What),
-			static_cast<uint8>(Tri.First),
+			static_cast<uint8>(Tri.Triangles[0].Material),
 			static_cast<uint8>(First));
+		TestEqual(*FString::Printf(TEXT("%s first corner 0"), What), Tri.Triangles[0].Corner0, FirstCorner[0]);
+		TestEqual(*FString::Printf(TEXT("%s first corner 1"), What), Tri.Triangles[0].Corner1, FirstCorner[1]);
+		TestEqual(*FString::Printf(TEXT("%s first corner 2"), What), Tri.Triangles[0].Corner2, FirstCorner[2]);
 		TestEqual(
 			*FString::Printf(TEXT("%s second"), What),
-			static_cast<uint8>(Tri.Second),
+			static_cast<uint8>(Tri.Triangles[1].Material),
 			static_cast<uint8>(Second));
+		TestEqual(*FString::Printf(TEXT("%s second corner 0"), What), Tri.Triangles[1].Corner0, SecondCorner[0]);
+		TestEqual(*FString::Printf(TEXT("%s second corner 1"), What), Tri.Triangles[1].Corner1, SecondCorner[1]);
+		TestEqual(*FString::Printf(TEXT("%s second corner 2"), What), Tri.Triangles[1].Corner2, SecondCorner[2]);
 	};
 
 	const ESolidBiome Grass = ESolidBiome::Grassland;

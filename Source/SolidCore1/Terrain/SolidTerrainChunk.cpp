@@ -267,7 +267,7 @@ void ASolidTerrainChunk::BuildChunk(
 	Tangents.Reserve(VertsPerSide * VertsPerSide);
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
-	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
+	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * SolidTerrainTypes::FSolidQuadTriangles::Capacity * 3);
 
 	TArray<float> Heights;
 	Heights.SetNumUninitialized(VertsPerSide * VertsPerSide);
@@ -351,8 +351,8 @@ void ASolidTerrainChunk::BuildChunk(
 	TArray<UMaterialInterface*> Materials;
 	TArray<int32> TriMatIndices;
 	TArray<FLinearColor> CornerColors;
-	TriMatIndices.Reserve(InQuadsPerSide * InQuadsPerSide * 2);
-	CornerColors.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
+	TriMatIndices.Reserve(InQuadsPerSide * InQuadsPerSide * SolidTerrainTypes::FSolidQuadTriangles::Capacity);
+	CornerColors.Reserve(InQuadsPerSide * InQuadsPerSide * SolidTerrainTypes::FSolidQuadTriangles::Capacity * 3);
 
 	auto EnsureMaterialSlot = [&](const ESolidBiome Biome) -> int32
 	{
@@ -388,13 +388,7 @@ void ASolidTerrainChunk::BuildChunk(
 			const int32 I10 = I00 + 1;
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
-
-			Triangles.Add(I00);
-			Triangles.Add(I11);
-			Triangles.Add(I10);
-			Triangles.Add(I00);
-			Triangles.Add(I01);
-			Triangles.Add(I11);
+			const int32 CornerVertex[4] = { I00, I10, I01, I11 };
 
 			ESolidBiome Preferred = ESolidBiome::Grassland;
 			ESolidBiome B00 = Preferred;
@@ -433,33 +427,20 @@ void ASolidTerrainChunk::BuildChunk(
 			const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
 				SolidTerrainTypes::QuadMaterial, Preferred, B00, B10, B01, B11,
 				WestOfNorthWest, SouthWestOfNorthWest);
-			// 00 and 11 sit on the mesh diagonal, so cutting one of them uses the other diagonal.
-			if (Picked.bFlip)
+			for (int32 TriangleIndex = 0; TriangleIndex < Picked.Count; ++TriangleIndex)
 			{
-				Triangles[Triangles.Num() - 6] = I10;
-				Triangles[Triangles.Num() - 5] = I00;
-				Triangles[Triangles.Num() - 4] = I01;
-				Triangles[Triangles.Num() - 3] = I10;
-				Triangles[Triangles.Num() - 2] = I01;
-				Triangles[Triangles.Num() - 1] = I11;
-				CornerColors.Add(Colors[I10]);
-				CornerColors.Add(Colors[I00]);
-				CornerColors.Add(Colors[I01]);
-				CornerColors.Add(Colors[I10]);
-				CornerColors.Add(Colors[I01]);
-				CornerColors.Add(Colors[I11]);
+				const SolidTerrainTypes::FSolidQuadTriangle& Triangle = Picked.Triangles[TriangleIndex];
+				const int32 V0 = CornerVertex[Triangle.Corner0];
+				const int32 V1 = CornerVertex[Triangle.Corner1];
+				const int32 V2 = CornerVertex[Triangle.Corner2];
+				Triangles.Add(V0);
+				Triangles.Add(V1);
+				Triangles.Add(V2);
+				CornerColors.Add(Colors[V0]);
+				CornerColors.Add(Colors[V1]);
+				CornerColors.Add(Colors[V2]);
+				TriMatIndices.Add(EnsureMaterialSlot(Triangle.Material));
 			}
-			else
-			{
-				CornerColors.Add(Colors[I00]);
-				CornerColors.Add(Colors[I11]);
-				CornerColors.Add(Colors[I10]);
-				CornerColors.Add(Colors[I00]);
-				CornerColors.Add(Colors[I01]);
-				CornerColors.Add(Colors[I11]);
-			}
-			TriMatIndices.Add(EnsureMaterialSlot(Picked.First));
-			TriMatIndices.Add(EnsureMaterialSlot(Picked.Second));
 		}
 	}
 

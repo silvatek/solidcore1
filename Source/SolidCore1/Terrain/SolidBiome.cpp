@@ -244,8 +244,9 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 	const ESolidBiome SouthWestOfNorthWest)
 {
 	FSolidQuadTriangles Out;
-	Out.First = BorderBiome(Preferred, B00, B11, B10);
-	Out.Second = BorderBiome(Preferred, B00, B01, B11);
+	ESolidBiome First = BorderBiome(Preferred, B00, B11, B10);
+	ESolidBiome Second = BorderBiome(Preferred, B00, B01, B11);
+	bool bFlip = false;
 	switch (Method)
 	{
 	case ESolidQuadMaterial::NorthWest:
@@ -256,17 +257,17 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 		const bool bNorthWestAlone = B01 == B10 && B10 == B00 && B00 != B11;
 		if (bNorthWestAlone)
 		{
-			Out.bFlip = true;
-			Out.First = B00;
-			Out.Second = B11;
+			bFlip = true;
+			First = B00;
+			Second = B11;
 			break;
 		}
 
 		const bool bSouthContinuesWest = B10 != B11 && B01 == B11 && B00 == B11 && WestOfNorthWest == B10;
 		if (bSouthContinuesWest)
 		{
-			Out.First = B10;
-			Out.Second = B11;
+			First = B10;
+			Second = B11;
 			break;
 		}
 
@@ -278,8 +279,8 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 			&& SouthWestOfNorthWest == WestOfNorthWest;
 		if (bWestEnd)
 		{
-			Out.First = B10;
-			Out.Second = B11;
+			First = B10;
+			Second = B11;
 			break;
 		}
 		break;
@@ -295,10 +296,10 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 		const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
 		const ESolidBiome Odd = Corners[CutCorner];
 		const ESolidBiome Majority = Corners[(CutCorner + 1) % 4];
-		Out.bFlip = CutCorner == 0 || CutCorner == 3;
-		const bool bOddOnFirst = Out.bFlip ? (CutCorner == 0) : (CutCorner == 1);
-		Out.First = bOddOnFirst ? Odd : Majority;
-		Out.Second = bOddOnFirst ? Majority : Odd;
+		bFlip = CutCorner == 0 || CutCorner == 3;
+		const bool bOddOnFirst = bFlip ? (CutCorner == 0) : (CutCorner == 1);
+		First = bOddOnFirst ? Odd : Majority;
+		Second = bOddOnFirst ? Majority : Odd;
 		break;
 	}
 	}
@@ -320,15 +321,30 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 		}
 		return Corners[Top] == ESolidBiome::Mountain ? ESolidBiome::Mountain : Material;
 	};
-	if (Out.bFlip)
+
+	const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
+	auto Append = [&](const ESolidBiome Material, const int32 A, const int32 B, const int32 C)
 	{
-		Out.First = KeepMountainTop(Out.First, B10, B00, B01);
-		Out.Second = KeepMountainTop(Out.Second, B10, B01, B11);
+		if (Out.Count >= FSolidQuadTriangles::Capacity)
+		{
+			return;
+		}
+		FSolidQuadTriangle& Triangle = Out.Triangles[Out.Count];
+		Triangle.Material = KeepMountainTop(Material, Corners[A], Corners[B], Corners[C]);
+		Triangle.Corner0 = A;
+		Triangle.Corner1 = B;
+		Triangle.Corner2 = C;
+		++Out.Count;
+	};
+	if (bFlip)
+	{
+		Append(First, 1, 0, 2);
+		Append(Second, 1, 2, 3);
 	}
 	else
 	{
-		Out.First = KeepMountainTop(Out.First, B00, B11, B10);
-		Out.Second = KeepMountainTop(Out.Second, B00, B01, B11);
+		Append(First, 0, 3, 1);
+		Append(Second, 0, 2, 3);
 	}
 	return Out;
 }

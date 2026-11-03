@@ -142,7 +142,9 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Kanfold projects"), WorldMap->TerrainPointToWorld(KanfoldMark.TerrainPoint, WorldMin, WorldMax, KanfoldXY));
 	TestTrue(TEXT("Iglin projects"), WorldMap->TerrainPointToWorld(IglinMark.TerrainPoint, WorldMin, WorldMax, IglinXY));
 	TestTrue(TEXT("Kanfold sign sits on its marker"), Placements[1].WorldXY.Equals(KanfoldXY, 0.1f));
-	TestTrue(TEXT("Iglin sign sits on its marker"), Placements[0].WorldXY.Equals(IglinXY, 0.1f));
+	TestTrue(
+		TEXT("Iglin sign is 2 m north of its marker"),
+		Placements[0].WorldXY.Equals(IglinXY + FVector2D(0.f, SolidTowns::IglinSignNorthCm), 0.1f));
 	return true;
 }
 
@@ -221,7 +223,16 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 				TEXT("other towns stay towns"),
 				static_cast<uint8>(Town.Type),
 				static_cast<uint8>(SolidTowns::ETownType::Town));
-			TestTrue(TEXT("other signs stay on the marker"), Town.SignOffsetCm.IsNearlyZero());
+			if (Town.Id == SolidTowns::Iglin)
+			{
+				TestTrue(
+					TEXT("Iglin sign is 2 m north"),
+					Town.SignOffsetCm.Equals(FVector2D(0.f, SolidTowns::IglinSignNorthCm), 0.1f));
+			}
+			else
+			{
+				TestTrue(TEXT("other signs stay on the marker"), Town.SignOffsetCm.IsNearlyZero());
+			}
 			TestTrue(TEXT("other signs face south"),
 				FMath::IsNearlyEqual(Town.SignYawDeg, SolidTownSigns::FacingYawDeg, 0.1f));
 		}

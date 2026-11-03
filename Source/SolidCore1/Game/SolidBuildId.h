@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0970")
+#define SOLID_BUILD_ID TEXT("SC1-0971")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A stronghold site is a tall truncated pyramid with a build hover.")
+#define SOLID_BUILD_NOTE TEXT("The Iglin sign stands 2 m north of the marker.")
 #endif

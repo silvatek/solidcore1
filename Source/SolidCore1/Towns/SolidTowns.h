@@ -19,6 +19,8 @@ namespace SolidTowns
 	 */
 	inline constexpr float DragongateSignNorthCm = 800.f;
 	inline constexpr float DragongateSignWestCm = 400.f;
+	/** Iglin's pole, 2 m north of the town marker. */
+	inline constexpr float IglinSignNorthCm = 200.f;
 
 	enum class ETownType : uint8
 	{
@@ -46,7 +48,7 @@ namespace SolidTowns
 	};
 
 	inline const FTownInfo Definitions[] = {
-		{ Iglin, TEXT("Iglin"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ Iglin, TEXT("Iglin"), FVector2D(0.f, IglinSignNorthCm), SignFacesSouthYawDeg, ETownType::Town },
 		{ Relion, TEXT("Relion"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
 		{ Kanfold, TEXT("Kanfold"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
 		{ Visolar, TEXT("Visolar"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },

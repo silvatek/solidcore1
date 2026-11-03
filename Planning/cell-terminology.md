@@ -20,6 +20,7 @@ This story introduces no new class.
 - Stronghold furniture placement says hex where it said cell.
 - A lair layout says slab where it said cell.
 - An inventory position says slot where it said cell.
+- The comments on `FSolidWorldChartMark` call the marker's position a terrain point. They do not call it a cell.
 
 ## Implementation notes
 
@@ -28,5 +29,7 @@ This story introduces no new class.
 `SolidLair::CellCm` is the slab width, 200 cm. `CellOf`, `CellCenter`, `IsOpenCell`, and `LairCells` are that plan.
 
 `FSolidStronghold::Cell` stores the terrain point of the chart marker. A marker records that terrain point. The world chart has no cells. The exterior, the interior, and the passage hit copy that point as `StrongholdCell`. The word cell on that point goes. The point stays the terrain point.
+
+The struct comment on `FSolidWorldChartMark` says the position is the terrain point of the cell centre, and that the chart turns that position into a cell and keeps the cell. The `TerrainPoint` comment says "The cell centre." Both describe the terrain point.
 
 `FirstEmptyPackCell` and the pack cell, chest cell, and empty cell in the inventory are slots. A crafting slot already uses that word.

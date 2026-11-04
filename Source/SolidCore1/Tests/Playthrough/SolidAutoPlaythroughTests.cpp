@@ -9,6 +9,7 @@
 #include "Events/SolidEncounters.h"
 #include "Lairs/SolidLair.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
+#include "Sight/SolidSight.h"
 #include "SolidCharacter.h"
 #include "SolidGameState.h"
 #include "Towns/SolidTowns.h"
@@ -863,6 +864,95 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 			Index < 2 ? !Place->bClosePage : Place->bClosePage);
 	}
 	TestEqual(TEXT("Quinn is the last row"), Search, FSolidAutoPlaythrough::ScriptCount);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughScriptsTest,
+	"SolidCore1.AutoPlaythrough.Scripts",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughScriptsTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("two scripts"), FSolidAutoPlaythrough::ScriptsCount, 2);
+
+	const FSolidAutoPlaythrough::FScript& Full = FSolidAutoPlaythrough::Scripts[0];
+	TestEqual(TEXT("the first script is Full-playthrough"), FString(Full.Name), FString(TEXT("Full-playthrough")));
+	TestTrue(TEXT("Full-playthrough uses the opening list"), Full.Steps == FSolidAutoPlaythrough::Script);
+	TestEqual(TEXT("Full-playthrough has every opening step"), Full.StepCount, FSolidAutoPlaythrough::ScriptCount);
+	TestTrue(TEXT("Full-playthrough is on the menu"), Full.bOnMenu);
+	TestTrue(TEXT("Full-playthrough disables after a move"), Full.bDisableAfterMove);
+
+	const FSolidAutoPlaythrough::FScript& Parade = FSolidAutoPlaythrough::Scripts[1];
+	TestEqual(TEXT("the second script is Companion parade"), FString(Parade.Name), FString(TEXT("Companion parade")));
+	TestTrue(TEXT("Companion parade uses its own list"), Parade.Steps == FSolidAutoPlaythrough::Parade);
+	TestEqual(TEXT("Companion parade has its steps"), Parade.StepCount, FSolidAutoPlaythrough::ParadeCount);
+	TestFalse(TEXT("Companion parade stays off the menu"), Parade.bOnMenu);
+	TestFalse(TEXT("Companion parade stays available after a move"), Parade.bDisableAfterMove);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughParadeTest,
+	"SolidCore1.AutoPlaythrough.Parade",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("seven parade steps"), FSolidAutoPlaythrough::ParadeCount, 7);
+	const FSolidAutoPlaythrough::FStep* Steps = FSolidAutoPlaythrough::Parade;
+
+	TestEqual(
+		TEXT("portal comes first"),
+		static_cast<uint8>(Steps[0].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::PortalToMarker));
+	TestEqual(
+		TEXT("the mark is a town"),
+		static_cast<uint8>(Steps[0].MarkKind),
+		static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(TEXT("the mark is Dragongate"), FString(Steps[0].MarkName), FString(TEXT("Dragongate")));
+	TestTrue(TEXT("no east or west offset"), FMath::IsNearlyEqual(Steps[0].OffsetXCm, 0.f));
+	TestTrue(TEXT("ten metres south"), FMath::IsNearlyEqual(Steps[0].OffsetYCm, -1000.f));
+
+	TestEqual(
+		TEXT("Sam is placed"),
+		static_cast<uint8>(Steps[1].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::BuildSquad));
+	TestEqual(TEXT("the companion is Sam"), FString(Steps[1].CompanionName), FString(TEXT("Sam")));
+
+	TestEqual(
+		TEXT("the formation is selected"),
+		static_cast<uint8>(Steps[2].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::SelectBattlePlan));
+	TestEqual(TEXT("the formation is Parade"), FString(Steps[2].PlanName), FString(TEXT("Parade")));
+
+	TestEqual(
+		TEXT("sight is enabled"),
+		static_cast<uint8>(Steps[3].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::EnableSight));
+	TestEqual(
+		TEXT("the sight is True"),
+		static_cast<uint8>(Steps[3].Sight),
+		static_cast<uint8>(ESolidSight::True));
+
+	TestEqual(
+		TEXT("the facing is set"),
+		static_cast<uint8>(Steps[4].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::FaceDirection));
+	TestTrue(
+		TEXT("facing south"),
+		FMath::IsNearlyEqual(Steps[4].FacingYawDeg, SolidTowns::SignFacesSouthYawDeg));
+
+	TestEqual(
+		TEXT("the wait is its own step"),
+		static_cast<uint8>(Steps[5].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::Pause));
+	TestTrue(TEXT("the wait is three seconds"), FMath::IsNearlyEqual(Steps[5].PauseSeconds, 3.f));
+
+	TestEqual(
+		TEXT("the playshot is last"),
+		static_cast<uint8>(Steps[6].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 	return true;
 }
 

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Inventory/SolidInventory.h"
+#include "Sight/SolidSight.h"
 #include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidWorldChartMark.h"
 
@@ -44,6 +45,11 @@ public:
 		AimRaven,
 		ChooseStronghold,
 		BuildSquad,
+		PortalToMarker,
+		Pause,
+		EnableSight,
+		FaceDirection,
+		TakePlayshot,
 		Custom,
 	};
 
@@ -65,7 +71,8 @@ public:
 	 * One row of the opening script.
 	 * WalkTo, MoveTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold,
 	 * EnterLair, ExitLair, WakeInStronghold, SelectBattlePlan, AimRaven,
-	 * ChooseStronghold, BuildSquad, and Custom build one.
+	 * ChooseStronghold, BuildSquad, PortalToMarker, Pause, EnableSight,
+	 * FaceDirection, TakePlayshot, and Custom build one.
 	 * A later helper fills the one field that row also reads.
 	 */
 	struct FStep
@@ -107,6 +114,13 @@ public:
 		ESolidWorldChartMarkKind MarkKind = ESolidWorldChartMarkKind::Town;
 		/** Name of that mark. The chart's mark of this kind and name supplies the place. */
 		const TCHAR* MarkName = nullptr;
+		/** Added to the mark, in centimetres. South is negative Y. PortalToMarker reads these. */
+		float OffsetXCm = 0.f;
+		float OffsetYCm = 0.f;
+		/** Sight mode. EnableSight reads this. */
+		ESolidSight Sight = ESolidSight::True;
+		/** Absolute facing, degrees. FaceDirection reads this. */
+		float FacingYawDeg = 0.f;
 
 		/** A walk to the chart mark of this kind and name. Summary is the row label. */
 		static constexpr FStep WalkToMarker(
@@ -305,11 +319,86 @@ public:
 			Step.PauseSeconds = Seconds;
 			return Step;
 		}
+
+		/** A portal to the chart mark of this kind and name, then the X and Y offsets. */
+		static constexpr FStep PortalToMarker(
+			const TCHAR* Summary,
+			const ESolidWorldChartMarkKind Kind,
+			const TCHAR* Name,
+			const float OffsetXCm,
+			const float OffsetYCm)
+		{
+			FStep Step;
+			Step.Type = EStepType::PortalToMarker;
+			Step.Name = Summary;
+			Step.MarkKind = Kind;
+			Step.MarkName = Name;
+			Step.OffsetXCm = OffsetXCm;
+			Step.OffsetYCm = OffsetYCm;
+			return Step;
+		}
+
+		/** A wait, then the next row. Name is the row label. */
+		static constexpr FStep Pause(const float Seconds, const TCHAR* Name = TEXT("Pause"))
+		{
+			FStep Step;
+			Step.Type = EStepType::Pause;
+			Step.Name = Name;
+			Step.PauseSeconds = Seconds;
+			return Step;
+		}
+
+		static constexpr FStep EnableSight(const TCHAR* Summary, const ESolidSight Sight)
+		{
+			FStep Step;
+			Step.Type = EStepType::EnableSight;
+			Step.Name = Summary;
+			Step.Sight = Sight;
+			return Step;
+		}
+
+		static constexpr FStep FaceDirection(const TCHAR* Summary, const float YawDeg)
+		{
+			FStep Step;
+			Step.Type = EStepType::FaceDirection;
+			Step.Name = Summary;
+			Step.FacingYawDeg = YawDeg;
+			return Step;
+		}
+
+		static constexpr FStep TakePlayshot(const TCHAR* Summary)
+		{
+			FStep Step;
+			Step.Type = EStepType::TakePlayshot;
+			Step.Name = Summary;
+			return Step;
+		}
 	};
 
-	/** The opening script, in order. A later story edits this list. */
+	/**
+	 * One named script. Steps is that list.
+	 * bOnMenu puts the name on the F10 menu. bDisableAfterMove refuses a later start once the captain has moved.
+	 */
+	struct FScript
+	{
+		const TCHAR* Name = TEXT("");
+		const FStep* Steps = nullptr;
+		int32 StepCount = 0;
+		bool bOnMenu = false;
+		bool bDisableAfterMove = false;
+	};
+
+	/** Named scripts. The runner still walks Script, which is Full-playthrough. */
+	static const FScript Scripts[];
+	static constexpr int32 ScriptsCount = 2;
+
+	/** Full-playthrough's steps, in order. */
 	static const FStep Script[];
 	static constexpr int32 ScriptCount = 30;
+
+	/** Companion parade's steps, in order. */
+	static const FStep Parade[];
+	static constexpr int32 ParadeCount = 7;
 
 	/** High behind the squad. AimRaven at Kanfold uses these. */
 	static constexpr float HighTrailPitchDeg = -48.f;
@@ -419,6 +508,11 @@ private:
 	void ApplyAimRaven(float DeltaSeconds, ASolidCharacter& Captain);
 	bool TickChooseStronghold(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickBuildSquad(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickPortal(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickPause(float DeltaSeconds, const FStep& Step);
+	bool TickEnableSight(ASolidCharacter& Captain, const FStep& Step);
+	bool TickFaceDirection(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickTakePlayshot(ASolidCharacter& Captain);
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;

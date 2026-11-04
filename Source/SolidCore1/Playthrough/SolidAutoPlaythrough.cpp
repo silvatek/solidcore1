@@ -27,6 +27,10 @@
 #include "Company/SolidCompany.h"
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Menus/SolidSquadBuilder.h"
+#include "Menus/SolidPortal.h"
+#include "Company/SolidCompanionCharacter.h"
+#include "Components/CapsuleComponent.h"
+#include "Towns/SolidTowns.h"
 #include "Strongholds/Sites/SolidStrongholdSite.h"
 #include "Algo/Reverse.h"
 
@@ -75,6 +79,26 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::BuildSquad(TEXT("Build squad Max"), TEXT("Max")),
 	FStep::BuildSquad(TEXT("Build squad Morgan"), TEXT("Morgan")),
 	FStep::BuildSquad(TEXT("Build squad Quinn"), TEXT("Quinn")).ClosePage(),
+};
+
+const FStep FSolidAutoPlaythrough::Parade[FSolidAutoPlaythrough::ParadeCount] = {
+	FStep::PortalToMarker(
+		TEXT("Portal to Dragongate"),
+		ESolidWorldChartMarkKind::Town,
+		TEXT("Dragongate"),
+		0.f,
+		-1000.f),
+	FStep::BuildSquad(TEXT("Build squad Sam"), TEXT("Sam")),
+	FStep::SelectBattlePlan(TEXT("Form Parade"), TEXT("Parade")),
+	FStep::EnableSight(TEXT("Enable true sight"), ESolidSight::True),
+	FStep::FaceDirection(TEXT("Face south"), SolidTowns::SignFacesSouthYawDeg),
+	FStep::Pause(3.f),
+	FStep::TakePlayshot(TEXT("Take playshot")),
+};
+
+const FSolidAutoPlaythrough::FScript FSolidAutoPlaythrough::Scripts[FSolidAutoPlaythrough::ScriptsCount] = {
+	{ TEXT("Full-playthrough"), Script, ScriptCount, true, true },
+	{ TEXT("Companion parade"), Parade, ParadeCount, false, false },
 };
 
 namespace
@@ -500,6 +524,16 @@ bool FSolidAutoPlaythrough::TickCurrent(
 		return TickChooseStronghold(DeltaSeconds, Mode, Captain, Step);
 	case EStepType::BuildSquad:
 		return TickBuildSquad(DeltaSeconds, Mode, Captain, Step);
+	case EStepType::PortalToMarker:
+		return TickPortal(Mode, Captain, Step);
+	case EStepType::Pause:
+		return TickPause(DeltaSeconds, Step);
+	case EStepType::EnableSight:
+		return TickEnableSight(Captain, Step);
+	case EStepType::FaceDirection:
+		return TickFaceDirection(Mode, Captain, Step);
+	case EStepType::TakePlayshot:
+		return TickTakePlayshot(Captain);
 	case EStepType::Custom:
 		TickCustom(Step);
 		return false;
@@ -1521,6 +1555,97 @@ bool FSolidAutoPlaythrough::TickBuildSquad(
 	{
 		HUD->ConfirmSquadBuilder();
 	}
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickPortal(
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	UWorld* World = Mode.GetWorld();
+	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!Streamer || !Terrain || !Terrain->IsBuilt() || !Chart || !Chart->IsLoaded()
+		|| !Streamer->HasAttemptedStartTownRelocate())
+	{
+		NoteWait(TEXT("portal waiting for the world"));
+		return false;
+	}
+
+	const FSolidWorldChartMark* Mark = Step.MarkName
+		? FindChartMark(*Chart, Step.MarkKind, Step.MarkName)
+		: nullptr;
+	if (!Mark)
+	{
+		Stop(TEXT("portal mark lookup failed"));
+		return false;
+	}
+
+	FVector2D WorldXY = FVector2D::ZeroVector;
+	if (!Chart->TerrainPointToWorld(Mark->TerrainPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), WorldXY))
+	{
+		NoteWait(TEXT("portal mark has no world position"));
+		return false;
+	}
+	WorldXY.X += Step.OffsetXCm;
+	WorldXY.Y += Step.OffsetYCm;
+
+	const FVector Delta = SolidPortal::SquadDelta(Captain.GetActorLocation(), WorldXY);
+	const float LandZ = Streamer->GetHeightAt(FVector(WorldXY.X, WorldXY.Y, 0.f)) + Streamer->CollisionHeightBias;
+	float CapsuleHalf = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain.GetCapsuleComponent())
+	{
+		CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	const FVector NewLoc(WorldXY.X, WorldXY.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
+	Captain.ArriveByPortal(NewLoc, Captain.GetActorRotation().Yaw);
+	Streamer->RelocateCompanionsByDelta(Delta);
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickPause(const float DeltaSeconds, const FStep& Step)
+{
+	WaitAccumulated += DeltaSeconds;
+	if (WaitAccumulated < Step.PauseSeconds)
+	{
+		return false;
+	}
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickEnableSight(ASolidCharacter& Captain, const FStep& Step)
+{
+	Captain.SetSight(Step.Sight);
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickFaceDirection(
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	const FRotator Facing(0.f, Step.FacingYawDeg, 0.f);
+	Captain.SetActorRotation(Facing);
+	for (const TObjectPtr<ASolidCompanionCharacter>& Companion : Mode.GetCompanions())
+	{
+		if (Companion)
+		{
+			Companion->SetActorRotation(Facing);
+		}
+	}
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickTakePlayshot(ASolidCharacter& Captain)
+{
+	Captain.TakePlayshot();
 	Advance();
 	return false;
 }

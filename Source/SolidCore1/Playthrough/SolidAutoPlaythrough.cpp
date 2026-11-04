@@ -33,6 +33,7 @@
 #include "Towns/SolidTowns.h"
 #include "Strongholds/Sites/SolidStrongholdSite.h"
 #include "Algo/Reverse.h"
+#include "Misc/Parse.h"
 
 namespace
 {
@@ -58,6 +59,7 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::EquipItem(TEXT("Equip the sword"), SolidItemType::IdRustySword, SolidInventory::ESlot::MainHand).ClosePage(),
 	FStep::MoveTo(TEXT("Move to the entrance"), EntranceCells, UE_ARRAY_COUNT(EntranceCells)),
 	FStep::ExitStronghold(TEXT("Leave the cave")),
+	FStep::TakePlayshot(TEXT("Take playshot")),
 	FStep::WalkToMarker(TEXT("Walk to Iglin"), ESolidWorldChartMarkKind::Town, TEXT("Iglin")),
 	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage),
 	FStep::WalkToMarker(TEXT("Walk to the Iglin tunnels"), ESolidWorldChartMarkKind::LairEntrance, TEXT("Iglin tunnels")),
@@ -433,13 +435,64 @@ bool FSolidAutoPlaythrough::CanStart(const USolidGameState& State, const int32 S
 	return !State.bAutoPlaythroughDim;
 }
 
-void FSolidAutoPlaythrough::Start(USolidGameState&)
+void FSolidAutoPlaythrough::Start(USolidGameState& State)
 {
+	Start(State, 0);
+}
+
+void FSolidAutoPlaythrough::Start(USolidGameState&, const int32 ScriptIndex)
+{
+	RunningScript = 0;
+	if (ScriptIndex >= 0 && ScriptIndex < ScriptsCount)
+	{
+		RunningScript = ScriptIndex;
+	}
 	bRunning = true;
 	StepIndex = 0;
+	LoggedStep = INDEX_NONE;
 	bAimRavenHeld = false;
 	ResetWalk();
 	NoteStepStart();
+}
+
+bool FSolidAutoPlaythrough::LaunchName(const TCHAR* CommandLine, FString& OutName)
+{
+	OutName.Reset();
+	if (!CommandLine)
+	{
+		return false;
+	}
+	return FParse::Value(CommandLine, TEXT("Autoplay="), OutName) && !OutName.IsEmpty();
+}
+
+int32 FSolidAutoPlaythrough::FindScript(const TCHAR* Name)
+{
+	if (!Name)
+	{
+		return INDEX_NONE;
+	}
+	for (int32 Index = 0; Index < ScriptsCount; ++Index)
+	{
+		if (Scripts[Index].Name && FCString::Strcmp(Scripts[Index].Name, Name) == 0)
+		{
+			return Index;
+		}
+	}
+	return INDEX_NONE;
+}
+
+const TCHAR* FSolidAutoPlaythrough::RunningName() const
+{
+	return Running().Name;
+}
+
+const FSolidAutoPlaythrough::FScript& FSolidAutoPlaythrough::Running() const
+{
+	if (RunningScript < 0 || RunningScript >= ScriptsCount || !Scripts[RunningScript].Steps)
+	{
+		return Scripts[0];
+	}
+	return Scripts[RunningScript];
 }
 
 void FSolidAutoPlaythrough::NoteCaptainPlace(USolidGameState& State, const FVector& Location)
@@ -487,21 +540,23 @@ void FSolidAutoPlaythrough::NoteWait(const TCHAR* Reason)
 
 void FSolidAutoPlaythrough::NoteStepStart()
 {
-	if (!bRunning || LoggedStep == StepIndex || StepIndex < 0 || StepIndex >= ScriptCount)
+	const FScript& ScriptRun = Running();
+	if (!bRunning || LoggedStep == StepIndex || StepIndex < 0 || StepIndex >= ScriptRun.StepCount || !ScriptRun.Steps)
 	{
 		return;
 	}
 	LoggedStep = StepIndex;
-	UE_LOG(LogSolid, Warning, TEXT("Auto playthrough start %d: %s"), StepIndex + 1, Script[StepIndex].Name);
+	UE_LOG(LogSolid, Warning, TEXT("Auto playthrough start %d: %s"), StepIndex + 1, ScriptRun.Steps[StepIndex].Name);
 }
 
 void FSolidAutoPlaythrough::NoteStepEnd()
 {
-	if (LoggedStep < 0 || LoggedStep >= ScriptCount)
+	const FScript& ScriptRun = Running();
+	if (LoggedStep < 0 || LoggedStep >= ScriptRun.StepCount || !ScriptRun.Steps)
 	{
 		return;
 	}
-	UE_LOG(LogSolid, Warning, TEXT("Auto playthrough end %d: %s"), LoggedStep + 1, Script[LoggedStep].Name);
+	UE_LOG(LogSolid, Warning, TEXT("Auto playthrough end %d: %s"), LoggedStep + 1, ScriptRun.Steps[LoggedStep].Name);
 	LoggedStep = INDEX_NONE;
 }
 
@@ -513,14 +568,15 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 		return;
 	}
 
-	if (StepIndex < 0 || StepIndex >= ScriptCount)
+	const FScript& ScriptRun = Running();
+	if (StepIndex < 0 || StepIndex >= ScriptRun.StepCount || !ScriptRun.Steps)
 	{
 		Stop(TEXT("step index is outside the script"));
 		Captain.ReleaseRightMouse();
 		return;
 	}
 
-	const bool bSteering = TickCurrent(DeltaSeconds, Mode, Captain, Script[StepIndex]);
+	const bool bSteering = TickCurrent(DeltaSeconds, Mode, Captain, ScriptRun.Steps[StepIndex]);
 	if (!bSteering)
 	{
 		Captain.ReleaseRightMouse();
@@ -590,7 +646,7 @@ void FSolidAutoPlaythrough::Advance(const TCHAR* Reason)
 	NoteStepEnd();
 	++StepIndex;
 	ResetWalk();
-	if (StepIndex >= ScriptCount)
+	if (StepIndex >= Running().StepCount)
 	{
 		Stop(TEXT("script finished"));
 		return;

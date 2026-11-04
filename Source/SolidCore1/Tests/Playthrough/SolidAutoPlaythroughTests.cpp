@@ -34,6 +34,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("Equip the sword"),
 		TEXT("Move to the entrance"),
 		TEXT("Leave the cave"),
+		TEXT("Take playshot"),
 		TEXT("Walk to Iglin"),
 		TEXT("Close the driven-out message"),
 		TEXT("Walk to the Iglin tunnels"),
@@ -54,6 +55,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		FSolidAutoPlaythrough::EStepType::EquipItem,
 		FSolidAutoPlaythrough::EStepType::MoveTo,
 		FSolidAutoPlaythrough::EStepType::ExitStronghold,
+		FSolidAutoPlaythrough::EStepType::TakePlayshot,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::CloseMessage,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
@@ -466,6 +468,51 @@ bool FSolidAutoPlaythroughDimTest::RunTest(const FString& Parameters)
 	Play.Stop();
 	TestFalse(TEXT("Esc clears the script after a move"), Play.IsRunning());
 	TestFalse(TEXT("the dim row does not start again"), FSolidAutoPlaythrough::CanStart(*Started));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughLaunchTest,
+	"SolidCore1.AutoPlaythrough.Launch",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughLaunchTest::RunTest(const FString& Parameters)
+{
+	FString Name;
+	TestTrue(
+		TEXT("-Autoplay=Full-playthrough names that script"),
+		FSolidAutoPlaythrough::LaunchName(TEXT("-Autoplay=Full-playthrough"), Name));
+	TestEqual(TEXT("the name is Full-playthrough"), Name, FString(TEXT("Full-playthrough")));
+	TestEqual(TEXT("that name is the first script"), FSolidAutoPlaythrough::FindScript(*Name), 0);
+
+	TestTrue(
+		TEXT("a quoted name keeps its space"),
+		FSolidAutoPlaythrough::LaunchName(TEXT("-Autoplay=\"Companion parade\""), Name));
+	TestEqual(TEXT("the name is Companion parade"), Name, FString(TEXT("Companion parade")));
+	TestEqual(TEXT("that name is the second script"), FSolidAutoPlaythrough::FindScript(*Name), 1);
+
+	TestFalse(TEXT("an ordinary launch names nothing"), FSolidAutoPlaythrough::LaunchName(TEXT("-log"), Name));
+	TestFalse(TEXT("a missing command line names nothing"), FSolidAutoPlaythrough::LaunchName(nullptr, Name));
+	TestEqual(TEXT("an unknown name has no script"), FSolidAutoPlaythrough::FindScript(TEXT("Missing")), INDEX_NONE);
+
+	USolidGameState* State = NewObject<USolidGameState>();
+	TestNotNull(TEXT("play state"), State);
+	if (!State)
+	{
+		return false;
+	}
+	FSolidAutoPlaythrough Play;
+	Play.Start(*State, 1);
+	TestTrue(TEXT("the named script is running"), Play.IsRunning());
+	TestEqual(
+		TEXT("the running script is Companion parade"),
+		FString(Play.RunningName()),
+		FString(TEXT("Companion parade")));
+	Play.Start(*State);
+	TestEqual(
+		TEXT("the menu starts Full-playthrough"),
+		FString(Play.RunningName()),
+		FString(TEXT("Full-playthrough")));
 	return true;
 }
 

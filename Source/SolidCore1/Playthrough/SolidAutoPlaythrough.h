@@ -394,7 +394,7 @@ public:
 
 	/** Full-playthrough's steps, in order. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 30;
+	static constexpr int32 ScriptCount = 31;
 
 	/** Companion parade's steps, in order. */
 	static const FStep Parade[];
@@ -456,8 +456,16 @@ public:
 	/** True while that script can be started. A script without DisableAfterMove stays available. */
 	static bool CanStart(const USolidGameState& State, int32 ScriptIndex);
 
-	/** Starts at the first step. A later start waits on a move, not on this call. */
+	/** Starts Full-playthrough at the first step. A later start waits on a move, not on this call. */
 	void Start(USolidGameState& State);
+	/** Starts that script at its first step. An unknown index starts Full-playthrough. */
+	void Start(USolidGameState& State, int32 ScriptIndex);
+	/** The name on -Autoplay=. False when the switch is absent. */
+	static bool LaunchName(const TCHAR* CommandLine, FString& OutName);
+	/** The script with that name. INDEX_NONE when none matches. */
+	static int32 FindScript(const TCHAR* Name);
+	/** The script Start selected. */
+	const TCHAR* RunningName() const;
 	/** The HUD line goes. The dim flag stays set. Reason is written to the log. */
 	void Stop(const TCHAR* Reason = nullptr);
 	bool IsRunning() const { return bRunning; }
@@ -475,7 +483,9 @@ public:
 	void NoteCaptainPlace(USolidGameState& State, const FVector& Location);
 
 private:
-	/** Moves to the next row of Script. The list ending stops the script. Reason is written to the log. */
+	/** The script Start selected. Full-playthrough until then. */
+	const FScript& Running() const;
+	/** Moves to the next row of the running script. The list ending stops the script. Reason is written to the log. */
 	void Advance(const TCHAR* Reason = nullptr);
 	/** Logs the current row once. A later row logs again. */
 	void NoteStepStart();
@@ -533,6 +543,8 @@ private:
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;
+	/** Index into Scripts. The menu starts Full-playthrough. */
+	int32 RunningScript = 0;
 	int32 StepIndex = 0;
 	/** Row whose start has been logged. INDEX_NONE after its end is logged. */
 	int32 LoggedStep = INDEX_NONE;

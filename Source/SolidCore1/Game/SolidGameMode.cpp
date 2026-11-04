@@ -1294,6 +1294,19 @@ void ASolidGameMode::RefreshEvents()
 		return;
 	}
 
+	if (bQuitWhenAutoplayEnds)
+	{
+		if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+		{
+			if (!Instance->IsAutoPlaythroughRunning())
+			{
+				bQuitWhenAutoplayEnds = false;
+				SolidExit::Perform(this, World->GetFirstPlayerController());
+				return;
+			}
+		}
+	}
+
 	if (IsInClosedVisit())
 	{
 		return;
@@ -1335,6 +1348,28 @@ void ASolidGameMode::RefreshEvents()
 		}
 	}
 	EnsureCompanion();
+	if (!bAutoplayLaunchHandled)
+	{
+		FString AutoplayName;
+		if (FSolidAutoPlaythrough::LaunchName(FCommandLine::Get(), AutoplayName))
+		{
+			const int32 ScriptIndex = FSolidAutoPlaythrough::FindScript(*AutoplayName);
+			USolidGameState* State = GetConfiguration();
+			USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
+			if (ScriptIndex == INDEX_NONE)
+			{
+				bAutoplayLaunchHandled = true;
+				UE_LOG(LogSolid, Warning, TEXT("Autoplay launch: no script named %s"), *AutoplayName);
+			}
+			else if (State && Instance)
+			{
+				bAutoplayLaunchHandled = true;
+				Instance->GetAutoPlaythrough().Start(*State, ScriptIndex);
+				bQuitWhenAutoplayEnds = true;
+				UE_LOG(LogSolid, Warning, TEXT("Autoplay launch: %s"), *AutoplayName);
+			}
+		}
+	}
 	if (!bCommandDebugShotStarted && SolidDebugShot::RequestsLaunch(FCommandLine::Get()))
 	{
 		bCommandDebugShotStarted = true;

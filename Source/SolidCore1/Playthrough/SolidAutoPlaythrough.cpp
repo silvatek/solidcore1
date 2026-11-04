@@ -92,7 +92,7 @@ const FStep FSolidAutoPlaythrough::Parade[FSolidAutoPlaythrough::ParadeCount] = 
 	FStep::SelectBattlePlan(TEXT("Form Parade"), TEXT("Parade")),
 	FStep::EnableSight(TEXT("Enable true sight"), ESolidSight::True),
 	FStep::FaceDirection(TEXT("Face south"), SolidTowns::SignFacesSouthYawDeg),
-	FStep::Pause(3.f),
+	FStep::Pause(3.f, TEXT("Pause")),
 	FStep::TakePlayshot(TEXT("Take playshot")),
 };
 

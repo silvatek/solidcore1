@@ -339,7 +339,7 @@ public:
 		}
 
 		/** A wait, then the next row. Name is the row label. */
-		static constexpr FStep Pause(const float Seconds, const TCHAR* Name = TEXT("Pause"))
+		static constexpr FStep Pause(const float Seconds, const TCHAR* Name)
 		{
 			FStep Step;
 			Step.Type = EStepType::Pause;

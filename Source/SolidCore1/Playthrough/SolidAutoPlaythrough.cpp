@@ -90,7 +90,7 @@ const FStep FSolidAutoPlaythrough::Parade[FSolidAutoPlaythrough::ParadeCount] = 
 		TEXT("Dragongate"),
 		0.f,
 		-1000.f),
-	FStep::BuildSquad(TEXT("Build squad Sam"), TEXT("Sam")),
+	FStep::BuildSquad(TEXT("Build squad Sam"), TEXT("Sam")).ClosePage(),
 	FStep::SelectBattlePlan(TEXT("Form Parade"), TEXT("Parade")),
 	FStep::EnableSight(TEXT("Enable true sight"), ESolidSight::True),
 	FStep::FaceDirection(TEXT("Face south"), SolidTowns::SignFacesSouthYawDeg),

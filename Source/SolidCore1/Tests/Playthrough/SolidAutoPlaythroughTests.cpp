@@ -1016,6 +1016,7 @@ bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Steps[1].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::BuildSquad));
 	TestEqual(TEXT("the companion is Sam"), FString(Steps[1].CompanionName), FString(TEXT("Sam")));
+	TestTrue(TEXT("Sam closes the squad builder"), Steps[1].bClosePage);
 
 	TestEqual(
 		TEXT("the formation is selected"),

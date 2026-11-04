@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0997")
+#define SOLID_BUILD_ID TEXT("SC1-0998")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Companion parade takes a playshot after the portal, Sam, and Parade.")
+#define SOLID_BUILD_NOTE TEXT("Companion parade takes a playshot after facing south.")
 #endif

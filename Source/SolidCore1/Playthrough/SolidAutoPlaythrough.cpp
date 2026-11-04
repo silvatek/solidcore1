@@ -97,6 +97,7 @@ const FStep FSolidAutoPlaythrough::Parade[FSolidAutoPlaythrough::ParadeCount] = 
 	FStep::TakePlayshot(TEXT("Playshot after Parade")),
 	FStep::EnableSight(TEXT("Enable true sight"), ESolidSight::True),
 	FStep::FaceDirection(TEXT("Face south"), SolidTowns::SignFacesSouthYawDeg),
+	FStep::TakePlayshot(TEXT("Playshot after facing south")),
 	FStep::Pause(3.f, TEXT("Pause")),
 	FStep::TakePlayshot(TEXT("Take playshot")),
 };

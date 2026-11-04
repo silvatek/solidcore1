@@ -996,7 +996,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("ten parade steps"), FSolidAutoPlaythrough::ParadeCount, 10);
+	TestEqual(TEXT("eleven parade steps"), FSolidAutoPlaythrough::ParadeCount, 11);
 	const FSolidAutoPlaythrough::FStep* Steps = FSolidAutoPlaythrough::Parade;
 
 	TestEqual(
@@ -1052,16 +1052,20 @@ bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("facing south"),
 		FMath::IsNearlyEqual(Steps[7].FacingYawDeg, SolidTowns::SignFacesSouthYawDeg));
+	TestEqual(
+		TEXT("a playshot follows the turn"),
+		static_cast<uint8>(Steps[8].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 
 	TestEqual(
 		TEXT("the wait is its own step"),
-		static_cast<uint8>(Steps[8].Type),
+		static_cast<uint8>(Steps[9].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::Pause));
-	TestTrue(TEXT("the wait is three seconds"), FMath::IsNearlyEqual(Steps[8].PauseSeconds, 3.f));
+	TestTrue(TEXT("the wait is three seconds"), FMath::IsNearlyEqual(Steps[9].PauseSeconds, 3.f));
 
 	TestEqual(
 		TEXT("the playshot is last"),
-		static_cast<uint8>(Steps[9].Type),
+		static_cast<uint8>(Steps[10].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 	return true;
 }

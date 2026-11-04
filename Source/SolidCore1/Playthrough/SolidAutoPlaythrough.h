@@ -398,7 +398,7 @@ public:
 
 	/** Companion parade's steps, in order. */
 	static const FStep Parade[];
-	static constexpr int32 ParadeCount = 7;
+	static constexpr int32 ParadeCount = 10;
 
 	/** High behind the squad. AimRaven at Kanfold uses these. */
 	static constexpr float HighTrailPitchDeg = -48.f;

@@ -996,7 +996,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("seven parade steps"), FSolidAutoPlaythrough::ParadeCount, 7);
+	TestEqual(TEXT("ten parade steps"), FSolidAutoPlaythrough::ParadeCount, 10);
 	const FSolidAutoPlaythrough::FStep* Steps = FSolidAutoPlaythrough::Parade;
 
 	TestEqual(
@@ -1010,46 +1010,58 @@ bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the mark is Dragongate"), FString(Steps[0].MarkName), FString(TEXT("Dragongate")));
 	TestTrue(TEXT("no east or west offset"), FMath::IsNearlyEqual(Steps[0].OffsetXCm, 0.f));
 	TestTrue(TEXT("ten metres south"), FMath::IsNearlyEqual(Steps[0].OffsetYCm, -1000.f));
+	TestEqual(
+		TEXT("a playshot follows the portal"),
+		static_cast<uint8>(Steps[1].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 
 	TestEqual(
 		TEXT("Sam is placed"),
-		static_cast<uint8>(Steps[1].Type),
+		static_cast<uint8>(Steps[2].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::BuildSquad));
-	TestEqual(TEXT("the companion is Sam"), FString(Steps[1].CompanionName), FString(TEXT("Sam")));
-	TestTrue(TEXT("Sam closes the squad builder"), Steps[1].bClosePage);
+	TestEqual(TEXT("the companion is Sam"), FString(Steps[2].CompanionName), FString(TEXT("Sam")));
+	TestTrue(TEXT("Sam closes the squad builder"), Steps[2].bClosePage);
+	TestEqual(
+		TEXT("a playshot follows Sam"),
+		static_cast<uint8>(Steps[3].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 
 	TestEqual(
 		TEXT("the formation is selected"),
-		static_cast<uint8>(Steps[2].Type),
+		static_cast<uint8>(Steps[4].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::SelectBattlePlan));
-	TestEqual(TEXT("the formation is Parade"), FString(Steps[2].PlanName), FString(TEXT("Parade")));
+	TestEqual(TEXT("the formation is Parade"), FString(Steps[4].PlanName), FString(TEXT("Parade")));
+	TestEqual(
+		TEXT("a playshot follows Parade"),
+		static_cast<uint8>(Steps[5].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 
 	TestEqual(
 		TEXT("sight is enabled"),
-		static_cast<uint8>(Steps[3].Type),
+		static_cast<uint8>(Steps[6].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::EnableSight));
 	TestEqual(
 		TEXT("the sight is True"),
-		static_cast<uint8>(Steps[3].Sight),
+		static_cast<uint8>(Steps[6].Sight),
 		static_cast<uint8>(ESolidSight::True));
 
 	TestEqual(
 		TEXT("the facing is set"),
-		static_cast<uint8>(Steps[4].Type),
+		static_cast<uint8>(Steps[7].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::FaceDirection));
 	TestTrue(
 		TEXT("facing south"),
-		FMath::IsNearlyEqual(Steps[4].FacingYawDeg, SolidTowns::SignFacesSouthYawDeg));
+		FMath::IsNearlyEqual(Steps[7].FacingYawDeg, SolidTowns::SignFacesSouthYawDeg));
 
 	TestEqual(
 		TEXT("the wait is its own step"),
-		static_cast<uint8>(Steps[5].Type),
+		static_cast<uint8>(Steps[8].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::Pause));
-	TestTrue(TEXT("the wait is three seconds"), FMath::IsNearlyEqual(Steps[5].PauseSeconds, 3.f));
+	TestTrue(TEXT("the wait is three seconds"), FMath::IsNearlyEqual(Steps[8].PauseSeconds, 3.f));
 
 	TestEqual(
 		TEXT("the playshot is last"),
-		static_cast<uint8>(Steps[6].Type),
+		static_cast<uint8>(Steps[9].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 	return true;
 }

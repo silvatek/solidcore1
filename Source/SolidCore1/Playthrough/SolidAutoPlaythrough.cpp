@@ -1841,7 +1841,6 @@ bool FSolidAutoPlaythrough::TickFaceDirection(
 {
 	const FRotator Facing(0.f, Step.FacingYawDeg, 0.f);
 	Captain.SetActorRotation(Facing);
-	Captain.ClearClickMove();
 	if (AController* Controller = Captain.GetController())
 	{
 		Controller->SetControlRotation(Facing);

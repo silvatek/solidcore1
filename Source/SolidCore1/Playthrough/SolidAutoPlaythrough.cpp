@@ -592,10 +592,26 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 		return;
 	}
 
-	const bool bSteering = TickCurrent(DeltaSeconds, Mode, Captain, ScriptRun.Steps[StepIndex]);
+	const FStep& Step = ScriptRun.Steps[StepIndex];
+	const int32 StepAtStart = StepIndex;
+	const EStepType StepType = Step.Type;
+	const bool bSteering = TickCurrent(DeltaSeconds, Mode, Captain, Step);
+	if (!bRunning)
+	{
+		Captain.ReleaseRightMouse();
+		return;
+	}
 	if (!bSteering)
 	{
 		Captain.ReleaseRightMouse();
+	}
+	if (StepIndex == StepAtStart && StepType != EStepType::WalkTo && StepType != EStepType::MoveTo)
+	{
+		StallAccumulated += DeltaSeconds;
+		if (StallAccumulated >= StallSeconds)
+		{
+			Stop(TEXT("step stall"));
+		}
 	}
 	ApplyAimRaven(DeltaSeconds, Captain);
 }
@@ -1631,22 +1647,46 @@ bool FSolidAutoPlaythrough::TickBuildSquad(
 	ASolidHUD* HUD = HudOf(Captain);
 	USolidSquad* Squad = Mode.GetSquad();
 	USolidCompany* Company = Mode.GetCompany();
-	if (!HUD || !Squad || !Company)
+	USolidGameState* State = Mode.GetConfiguration();
+	USolidCaptain* SessionCaptain = Company ? Company->GetCaptain() : nullptr;
+	if (!HUD || !Squad || !Company || !State || !SessionCaptain)
 	{
 		return false;
+	}
+
+	const int32 Selected = Squad->GetSelectedCompanionCount();
+	int32 Companion = Company->FindCompanionIndexByName(Step.CompanionName);
+	const bool bSelected = Companion != INDEX_NONE
+		&& Squad->GetSelectedCompanionIndices().Contains(Companion);
+	if (!bSelected)
+	{
+		if (Selected >= State->MaxSquadSize)
+		{
+			SolidEvents::FResult SizeResult;
+			SolidEvents::ApplyChange(
+				*State,
+				*SessionCaptain,
+				SolidEvents::Change::SetMaxSquadSize(Selected + 1),
+				SizeResult);
+		}
+		if (Companion == INDEX_NONE)
+		{
+			SolidEvents::FResult AddResult;
+			SolidEvents::ApplyChange(
+				*State,
+				*SessionCaptain,
+				SolidEvents::Change::AddCompanion(Step.CompanionName),
+				AddResult);
+		}
 	}
 
 	if (!HUD->IsSquadBuilderOpen())
 	{
-		if (SolidSquadBuilder::CanOpen(Mode.GetMaxSquadSize())
-			&& SolidSquadBuilder::HasAnythingToArrange(Squad, Mode.GetMaxSquadSize()))
-		{
-			HUD->OpenSquadBuilder();
-		}
+		HUD->OpenSquadBuilder();
 		return false;
 	}
 
-	const int32 Companion = Company->FindCompanionIndexByName(Step.CompanionName);
+	Companion = Company->FindCompanionIndexByName(Step.CompanionName);
 	if (Companion == INDEX_NONE)
 	{
 		Stop();

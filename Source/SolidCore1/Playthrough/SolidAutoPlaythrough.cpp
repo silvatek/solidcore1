@@ -109,6 +109,17 @@ namespace
 	constexpr float MaxTurnSliceSeconds = 0.05f;
 	/** Inside one tunnel cell. The next center, a full cell away, stays ahead. */
 	constexpr float LairArriveCm = SolidLair::CellCm * 0.45f;
+	/**
+	 * The walk stops within FSolidAutoPlaythrough::ArriveCm of the chart mark.
+	 * The opening stands on the grass side of that mark.
+	 */
+	constexpr float MouthReachCm = 600.f;
+
+	/** Center of the mesh bounds. The component origin is the ground at the lip. */
+	FVector MeshCenter(const UStaticMeshComponent& Mesh)
+	{
+		return Mesh.CalcBounds(Mesh.GetComponentTransform()).GetBox().GetCenter();
+	}
 
 	bool SameItem(const FSolidItem& Item, const TCHAR* Id)
 	{
@@ -247,7 +258,7 @@ namespace
 		}
 
 		const FVector Here = Captain.GetActorLocation();
-		const FVector At = Mesh->GetComponentLocation();
+		const FVector At = MeshCenter(*Mesh);
 		float Yaw = 0.f;
 		if (!FSolidAutoPlaythrough::TrailYawDeg(FVector2D(At.X - Here.X, At.Y - Here.Y), 0.f, Yaw))
 		{
@@ -276,7 +287,7 @@ namespace
 		}
 
 		FVector2D Screen = FVector2D::ZeroVector;
-		if (!PlayerController->ProjectWorldLocationToScreen(Target->GetComponentLocation(), Screen))
+		if (!PlayerController->ProjectWorldLocationToScreen(MeshCenter(*Target), Screen))
 		{
 			return false;
 		}
@@ -1204,16 +1215,48 @@ bool FSolidAutoPlaythrough::TickEnterLair(
 	UWorld* World = Mode.GetWorld();
 	const ASolidLairEntrance* Entrance = FindMouthActor(World, Step.EndMarker);
 	const UStaticMeshComponent* Mouth = Entrance ? Entrance->GetMouthMesh() : nullptr;
-	if (StillTurningToward(DeltaSeconds, Captain, Mouth))
+	if (!Mouth)
 	{
-		return true;
-	}
-	if (!ClickMesh(Captain, Mouth))
-	{
+		NoteWait(TEXT("no tunnel mouth"));
 		return false;
 	}
 
+	const bool bTurning = StillTurningToward(DeltaSeconds, Captain, Mouth);
+	if (bTurning)
+	{
+		WaitAccumulated += DeltaSeconds;
+	}
+	else
+	{
+		ClickMesh(Captain, Mouth);
+	}
+
 	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
+	const bool bInside = Instance && Instance->IsInLair() && LairSessionEnd(*Instance, Step.EndMarker);
+	if (bInside)
+	{
+		Advance();
+		return false;
+	}
+	if (bTurning && WaitAccumulated < StallSeconds)
+	{
+		return true;
+	}
+	if (!Mode.AreTunnelsOpen())
+	{
+		NoteWait(TEXT("tunnels are shut"));
+		return false;
+	}
+
+	const FVector Center = MeshCenter(*Mouth);
+	const float Reach = FVector::Dist2D(Captain.GetActorLocation(), Center);
+	if (Reach > MouthReachCm)
+	{
+		NoteWait(TEXT("tunnel mouth is out of reach"));
+		return false;
+	}
+
+	Mode.TravelToLair(Step.EndMarker);
 	if (Instance && Instance->IsInLair() && LairSessionEnd(*Instance, Step.EndMarker))
 	{
 		Advance();

@@ -402,10 +402,6 @@ protected:
 	FTimerHandle EventRefreshTimer;
 	/** -DebugShot has already started its one shot. */
 	bool bCommandDebugShotStarted = false;
-	/** -Autoplay= has already been read. */
-	bool bAutoplayLaunchHandled = false;
-	/** Quit once the script that -Autoplay= started has finished. */
-	bool bQuitWhenAutoplayEnds = false;
 	/** Quit after the playshot this launch requested. F10 leaves the editor open. */
 	bool bQuitAfterDebugShot = false;
 	FTimerHandle VegetationSpawnTimer;

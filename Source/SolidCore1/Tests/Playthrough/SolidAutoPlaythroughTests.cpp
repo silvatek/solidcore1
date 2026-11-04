@@ -513,6 +513,31 @@ bool FSolidAutoPlaythroughLaunchTest::RunTest(const FString& Parameters)
 		TEXT("the menu starts Full-playthrough"),
 		FString(Play.RunningName()),
 		FString(TEXT("Full-playthrough")));
+	TestFalse(TEXT("the menu start is not a launch"), Play.HasHandledLaunch());
+
+	TestTrue(TEXT("the launch starts its script"), Play.BeginLaunch(*State, 1));
+	TestTrue(TEXT("the launch is remembered"), Play.HasHandledLaunch());
+	TestEqual(
+		TEXT("the launch selected Companion parade"),
+		FString(Play.RunningName()),
+		FString(TEXT("Companion parade")));
+	TestFalse(TEXT("a running launch does not quit yet"), Play.ShouldQuit());
+	TestFalse(TEXT("a second launch leaves the script"), Play.BeginLaunch(*State, 0));
+	TestEqual(
+		TEXT("the running script stays Companion parade"),
+		FString(Play.RunningName()),
+		FString(TEXT("Companion parade")));
+	Play.Stop();
+	TestTrue(TEXT("a finished launch quits"), Play.ShouldQuit());
+	Play.ClearQuit();
+	TestFalse(TEXT("the quit is asked for once"), Play.ShouldQuit());
+
+	FSolidAutoPlaythrough Unknown;
+	TestFalse(TEXT("an unknown script does not start"), Unknown.BeginLaunch(*State, INDEX_NONE));
+	TestFalse(TEXT("an unknown script leaves the runner idle"), Unknown.IsRunning());
+	TestTrue(TEXT("an unknown script is still remembered"), Unknown.HasHandledLaunch());
+	TestFalse(TEXT("a later launch does not start after that"), Unknown.BeginLaunch(*State, 0));
+	TestFalse(TEXT("the runner stays idle"), Unknown.IsRunning());
 	return true;
 }
 

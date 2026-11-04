@@ -486,6 +486,22 @@ const TCHAR* FSolidAutoPlaythrough::RunningName() const
 	return Running().Name;
 }
 
+bool FSolidAutoPlaythrough::BeginLaunch(USolidGameState& State, const int32 ScriptIndex)
+{
+	if (bLaunchHandled)
+	{
+		return false;
+	}
+	bLaunchHandled = true;
+	if (ScriptIndex < 0 || ScriptIndex >= ScriptsCount)
+	{
+		return false;
+	}
+	Start(State, ScriptIndex);
+	bQuitWhenFinished = true;
+	return true;
+}
+
 const FSolidAutoPlaythrough::FScript& FSolidAutoPlaythrough::Running() const
 {
 	if (RunningScript < 0 || RunningScript >= ScriptsCount || !Scripts[RunningScript].Steps)

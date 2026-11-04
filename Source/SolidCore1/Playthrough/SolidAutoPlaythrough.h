@@ -466,6 +466,19 @@ public:
 	static int32 FindScript(const TCHAR* Name);
 	/** The script Start selected. */
 	const TCHAR* RunningName() const;
+	/**
+	 * -Autoplay= has already been read. OpenLevel keeps this object, so a later map does not start again.
+	 */
+	bool HasHandledLaunch() const { return bLaunchHandled; }
+	/**
+	 * Reads the launch once. Starts that script and quits the editor when the script stops.
+	 * A second call leaves the running script alone. An unknown index is remembered and does not start.
+	 */
+	bool BeginLaunch(USolidGameState& State, int32 ScriptIndex);
+	/** True once a launch's script has stopped and the editor should quit. */
+	bool ShouldQuit() const { return bQuitWhenFinished && !bRunning; }
+	/** The quit has been asked for. */
+	void ClearQuit() { bQuitWhenFinished = false; }
 	/** The HUD line goes. The dim flag stays set. Reason is written to the log. */
 	void Stop(const TCHAR* Reason = nullptr);
 	bool IsRunning() const { return bRunning; }
@@ -543,6 +556,10 @@ private:
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;
+	/** -Autoplay= has been read. A later map load must not start the script again. */
+	bool bLaunchHandled = false;
+	/** Quit the editor when this launch's script stops. */
+	bool bQuitWhenFinished = false;
 	/** Index into Scripts. The menu starts Full-playthrough. */
 	int32 RunningScript = 0;
 	int32 StepIndex = 0;

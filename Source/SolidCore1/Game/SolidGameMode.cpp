@@ -1294,16 +1294,14 @@ void ASolidGameMode::RefreshEvents()
 		return;
 	}
 
-	if (bQuitWhenAutoplayEnds)
+	if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
 	{
-		if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+		FSolidAutoPlaythrough& Play = Instance->GetAutoPlaythrough();
+		if (Play.ShouldQuit())
 		{
-			if (!Instance->IsAutoPlaythroughRunning())
-			{
-				bQuitWhenAutoplayEnds = false;
-				SolidExit::Perform(this, World->GetFirstPlayerController());
-				return;
-			}
+			Play.ClearQuit();
+			SolidExit::Perform(this, World->GetFirstPlayerController());
+			return;
 		}
 	}
 
@@ -1348,25 +1346,21 @@ void ASolidGameMode::RefreshEvents()
 		}
 	}
 	EnsureCompanion();
-	if (!bAutoplayLaunchHandled)
+	if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
 	{
+		FSolidAutoPlaythrough& Play = Instance->GetAutoPlaythrough();
 		FString AutoplayName;
-		if (FSolidAutoPlaythrough::LaunchName(FCommandLine::Get(), AutoplayName))
+		if (!Play.HasHandledLaunch() && FSolidAutoPlaythrough::LaunchName(FCommandLine::Get(), AutoplayName))
 		{
-			const int32 ScriptIndex = FSolidAutoPlaythrough::FindScript(*AutoplayName);
 			USolidGameState* State = GetConfiguration();
-			USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
-			if (ScriptIndex == INDEX_NONE)
+			const int32 ScriptIndex = FSolidAutoPlaythrough::FindScript(*AutoplayName);
+			if (State && Play.BeginLaunch(*State, ScriptIndex))
 			{
-				bAutoplayLaunchHandled = true;
-				UE_LOG(LogSolid, Warning, TEXT("Autoplay launch: no script named %s"), *AutoplayName);
-			}
-			else if (State && Instance)
-			{
-				bAutoplayLaunchHandled = true;
-				Instance->GetAutoPlaythrough().Start(*State, ScriptIndex);
-				bQuitWhenAutoplayEnds = true;
 				UE_LOG(LogSolid, Warning, TEXT("Autoplay launch: %s"), *AutoplayName);
+			}
+			else if (ScriptIndex == INDEX_NONE)
+			{
+				UE_LOG(LogSolid, Warning, TEXT("Autoplay launch: no script named %s"), *AutoplayName);
 			}
 		}
 	}

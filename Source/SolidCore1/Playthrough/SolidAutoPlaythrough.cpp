@@ -4,6 +4,7 @@
 #include "SolidCore1.h"
 #include "SolidClickMove.h"
 #include "SolidGameMode.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
@@ -1840,6 +1841,15 @@ bool FSolidAutoPlaythrough::TickFaceDirection(
 {
 	const FRotator Facing(0.f, Step.FacingYawDeg, 0.f);
 	Captain.SetActorRotation(Facing);
+	Captain.ClearClickMove();
+	if (AController* Controller = Captain.GetController())
+	{
+		Controller->SetControlRotation(Facing);
+	}
+	if (UCharacterMovementComponent* Move = Captain.GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+	}
 	for (const TObjectPtr<ASolidCompanionCharacter>& Companion : Mode.GetCompanions())
 	{
 		if (Companion)

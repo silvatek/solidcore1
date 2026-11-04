@@ -1471,7 +1471,7 @@ bool FSolidAutoPlaythrough::TickSelectBattlePlan(
 				*SessionCaptain,
 				SolidEvents::Change::EnableBattlePlan(Step.PlanName),
 				Result);
-			Mode.SyncBattlePlans();
+			Squad->SyncEnabledBattlePlans(*State);
 			Slot = BattlePlanSlot(*Squad, Step.PlanName);
 		}
 		if (Slot == INDEX_NONE || !Mode.SelectBattlePlanSlot(Slot))

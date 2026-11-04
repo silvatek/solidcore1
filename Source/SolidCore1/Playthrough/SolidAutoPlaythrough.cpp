@@ -417,17 +417,47 @@ bool FSolidAutoPlaythrough::EquipItem(
 
 bool FSolidAutoPlaythrough::CanStart(const USolidGameState& State)
 {
+	return CanStart(State, 0);
+}
+
+bool FSolidAutoPlaythrough::CanStart(const USolidGameState& State, const int32 ScriptIndex)
+{
+	if (ScriptIndex < 0 || ScriptIndex >= ScriptsCount)
+	{
+		return false;
+	}
+	if (!Scripts[ScriptIndex].bDisableAfterMove)
+	{
+		return true;
+	}
 	return !State.bAutoPlaythroughDim;
 }
 
-void FSolidAutoPlaythrough::Start(USolidGameState& State)
+void FSolidAutoPlaythrough::Start(USolidGameState&)
 {
-	State.bAutoPlaythroughDim = true;
 	bRunning = true;
 	StepIndex = 0;
 	bAimRavenHeld = false;
 	ResetWalk();
 	NoteStepStart();
+}
+
+void FSolidAutoPlaythrough::NoteCaptainPlace(USolidGameState& State, const FVector& Location)
+{
+	if (State.bAutoPlaythroughDim || !State.bAutoPlaythroughPlaced)
+	{
+		return;
+	}
+	if (!State.bAutoPlaythroughAnchorValid)
+	{
+		State.AutoPlaythroughAnchor = Location;
+		State.bAutoPlaythroughAnchorValid = true;
+		return;
+	}
+	if (FVector::Dist2D(State.AutoPlaythroughAnchor, Location) > MovedCm)
+	{
+		State.bAutoPlaythroughDim = true;
+	}
 }
 
 void FSolidAutoPlaythrough::Stop(const TCHAR* Reason)

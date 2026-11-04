@@ -408,7 +408,13 @@ FResult NotifyOccupiedTown(
 	}
 
 	Captain.OccupiedTown = TownId;
-	// Leaving Iglin dims Auto playthrough. The spawn arrives from none and leaves the row available.
+	// The new-game arrival is none into Iglin. That place is not a move.
+	if (PreviousTown == INDEX_NONE && TownId == SolidTowns::Iglin && !State.bAutoPlaythroughDim)
+	{
+		State.bAutoPlaythroughPlaced = true;
+		State.bAutoPlaythroughAnchorValid = false;
+	}
+	// Leaving Iglin is a move, including a portal.
 	if (PreviousTown == SolidTowns::Iglin && TownId != SolidTowns::Iglin)
 	{
 		State.bAutoPlaythroughDim = true;

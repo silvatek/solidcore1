@@ -414,6 +414,12 @@ public:
 	static constexpr float ArriveCm = 200.f;
 
 	/**
+	 * A later place this far from the Iglin arrival is a move, in centimetres.
+	 * The arrival place is the only one that is not.
+	 */
+	static constexpr float MovedCm = 1.f;
+
+	/**
 	 * One stick and one pitch become a torch in the pack. The leftovers go back to the chest.
 	 * The sword, the boots, the coins, and the body are left alone.
 	 */
@@ -442,10 +448,15 @@ public:
 		const TCHAR* ItemId,
 		SolidInventory::ESlot Slot);
 
-	/** True while the row can be chosen. The dim flag on the play state clears it. */
+	/**
+	 * True while Full-playthrough can be started.
+	 * The dim flag clears a DisableAfterMove script.
+	 */
 	static bool CanStart(const USolidGameState& State);
+	/** True while that script can be started. A script without DisableAfterMove stays available. */
+	static bool CanStart(const USolidGameState& State, int32 ScriptIndex);
 
-	/** Sets the dim flag and starts at the first step. */
+	/** Starts at the first step. A later start waits on a move, not on this call. */
 	void Start(USolidGameState& State);
 	/** The HUD line goes. The dim flag stays set. Reason is written to the log. */
 	void Stop(const TCHAR* Reason = nullptr);
@@ -456,6 +467,12 @@ public:
 	 * The battle's death can load the cave before a later frame.
 	 */
 	void Tick(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
+
+	/**
+	 * One place of the captain. Samples start once the new game has arrived in Iglin.
+	 * A later place farther than MovedCm sets the dim flag. A running script is left running.
+	 */
+	void NoteCaptainPlace(USolidGameState& State, const FVector& Location);
 
 private:
 	/** Moves to the next row of Script. The list ending stops the script. Reason is written to the log. */

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0990")
+#define SOLID_BUILD_ID TEXT("SC1-0991")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The tunnel enter aims at the opening.")
+#define SOLID_BUILD_NOTE TEXT("The menu row is Full-playthrough, and a move disables it.")
 #endif

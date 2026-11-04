@@ -1,5 +1,4 @@
 #include "SolidMainMenu.h"
-#include "Menus/SolidDebugShot.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
 
 void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
@@ -9,8 +8,15 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
 	OutEntries.Add({ ESolidMainMenuItem::Journal, TEXT("Journal") });
 	OutEntries.Add({ ESolidMainMenuItem::BuildSquad, TEXT("Build squad") });
 	OutEntries.Add({ ESolidMainMenuItem::CharacterEditor, TEXT("Character editor") });
-	OutEntries.Add({ ESolidMainMenuItem::AutoPlaythrough, FSolidAutoPlaythrough::Label() });
-	OutEntries.Add({ ESolidMainMenuItem::DebugShot, SolidDebugShot::Label() });
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptsCount; ++Index)
+	{
+		const FSolidAutoPlaythrough::FScript& Script = FSolidAutoPlaythrough::Scripts[Index];
+		if (!Script.bOnMenu || !Script.Name)
+		{
+			continue;
+		}
+		OutEntries.Add({ ESolidMainMenuItem::AutoPlaythrough, Script.Name });
+	}
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
 	OutEntries.Add({ ESolidMainMenuItem::ExitGame, TEXT("Exit Game") });
 }

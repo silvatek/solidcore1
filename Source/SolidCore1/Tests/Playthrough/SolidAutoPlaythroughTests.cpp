@@ -329,8 +329,7 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 		TEXT("Journal"),
 		TEXT("Build squad"),
 		TEXT("Character editor"),
-		TEXT("Auto playthrough"),
-		TEXT("Debug Shot"),
+		TEXT("Full-playthrough"),
 		TEXT("Credits"),
 		TEXT("Exit Game"),
 	};
@@ -340,7 +339,6 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 		ESolidMainMenuItem::BuildSquad,
 		ESolidMainMenuItem::CharacterEditor,
 		ESolidMainMenuItem::AutoPlaythrough,
-		ESolidMainMenuItem::DebugShot,
 		ESolidMainMenuItem::Credits,
 		ESolidMainMenuItem::ExitGame,
 	};
@@ -350,14 +348,13 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 		ESolidMainMenuAction::OpenSquad,
 		ESolidMainMenuAction::OpenCharacterEditor,
 		ESolidMainMenuAction::StartAutoPlaythrough,
-		ESolidMainMenuAction::TakeDebugShot,
 		ESolidMainMenuAction::ShowCredits,
 		ESolidMainMenuAction::Quit,
 	};
 
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	TestEqual(TEXT("eight rows"), Entries.Num(), static_cast<int32>(UE_ARRAY_COUNT(Labels)));
+	TestEqual(TEXT("seven rows"), Entries.Num(), static_cast<int32>(UE_ARRAY_COUNT(Labels)));
 	if (Entries.Num() != UE_ARRAY_COUNT(Labels))
 	{
 		return false;
@@ -376,17 +373,16 @@ bool FSolidAutoPlaythroughMenuTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(Actions[Index]));
 	}
 
-	TestEqual(TEXT("the row text"), FString(FSolidAutoPlaythrough::Label()), FString(TEXT("Auto playthrough")));
-	TestEqual(TEXT("key 5 is Auto playthrough"), Entries[4].Label, FString(TEXT("Auto playthrough")));
-	TestEqual(TEXT("key 6 is Debug Shot"), Entries[5].Label, FString(TEXT("Debug Shot")));
-	TestEqual(TEXT("key 7 is Credits"), Entries[6].Label, FString(TEXT("Credits")));
-	TestEqual(TEXT("key 8 is Exit Game"), Entries[7].Label, FString(TEXT("Exit Game")));
+	TestEqual(TEXT("the HUD line"), FString(FSolidAutoPlaythrough::Label()), FString(TEXT("Auto playthrough")));
+	TestEqual(TEXT("key 5 is Full-playthrough"), Entries[4].Label, FString(TEXT("Full-playthrough")));
+	TestEqual(TEXT("key 6 is Credits"), Entries[5].Label, FString(TEXT("Credits")));
+	TestEqual(TEXT("key 7 is Exit Game"), Entries[6].Label, FString(TEXT("Exit Game")));
 	TestEqual(
 		TEXT("Credits stays immediately before Exit Game"),
-		static_cast<uint8>(Entries[6].Item),
+		static_cast<uint8>(Entries[5].Item),
 		static_cast<uint8>(ESolidMainMenuItem::Credits));
 	FSolidMainMenuEntry PastEnd;
-	TestFalse(TEXT("key 9 has no row"), SolidMainMenu::FindEntry(8, PastEnd));
+	TestFalse(TEXT("key 8 has no row"), SolidMainMenu::FindEntry(7, PastEnd));
 	return true;
 }
 
@@ -424,22 +420,51 @@ bool FSolidAutoPlaythroughDimTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(*Portaled, *PortaledCaptain, SolidTowns::Relion);
 	TestTrue(TEXT("a portal out of Iglin dims the row"), Portaled->bAutoPlaythroughDim);
 
+	USolidGameState* Stepped = NewObject<USolidGameState>();
+	USolidCaptain* SteppedCaptain = NewObject<USolidCaptain>();
+	TestNotNull(TEXT("step state"), Stepped);
+	TestNotNull(TEXT("step captain"), SteppedCaptain);
+	if (!Stepped || !SteppedCaptain)
+	{
+		return false;
+	}
+	FSolidAutoPlaythrough Steps;
+	Steps.NoteCaptainPlace(*Stepped, FVector::ZeroVector);
+	Steps.NoteCaptainPlace(*Stepped, FVector(0.f, 5000.f, 0.f));
+	TestFalse(TEXT("a place before arrival is not a move"), Stepped->bAutoPlaythroughDim);
+	SolidEvents::NotifyOccupiedTown(*Stepped, *SteppedCaptain, SolidTowns::Iglin);
+	const FVector Arrival(100.f, 200.f, 0.f);
+	Steps.NoteCaptainPlace(*Stepped, Arrival);
+	TestFalse(TEXT("the arrival place is not a move"), Stepped->bAutoPlaythroughDim);
+	Steps.NoteCaptainPlace(*Stepped, Arrival + FVector(FSolidAutoPlaythrough::MovedCm + 1.f, 0.f, 0.f));
+	TestTrue(TEXT("a step away dims the row"), Stepped->bAutoPlaythroughDim);
+	TestFalse(TEXT("Full-playthrough cannot start after a move"), FSolidAutoPlaythrough::CanStart(*Stepped));
+	TestTrue(TEXT("Companion parade can start after a move"), FSolidAutoPlaythrough::CanStart(*Stepped, 1));
+
 	USolidGameState* Started = NewObject<USolidGameState>();
 	USolidCaptain* StartedCaptain = NewObject<USolidCaptain>();
 	FSolidAutoPlaythrough Play;
 	TestFalse(TEXT("the script is idle"), Play.IsRunning());
 	Play.Start(*Started);
 	TestTrue(TEXT("choosing the row starts the script"), Play.IsRunning());
-	TestTrue(TEXT("choosing the row dims it"), Started->bAutoPlaythroughDim);
-	TestFalse(TEXT("a second start is refused"), FSolidAutoPlaythrough::CanStart(*Started));
+	TestFalse(TEXT("choosing the row leaves it bright"), Started->bAutoPlaythroughDim);
+	TestTrue(TEXT("a second start is still allowed"), FSolidAutoPlaythrough::CanStart(*Started));
+	Play.Stop();
+	TestFalse(TEXT("Esc clears the script"), Play.IsRunning());
+	TestFalse(TEXT("Esc before a move leaves the flag clear"), Started->bAutoPlaythroughDim);
+	TestTrue(TEXT("Esc before a move leaves the row available"), FSolidAutoPlaythrough::CanStart(*Started));
 
+	Play.Start(*Started);
 	SolidEvents::NotifyOccupiedTown(*Started, *StartedCaptain, SolidTowns::Iglin);
+	Play.NoteCaptainPlace(*Started, Arrival);
+	Play.NoteCaptainPlace(*Started, Arrival + FVector(FSolidAutoPlaythrough::MovedCm + 10.f, 0.f, 0.f));
+	TestTrue(TEXT("a script move leaves the script running"), Play.IsRunning());
+	TestTrue(TEXT("a script move dims a later start"), Started->bAutoPlaythroughDim);
 	SolidEvents::NotifyOccupiedTown(*Started, *StartedCaptain, INDEX_NONE);
 	TestTrue(TEXT("leaving Iglin does not stop a running script"), Play.IsRunning());
 
 	Play.Stop();
-	TestFalse(TEXT("Esc clears the script"), Play.IsRunning());
-	TestTrue(TEXT("Esc leaves the row dim"), Started->bAutoPlaythroughDim);
+	TestFalse(TEXT("Esc clears the script after a move"), Play.IsRunning());
 	TestFalse(TEXT("the dim row does not start again"), FSolidAutoPlaythrough::CanStart(*Started));
 	return true;
 }

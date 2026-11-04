@@ -36,11 +36,16 @@ public:
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
 	/**
-	 * The Auto playthrough row stays dim for the rest of the game.
-	 * Choosing the row sets it. So does leaving Iglin, including a portal.
-	 * Spawn arrives from none and leaves it clear.
+	 * A DisableAfterMove script cannot be started once this is set.
+	 * A captain move sets it: a step from the Iglin arrival, or leaving Iglin.
+	 * Choosing the row does not. The spawn from none into Iglin leaves it clear.
 	 */
 	bool bAutoPlaythroughDim = false;
+	/** The new game has arrived in Iglin. Position samples start at that place. */
+	bool bAutoPlaythroughPlaced = false;
+	/** The arrival place is stored. A later sample can count as a move. */
+	bool bAutoPlaythroughAnchorValid = false;
+	FVector AutoPlaythroughAnchor = FVector::ZeroVector;
 	/** Strongholds start closed. A size unlock or EnableCave opens them. */
 	bool bStrongholdsEnabled = false;
 	/**

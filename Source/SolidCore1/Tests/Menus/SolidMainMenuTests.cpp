@@ -275,31 +275,10 @@ bool FSolidDebugShotRecipeTest::RunTest(const FString& Parameters)
 
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	int32 ShotIndex = INDEX_NONE;
-	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	for (const FSolidMainMenuEntry& Entry : Entries)
 	{
-		if (Entries[Index].Item == ESolidMainMenuItem::DebugShot)
-		{
-			ShotIndex = Index;
-			break;
-		}
-	}
-	TestTrue(TEXT("Debug Shot is listed"), ShotIndex != INDEX_NONE);
-	if (ShotIndex == INDEX_NONE)
-	{
-		return false;
-	}
-	TestEqual(
-		TEXT("Debug Shot takes the shot"),
-		static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[ShotIndex].Item)),
-		static_cast<uint8>(ESolidMainMenuAction::TakeDebugShot));
-	TestTrue(TEXT("Credits follows Debug Shot"), Entries.IsValidIndex(ShotIndex + 1));
-	if (Entries.IsValidIndex(ShotIndex + 1))
-	{
-		TestEqual(
-			TEXT("the next row is Credits"),
-			static_cast<uint8>(Entries[ShotIndex + 1].Item),
-			static_cast<uint8>(ESolidMainMenuItem::Credits));
+		TestFalse(TEXT("Debug Shot stays off the menu"), Entry.Item == ESolidMainMenuItem::DebugShot);
+		TestFalse(TEXT("the menu does not read Debug Shot"), Entry.Label == TEXT("Debug Shot"));
 	}
 	return true;
 }

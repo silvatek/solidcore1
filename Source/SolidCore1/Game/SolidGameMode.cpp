@@ -1327,6 +1327,13 @@ void ASolidGameMode::RefreshEvents()
 		Terrain->GetWorldMinXY(),
 		Terrain->GetWorldMaxXY());
 	NoteTownEntry(TownId);
+	if (USolidGameState* State = GetConfiguration())
+	{
+		if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+		{
+			Instance->GetAutoPlaythrough().NoteCaptainPlace(*State, Location);
+		}
+	}
 	EnsureCompanion();
 	if (!bCommandDebugShotStarted && SolidDebugShot::RequestsLaunch(FCommandLine::Get()))
 	{

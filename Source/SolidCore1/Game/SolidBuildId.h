@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0999")
+#define SOLID_BUILD_ID TEXT("SC1-1000")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The launch quits after its playshot is written.")
+#define SOLID_BUILD_NOTE TEXT("Face south comes before Form Parade.")
 #endif

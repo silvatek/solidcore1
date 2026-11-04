@@ -1035,35 +1035,35 @@ bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 
 	TestEqual(
-		TEXT("the formation is selected"),
+		TEXT("the facing is set"),
 		static_cast<uint8>(Steps[4].Type),
-		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::SelectBattlePlan));
-	TestEqual(TEXT("the formation is Parade"), FString(Steps[4].PlanName), FString(TEXT("Parade")));
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::FaceDirection));
+	TestTrue(
+		TEXT("facing south"),
+		FMath::IsNearlyEqual(Steps[4].FacingYawDeg, SolidTowns::SignFacesSouthYawDeg));
 	TestEqual(
-		TEXT("a playshot follows Parade"),
+		TEXT("a playshot follows the turn"),
 		static_cast<uint8>(Steps[5].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 
 	TestEqual(
-		TEXT("sight is enabled"),
+		TEXT("the formation is selected"),
 		static_cast<uint8>(Steps[6].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::SelectBattlePlan));
+	TestEqual(TEXT("the formation is Parade"), FString(Steps[6].PlanName), FString(TEXT("Parade")));
+	TestEqual(
+		TEXT("a playshot follows Parade"),
+		static_cast<uint8>(Steps[7].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
+
+	TestEqual(
+		TEXT("sight is enabled"),
+		static_cast<uint8>(Steps[8].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::EnableSight));
 	TestEqual(
 		TEXT("the sight is True"),
-		static_cast<uint8>(Steps[6].Sight),
+		static_cast<uint8>(Steps[8].Sight),
 		static_cast<uint8>(ESolidSight::True));
-
-	TestEqual(
-		TEXT("the facing is set"),
-		static_cast<uint8>(Steps[7].Type),
-		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::FaceDirection));
-	TestTrue(
-		TEXT("facing south"),
-		FMath::IsNearlyEqual(Steps[7].FacingYawDeg, SolidTowns::SignFacesSouthYawDeg));
-	TestEqual(
-		TEXT("a playshot follows the turn"),
-		static_cast<uint8>(Steps[8].Type),
-		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 
 	TestEqual(
 		TEXT("the wait is its own step"),

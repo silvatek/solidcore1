@@ -1374,6 +1374,17 @@ void ASolidGameMode::RefreshEvents()
 
 void ASolidGameMode::NotePlayshotWritten()
 {
+	if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+	{
+		FSolidAutoPlaythrough& Play = Instance->GetAutoPlaythrough();
+		Play.ReleaseQuitHold();
+		if (Play.ShouldQuit())
+		{
+			Play.ClearQuit();
+			APlayerController* Player = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+			SolidExit::Perform(this, Player);
+		}
+	}
 	if (!bQuitAfterDebugShot)
 	{
 		return;

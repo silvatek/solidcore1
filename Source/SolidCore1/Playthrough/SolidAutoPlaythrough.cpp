@@ -455,6 +455,7 @@ void FSolidAutoPlaythrough::Start(USolidGameState&, const int32 ScriptIndex)
 	StepIndex = 0;
 	LoggedStep = INDEX_NONE;
 	bAimRavenHeld = false;
+	bHoldQuitForPlayshot = false;
 	ResetWalk();
 	NoteStepStart();
 }
@@ -1852,6 +1853,11 @@ bool FSolidAutoPlaythrough::TickFaceDirection(
 
 bool FSolidAutoPlaythrough::TickTakePlayshot(ASolidCharacter& Captain)
 {
+	const bool bLastStep = StepIndex + 1 >= Running().StepCount;
+	if (bQuitWhenFinished && bLastStep)
+	{
+		HoldQuitUntilPlayshotWritten();
+	}
 	Captain.TakePlayshot();
 	Advance();
 	return false;

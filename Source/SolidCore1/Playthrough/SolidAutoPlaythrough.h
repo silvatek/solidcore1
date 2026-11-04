@@ -475,10 +475,14 @@ public:
 	 * A second call leaves the running script alone. An unknown index is remembered and does not start.
 	 */
 	bool BeginLaunch(USolidGameState& State, int32 ScriptIndex);
-	/** True once a launch's script has stopped and the editor should quit. */
-	bool ShouldQuit() const { return bQuitWhenFinished && !bRunning; }
+	/** True once a launch's script has stopped and the editor should quit. A final playshot holds this until the file is written. */
+	bool ShouldQuit() const { return bQuitWhenFinished && !bRunning && !bHoldQuitForPlayshot; }
 	/** The quit has been asked for. */
 	void ClearQuit() { bQuitWhenFinished = false; }
+	/** The last step requested a playshot. The quit waits until that file is written. */
+	void HoldQuitUntilPlayshotWritten() { bHoldQuitForPlayshot = true; }
+	/** The playshot file has been written. */
+	void ReleaseQuitHold() { bHoldQuitForPlayshot = false; }
 	/** The HUD line goes. The dim flag stays set. Reason is written to the log. */
 	void Stop(const TCHAR* Reason = nullptr);
 	bool IsRunning() const { return bRunning; }
@@ -558,8 +562,9 @@ private:
 	bool bRunning = false;
 	/** -Autoplay= has been read. A later map load must not start the script again. */
 	bool bLaunchHandled = false;
-	/** Quit the editor when this launch's script stops. */
+	/** Quit the editor when this launch's script stops. A final playshot holds the quit until the file is written. */
 	bool bQuitWhenFinished = false;
+	bool bHoldQuitForPlayshot = false;
 	/** Index into Scripts. The menu starts Full-playthrough. */
 	int32 RunningScript = 0;
 	int32 StepIndex = 0;

@@ -532,6 +532,14 @@ bool FSolidAutoPlaythroughLaunchTest::RunTest(const FString& Parameters)
 	Play.ClearQuit();
 	TestFalse(TEXT("the quit is asked for once"), Play.ShouldQuit());
 
+	FSolidAutoPlaythrough Held;
+	TestTrue(TEXT("a held launch starts"), Held.BeginLaunch(*State, 1));
+	Held.HoldQuitUntilPlayshotWritten();
+	Held.Stop();
+	TestFalse(TEXT("the quit waits for the playshot"), Held.ShouldQuit());
+	Held.ReleaseQuitHold();
+	TestTrue(TEXT("the written playshot lets the quit through"), Held.ShouldQuit());
+
 	FSolidAutoPlaythrough Unknown;
 	TestFalse(TEXT("an unknown script does not start"), Unknown.BeginLaunch(*State, INDEX_NONE));
 	TestFalse(TEXT("an unknown script leaves the runner idle"), Unknown.IsRunning());

@@ -1455,7 +1455,25 @@ bool FSolidAutoPlaythrough::TickSelectBattlePlan(
 	const FSolidBattlePlan* Active = Squad->GetActiveBattlePlan();
 	if (!Active || !Active->Is(Step.PlanName))
 	{
-		const int32 Slot = BattlePlanSlot(*Squad, Step.PlanName);
+		int32 Slot = BattlePlanSlot(*Squad, Step.PlanName);
+		if (Slot == INDEX_NONE)
+		{
+			USolidGameState* State = Mode.GetConfiguration();
+			USolidCompany* Company = Mode.GetCompany();
+			USolidCaptain* SessionCaptain = Company ? Company->GetCaptain() : nullptr;
+			if (!State || !SessionCaptain)
+			{
+				return false;
+			}
+			SolidEvents::FResult Result;
+			SolidEvents::ApplyChange(
+				*State,
+				*SessionCaptain,
+				SolidEvents::Change::EnableBattlePlan(Step.PlanName),
+				Result);
+			Mode.SyncBattlePlans();
+			Slot = BattlePlanSlot(*Squad, Step.PlanName);
+		}
 		if (Slot == INDEX_NONE || !Mode.SelectBattlePlanSlot(Slot))
 		{
 			Stop();

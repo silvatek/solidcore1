@@ -40,7 +40,7 @@ void ASolidNpc::BuildVisuals()
 		return;
 	}
 
-	Body->SetSkeletalMeshAsset(Mesh);
+	Body->SetSkinnedAssetAndUpdate(Mesh, true);
 #if WITH_EDITOR
 	UAnimSequence* Idle = SolidContentLookup::FindVikingIdle();
 	if (!ApplyRetargetedIdle(Body, Mesh, Idle))

@@ -6,6 +6,14 @@
 
 class USkeletalMeshComponent;
 
+/** One chain the Viking idle retargets onto the figure. */
+struct FSolidNpcRetargetChain
+{
+	const TCHAR* Name;
+	const TCHAR* StartBone;
+	const TCHAR* EndBone;
+};
+
 /**
  * The MakeHuman person.
  * The mesh is the import at exports1, at the scale that import wrote.
@@ -37,6 +45,11 @@ public:
 	{
 		return FVector2D(MarkXY.X, MarkXY.Y - SouthOfDragongateCm);
 	}
+
+	/** Spine, both arms, both legs, and the head. */
+	static constexpr int32 RetargetChainCount = 6;
+
+	static const FSolidNpcRetargetChain& RetargetChain(int32 Index);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Npc")

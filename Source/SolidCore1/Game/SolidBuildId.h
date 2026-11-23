@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-1012")
+#define SOLID_BUILD_ID TEXT("SC1-1013")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The Dragongate figure stands in the bind pose again.")
+#define SOLID_BUILD_NOTE TEXT("The figure names six chains for the Viking idle.")
 #endif

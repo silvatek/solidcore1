@@ -126,6 +126,113 @@ namespace
 			Settings->TranslationAlpha = 0.0;
 		}
 	}
+
+	int32 NamedBone(const TArray<FName>& Names, const TCHAR* Bone)
+	{
+		return Names.IndexOfByKey(FName(Bone));
+	}
+
+	void ComponentReferencePose(const FReferenceSkeleton& Skeleton, TArray<FTransform>& OutPose)
+	{
+		const TArray<FTransform>& Local = Skeleton.GetRefBonePose();
+		OutPose.SetNum(Local.Num());
+		for (int32 BoneIndex = 0; BoneIndex < Local.Num(); ++BoneIndex)
+		{
+			const int32 Parent = Skeleton.GetParentIndex(BoneIndex);
+			OutPose[BoneIndex] = Parent == INDEX_NONE ? Local[BoneIndex] : Local[BoneIndex] * OutPose[Parent];
+		}
+	}
+
+	FVector PoseTranslation(const TArray<FTransform>& Pose, const int32 BoneIndex)
+	{
+		return Pose.IsValidIndex(BoneIndex) ? Pose[BoneIndex].GetTranslation() : FVector::ZeroVector;
+	}
+
+	float RotationDegrees(const FTransform& From, const FTransform& To)
+	{
+		return FMath::RadiansToDegrees(From.GetRotation().AngularDistance(To.GetRotation()));
+	}
+
+	void LogIdlePose(
+		UPoseableMeshComponent* BodyMesh,
+		const USkeletalMesh* Figure,
+		const FRetargetSkeleton& SourceSkeleton,
+		const TArray<FTransform>& SourceComponentPose,
+		const FRetargetSkeleton& TargetSkeleton,
+		const TArray<FTransform>& TargetPose)
+	{
+		const int32 SourcePelvis = NamedBone(SourceSkeleton.BoneNames, TEXT("pelvis"));
+		const int32 OutputPelvis = NamedBone(TargetSkeleton.BoneNames, TEXT("pelvis"));
+		TArray<FTransform> ReferencePose;
+		int32 ReferencePelvis = INDEX_NONE;
+		if (!Figure)
+		{
+			return;
+		}
+		ComponentReferencePose(Figure->GetRefSkeleton(), ReferencePose);
+		ReferencePelvis = Figure->GetRefSkeleton().FindBoneIndex(TEXT("pelvis"));
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Npc idle pelvis cm: source %s, reference %s, output %s"),
+			*PoseTranslation(SourceComponentPose, SourcePelvis).ToString(),
+			*PoseTranslation(ReferencePose, ReferencePelvis).ToString(),
+			*PoseTranslation(TargetPose, OutputPelvis).ToString());
+
+		float FarthestCm = 0.f;
+		FName FarthestBone = NAME_None;
+		const FReferenceSkeleton& ReferenceSkeleton = Figure->GetRefSkeleton();
+		for (int32 BoneIndex = 0; BoneIndex < TargetSkeleton.BoneNames.Num() && BoneIndex < TargetPose.Num(); ++BoneIndex)
+		{
+			const FName BoneName = TargetSkeleton.BoneNames[BoneIndex];
+			const int32 ReferenceIndex = ReferenceSkeleton.FindBoneIndex(BoneName);
+			if (ReferenceIndex == INDEX_NONE || !ReferencePose.IsValidIndex(ReferenceIndex))
+			{
+				continue;
+			}
+			const float MovedCm = FVector::Distance(
+				TargetPose[BoneIndex].GetTranslation(),
+				ReferencePose[ReferenceIndex].GetTranslation());
+			if (MovedCm >= FarthestCm)
+			{
+				FarthestCm = MovedCm;
+				FarthestBone = BoneName;
+			}
+		}
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Npc idle farthest bone: %s moved %.1f cm from its reference pose"),
+			*FarthestBone.ToString(),
+			FarthestCm);
+
+		auto LogLegRotation = [&TargetSkeleton, &TargetPose, &ReferenceSkeleton, &ReferencePose](const TCHAR* Bone)
+		{
+			const int32 OutputIndex = NamedBone(TargetSkeleton.BoneNames, Bone);
+			const int32 ReferenceIndex = ReferenceSkeleton.FindBoneIndex(Bone);
+			if (!TargetPose.IsValidIndex(OutputIndex) || !ReferencePose.IsValidIndex(ReferenceIndex))
+			{
+				return -1.f;
+			}
+			return RotationDegrees(ReferencePose[ReferenceIndex], TargetPose[OutputIndex]);
+		};
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Npc idle left leg rotation deg: thigh %.1f, foot %.1f"),
+			LogLegRotation(TEXT("thigh_l")),
+			LogLegRotation(TEXT("foot_l")));
+
+		if (BodyMesh)
+		{
+			BodyMesh->UpdateBounds();
+			UE_LOG(
+				LogSolid,
+				Warning,
+				TEXT("Npc idle bounds extent cm: %s"),
+				*BodyMesh->Bounds.GetBox().GetExtent().ToString());
+		}
+	}
 }
 
 UIKRigDefinition* ASolidNpc::MakeRetargetRig(USkeletalMesh* Mesh)
@@ -258,11 +365,7 @@ bool ASolidNpc::ApplyRetargetedIdle(UPoseableMeshComponent* BodyMesh, USkeletalM
 			EBoneSpaces::ComponentSpace);
 	}
 	BodyMesh->RefreshBoneTransforms();
-	UE_LOG(
-		LogSolid,
-		Warning,
-		TEXT("Npc idle retarget: left leg only, match scaled chain, bones %d"),
-		BoneCount);
+	LogIdlePose(BodyMesh, Figure, SourceSkeleton, SourceComponentPose, TargetSkeleton, TargetPose);
 	return BoneCount > 0;
 }
 #else

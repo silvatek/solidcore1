@@ -22,6 +22,7 @@ class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidNameSign;
+class ASolidNpc;
 class ASolidStrongholdExterior;
 class ASolidStrongholdInterior;
 class ASolidStrongholdSite;
@@ -379,6 +380,10 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTownSign>> SpawnedTownSigns;
+
+	/** The MakeHuman person, ten metres south of Dragongate. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidNpc>> SpawnedNpcs;
 
 	/** The company stronghold's name. A stronghold the company has left has none. */
 	UPROPERTY(Transient)

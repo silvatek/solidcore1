@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-1004")
+#define SOLID_BUILD_ID TEXT("SC1-1005")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Dragongate look stands seven metres south of the mark.")
+#define SOLID_BUILD_NOTE TEXT("A figure stands ten metres south of Dragongate.")
 #endif

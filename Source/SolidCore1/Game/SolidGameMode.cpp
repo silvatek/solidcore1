@@ -27,6 +27,7 @@
 #include "Towns/SolidWallgate.h"
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
+#include "SolidNpc.h"
 #include "Strongholds/SolidNameSign.h"
 #include "Strongholds/SolidNameSigns.h"
 #include "Towns/SolidTownSigns.h"
@@ -2504,6 +2505,14 @@ void ASolidGameMode::EnsureVegetation()
 		}
 	}
 
+	if (SpawnedNpcs.Num() == 0)
+	{
+		for (TActorIterator<ASolidNpc> It(World); It; ++It)
+		{
+			SpawnedNpcs.Add(*It);
+		}
+	}
+
 	if (SpawnedNameSigns.Num() == 0)
 	{
 		for (TActorIterator<ASolidNameSign> It(World); It; ++It)
@@ -2695,6 +2704,44 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d town signs"), Spawned);
+	}
+
+	if (SpawnedNpcs.Num() == 0)
+	{
+		const USolidWorldChart* NpcMap = Streamer->GetTerrainMap()->GetWorldMap();
+		FSolidWorldChartMark Dragongate;
+		FVector2D MarkXY = FVector2D::ZeroVector;
+		if (NpcMap
+			&& NpcMap->FindTownMarker(SolidTowns::Dragongate, Dragongate)
+			&& NpcMap->TerrainPointToWorld(
+				Dragongate.TerrainPoint,
+				Streamer->GetTerrainMap()->GetWorldMinXY(),
+				Streamer->GetTerrainMap()->GetWorldMaxXY(),
+				MarkXY))
+		{
+			const FVector2D Place = ASolidNpc::Place(MarkXY);
+			FVector SpawnLoc(Place.X, Place.Y, 0.f);
+			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+			ASolidNpc* Person = World->SpawnActor<ASolidNpc>(
+				ASolidNpc::StaticClass(),
+				SpawnLoc,
+				FRotator(0.f, SolidTowns::SignFacesNorthYawDeg, 0.f),
+				SpawnParams);
+			if (Person)
+			{
+				Person->BuildVisuals();
+				SpawnedNpcs.Add(Person);
+				UE_LOG(
+					LogSolid,
+					Warning,
+					TEXT("Spawned the person at (%.0f, %.0f, %.0f)"),
+					SpawnLoc.X,
+					SpawnLoc.Y,
+					SpawnLoc.Z);
+			}
+		}
 	}
 
 	if (SpawnedLairEntrances.Num() == 0)

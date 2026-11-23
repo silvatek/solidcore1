@@ -62,3 +62,44 @@ const FSolidNpcRetargetChain& ASolidNpc::RetargetChain(const int32 Index)
 	}
 	return ASolidNpcChains[Index];
 }
+
+#if WITH_EDITOR
+#include "Rig/IKRigDefinition.h"
+#include "RigEditor/IKRigController.h"
+
+UIKRigDefinition* ASolidNpc::MakeRetargetRig(USkeletalMesh* Mesh)
+{
+	if (!Mesh)
+	{
+		return nullptr;
+	}
+
+	UIKRigDefinition* Rig = NewObject<UIKRigDefinition>(GetTransientPackage());
+	UIKRigController* Controller = UIKRigController::GetController(Rig);
+	if (!Controller || !Controller->SetSkeletalMesh(Mesh))
+	{
+		return nullptr;
+	}
+
+	Controller->SetRetargetRoot(TEXT("pelvis"));
+	for (int32 Index = 0; Index < RetargetChainCount; ++Index)
+	{
+		const FSolidNpcRetargetChain& Chain = RetargetChain(Index);
+		const FName Added = Controller->AddRetargetChain(
+			Chain.Name,
+			Chain.StartBone,
+			Chain.EndBone,
+			NAME_None);
+		if (Added.IsNone())
+		{
+			return nullptr;
+		}
+	}
+	return Rig;
+}
+#else
+UIKRigDefinition* ASolidNpc::MakeRetargetRig(USkeletalMesh*)
+{
+	return nullptr;
+}
+#endif

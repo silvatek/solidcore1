@@ -55,6 +55,8 @@ public class SolidCore1 : ModuleRules
 		if (Target.bBuildEditor)
 		{
 			PrivateDependencyModuleNames.Add("UnrealEd");
+			PrivateDependencyModuleNames.Add("IKRig");
+			PrivateDependencyModuleNames.Add("IKRigEditor");
 		}
 	}
 }

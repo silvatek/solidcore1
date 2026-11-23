@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "SolidNpc.generated.h"
 
+class UIKRigDefinition;
+class USkeletalMesh;
 class USkeletalMeshComponent;
 
 /** One chain the Viking idle retargets onto the figure. */
@@ -50,6 +52,9 @@ public:
 	static constexpr int32 RetargetChainCount = 6;
 
 	static const FSolidNpcRetargetChain& RetargetChain(int32 Index);
+
+	/** An IK rig whose chains are the six retarget chains, rooted at the pelvis. */
+	static UIKRigDefinition* MakeRetargetRig(USkeletalMesh* Mesh);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Npc")

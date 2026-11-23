@@ -3,6 +3,10 @@
 #include "Content/SolidContentLookup.h"
 #include "Engine/SkeletalMesh.h"
 #include "Game/SolidNpc.h"
+#if WITH_EDITOR
+#include "Rig/IKRigDefinition.h"
+#include "RigEditor/IKRigController.h"
+#endif
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -64,5 +68,52 @@ bool FSolidNpcRetargetChainsTest::RunTest(const FString& Parameters)
 	}
 	return true;
 }
+
+#if WITH_EDITOR
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidNpcRetargetRigTest,
+	"SolidCore1.Game.NpcRetargetRig",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidNpcRetargetRigTest::RunTest(const FString& Parameters)
+{
+	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH1/exports1.exports1"));
+	USkeletalMesh* Viking = SolidContentLookup::FindVikingMesh();
+	UTEST_NOT_NULL(TEXT("exports1"), Figure);
+	UTEST_NOT_NULL(TEXT("the viking mesh"), Viking);
+
+	const USkeletalMesh* Meshes[] = { Figure, Viking };
+	const TCHAR* Names[] = { TEXT("figure"), TEXT("viking") };
+	for (int32 MeshIndex = 0; MeshIndex < 2; ++MeshIndex)
+	{
+		UIKRigDefinition* Rig = ASolidNpc::MakeRetargetRig(const_cast<USkeletalMesh*>(Meshes[MeshIndex]));
+		UTEST_NOT_NULL(*FString::Printf(TEXT("%s rig"), Names[MeshIndex]), Rig);
+		UIKRigController* Controller = UIKRigController::GetController(Rig);
+		UTEST_NOT_NULL(*FString::Printf(TEXT("%s controller"), Names[MeshIndex]), Controller);
+		TestEqual(
+			*FString::Printf(TEXT("%s pelvis"), Names[MeshIndex]),
+			Controller->GetRetargetRoot(),
+			FName(TEXT("pelvis")));
+		TestEqual(
+			*FString::Printf(TEXT("%s chain count"), Names[MeshIndex]),
+			Controller->GetRetargetChains().Num(),
+			ASolidNpc::RetargetChainCount);
+		for (int32 Index = 0; Index < ASolidNpc::RetargetChainCount; ++Index)
+		{
+			const FSolidNpcRetargetChain& Chain = ASolidNpc::RetargetChain(Index);
+			const FName ChainName(Chain.Name);
+			TestEqual(
+				*FString::Printf(TEXT("%s %s start"), Names[MeshIndex], Chain.Name),
+				Controller->GetRetargetChainStartBone(ChainName),
+				FName(Chain.StartBone));
+			TestEqual(
+				*FString::Printf(TEXT("%s %s end"), Names[MeshIndex], Chain.Name),
+				Controller->GetRetargetChainEndBone(ChainName),
+				FName(Chain.EndBone));
+		}
+	}
+	return true;
+}
+#endif
 
 #endif

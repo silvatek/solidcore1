@@ -84,7 +84,7 @@ const FSolidNpcRetargetChain& ASolidNpc::RetargetChain(const int32 Index)
 
 namespace
 {
-	void UseMatchScaledChains(UIKRetargeterController& Controller, const int32 ChainOp)
+	void UseOneToOneChains(UIKRetargeterController& Controller, const int32 ChainOp)
 	{
 		UIKRetargetFKChainsController* Chains =
 			Cast<UIKRetargetFKChainsController>(Controller.GetOpController(ChainOp));
@@ -96,7 +96,7 @@ namespace
 		FIKRetargetFKChainsOpSettings Settings = Chains->GetSettings();
 		for (FRetargetFKChainSettings& Chain : Settings.ChainsToRetarget)
 		{
-			Chain.RotationMode = EFKChainRotationMode::MatchScaledChain;
+			Chain.RotationMode = EFKChainRotationMode::OneToOne;
 			Chain.TranslationMode = EFKChainTranslationMode::None;
 		}
 		Chains->SetSettings(Settings);
@@ -173,6 +173,8 @@ UIKRetargeter* ASolidNpc::MakeIdleRetargeter(USkeletalMesh* Viking, USkeletalMes
 
 	Controller->SetIKRig(ERetargetSourceOrTarget::Source, SourceRig);
 	Controller->SetIKRig(ERetargetSourceOrTarget::Target, TargetRig);
+	Controller->SetPreviewMesh(ERetargetSourceOrTarget::Source, Viking);
+	Controller->SetPreviewMesh(ERetargetSourceOrTarget::Target, Figure);
 	const int32 PelvisOp = Controller->AddRetargetOp(TEXT("/Script/IKRig.IKRetargetPelvisMotionOp"));
 	const int32 ChainOp = Controller->AddRetargetOp(TEXT("/Script/IKRig.IKRetargetFKChainsOp"));
 	if (PelvisOp == INDEX_NONE || ChainOp == INDEX_NONE)
@@ -182,7 +184,18 @@ UIKRetargeter* ASolidNpc::MakeIdleRetargeter(USkeletalMesh* Viking, USkeletalMes
 
 	Controller->AutoMapChains(EAutoMapChainType::Exact, true);
 	HoldPelvisTranslation(*Controller, PelvisOp);
-	UseMatchScaledChains(*Controller, ChainOp);
+	UseOneToOneChains(*Controller, ChainOp);
+	Controller->AutoAlignAllBones(ERetargetSourceOrTarget::Target, ERetargetAutoAlignMethod::ChainToChain);
+	const FIKRetargetPose& Aligned = Controller->GetCurrentRetargetPose(ERetargetSourceOrTarget::Target);
+	int32 AlignedBones = 0;
+	for (const TPair<FName, FQuat>& Delta : Aligned.GetAllDeltaRotations())
+	{
+		if (!Delta.Value.Equals(FQuat::Identity, 0.01f))
+		{
+			++AlignedBones;
+		}
+	}
+	UE_LOG(LogSolid, Warning, TEXT("Npc idle align: %d target bones rotated off the reference pose."), AlignedBones);
 
 	UIKRetargetFKChainsController* Chains =
 		Cast<UIKRetargetFKChainsController>(Controller->GetOpController(ChainOp));
@@ -255,7 +268,7 @@ bool ASolidNpc::ApplyRetargetedIdle(UPoseableMeshComponent* BodyMesh, USkeletalM
 	UE_LOG(
 		LogSolid,
 		Warning,
-		TEXT("Npc idle retarget: match scaled chain, pelvis translation 0, bones %d"),
+		TEXT("Npc idle retarget: aligned stand, one to one, pelvis translation 0, bones %d"),
 		BoneCount);
 	return BoneCount > 0;
 }

@@ -162,9 +162,9 @@ bool FSolidNpcIdleRetargetTest::RunTest(const FString& Parameters)
 			for (const FRetargetFKChainSettings& Chain : Settings.ChainsToRetarget)
 			{
 				TestEqual(
-					*FString::Printf(TEXT("%s match scaled chain"), *Chain.TargetChainName.ToString()),
+					*FString::Printf(TEXT("%s one to one"), *Chain.TargetChainName.ToString()),
 					static_cast<uint8>(Chain.RotationMode),
-					static_cast<uint8>(EFKChainRotationMode::MatchScaledChain));
+					static_cast<uint8>(EFKChainRotationMode::OneToOne));
 				TestEqual(
 					*FString::Printf(TEXT("%s translation off"), *Chain.TargetChainName.ToString()),
 					static_cast<uint8>(Chain.TranslationMode),

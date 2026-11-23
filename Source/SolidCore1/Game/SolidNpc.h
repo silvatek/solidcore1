@@ -20,7 +20,7 @@ public:
 
 	virtual void BeginPlay() override;
 
-	/** Load exports1 onto the body and play the Viking idle. */
+	/** Load exports1 onto the body. */
 	void BuildVisuals();
 
 	/** Ten metres. South of the Dragongate mark is negative Y. */

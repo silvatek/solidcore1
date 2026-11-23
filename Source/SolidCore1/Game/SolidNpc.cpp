@@ -113,9 +113,14 @@ namespace
 
 		Pelvis->SetSourcePelvisBone(TEXT("pelvis"));
 		Pelvis->SetTargetPelvisBone(TEXT("pelvis"));
-		FIKRetargetPelvisMotionOpSettings Settings = Pelvis->GetSettings();
-		Settings.TranslationAlpha = 0.0;
-		Pelvis->SetSettings(Settings);
+		FIKRetargetOpBase* Op = Controller.GetRetargetOpByIndex(PelvisOp);
+		FIKRetargetPelvisMotionOpSettings* Settings = Op
+			? static_cast<FIKRetargetPelvisMotionOpSettings*>(Op->GetSettings())
+			: nullptr;
+		if (Settings)
+		{
+			Settings->TranslationAlpha = 0.0;
+		}
 	}
 }
 

@@ -140,15 +140,18 @@ bool FSolidNpcIdleRetargetTest::RunTest(const FString& Parameters)
 	bool bFoundChains = false;
 	for (int32 Index = 0; Index < 8; ++Index)
 	{
-		if (UIKRetargetPelvisMotionController* Pelvis =
-			Cast<UIKRetargetPelvisMotionController>(Controller->GetOpController(Index)))
+		if (Cast<UIKRetargetPelvisMotionController>(Controller->GetOpController(Index)))
 		{
-			const FIKRetargetPelvisMotionOpSettings Settings = Pelvis->GetSettings();
+			const FIKRetargetOpBase* Op = Controller->GetRetargetOpByIndex(Index);
+			const FIKRetargetPelvisMotionOpSettings* Settings = Op
+				? static_cast<const FIKRetargetPelvisMotionOpSettings*>(Op->GetSettings())
+				: nullptr;
+			UTEST_NOT_NULL(TEXT("pelvis settings"), Settings);
 			TestTrue(
 				TEXT("pelvis translation stays at the standing pose"),
-				FMath::IsNearlyZero(Settings.TranslationAlpha));
-			TestEqual(TEXT("source pelvis"), Settings.SourcePelvisBone.BoneName, FName(TEXT("pelvis")));
-			TestEqual(TEXT("target pelvis"), Settings.TargetPelvisBone.BoneName, FName(TEXT("pelvis")));
+				FMath::IsNearlyZero(Settings->TranslationAlpha));
+			TestEqual(TEXT("source pelvis"), Settings->SourcePelvisBone.BoneName, FName(TEXT("pelvis")));
+			TestEqual(TEXT("target pelvis"), Settings->TargetPelvisBone.BoneName, FName(TEXT("pelvis")));
 			bFoundPelvis = true;
 		}
 		if (UIKRetargetFKChainsController* Chains =

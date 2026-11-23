@@ -5,10 +5,12 @@
 #include "SolidNpc.generated.h"
 
 class USkeletalMeshComponent;
+class USkeleton;
 
 /**
  * The MakeHuman person.
  * The mesh is the import at exports1, at the scale that import wrote.
+ * The Viking idle is retargeted onto that skeleton.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidNpc : public AActor
@@ -20,8 +22,14 @@ public:
 
 	virtual void BeginPlay() override;
 
-	/** Load exports1 onto the body. */
+	/** Load exports1 onto the body and play the retargeted Viking idle. */
 	void BuildVisuals();
+
+	/**
+	 * The idle was authored on Source. Target keeps its own proportions.
+	 * Bone 0 stays on the target pose so the figure does not walk off with the clip.
+	 */
+	static void RetargetFrom(USkeleton* Target, const USkeleton* Source);
 
 	/** Ten metres. South of the Dragongate mark is negative Y. */
 	static constexpr float SouthOfDragongateCm = 1000.f;

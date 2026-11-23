@@ -2,19 +2,24 @@
 
 #include "SolidCore1.h"
 #include "Components/PoseableMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Content/SolidContentLookup.h"
 #include "Engine/SkeletalMesh.h"
 
 namespace
 {
 	const TCHAR* MeshPath = TEXT("/Game/Characters/MH1/exports1.exports1");
+
+#if WITH_EDITOR
+	void LogBindPose(USkinnedMeshComponent* BodyMesh, const USkeletalMesh* Figure);
+#endif
 }
 
 ASolidNpc::ASolidNpc()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	Body = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("Body"));
+	Body = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Body"));
 	SetRootComponent(Body);
 	Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Body->SetCastShadow(true);
@@ -40,13 +45,9 @@ void ASolidNpc::BuildVisuals()
 		return;
 	}
 
-	Body->SetSkinnedAssetAndUpdate(Mesh, true);
+	Body->SetSkeletalMeshAsset(Mesh);
 #if WITH_EDITOR
-	UAnimSequence* Idle = SolidContentLookup::FindVikingIdle();
-	if (!ApplyRetargetedIdle(Body, Mesh, Idle))
-	{
-		UE_LOG(LogSolid, Warning, TEXT("Npc idle was not retargeted."));
-	}
+	LogBindPose(Body, Mesh);
 #endif
 }
 
@@ -232,6 +233,77 @@ namespace
 				TEXT("Npc idle bounds extent cm: %s"),
 				*BodyMesh->Bounds.GetBox().GetExtent().ToString());
 		}
+	}
+
+	void LogBindPose(USkinnedMeshComponent* BodyMesh, const USkeletalMesh* Figure)
+	{
+		if (!BodyMesh || !Figure)
+		{
+			return;
+		}
+
+		const FReferenceSkeleton& ReferenceSkeleton = Figure->GetRefSkeleton();
+		TArray<FTransform> ReferencePose;
+		ComponentReferencePose(ReferenceSkeleton, ReferencePose);
+		const int32 Pelvis = ReferenceSkeleton.FindBoneIndex(TEXT("pelvis"));
+		const FVector ReferencePelvis = PoseTranslation(ReferencePose, Pelvis);
+		const FTransform PosedPelvis = BodyMesh->GetBoneTransform(TEXT("pelvis"), RTS_Component);
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Npc bind pelvis cm: reference %s, posed %s"),
+			*ReferencePelvis.ToString(),
+			*PosedPelvis.GetTranslation().ToString());
+
+		float FarthestCm = 0.f;
+		FName FarthestBone = NAME_None;
+		for (int32 BoneIndex = 0; BoneIndex < ReferenceSkeleton.GetNum(); ++BoneIndex)
+		{
+			if (!ReferencePose.IsValidIndex(BoneIndex))
+			{
+				continue;
+			}
+			const FName BoneName = ReferenceSkeleton.GetBoneName(BoneIndex);
+			const FTransform Posed = BodyMesh->GetBoneTransform(BoneName, RTS_Component);
+			const float MovedCm = FVector::Distance(
+				Posed.GetTranslation(),
+				ReferencePose[BoneIndex].GetTranslation());
+			if (MovedCm >= FarthestCm)
+			{
+				FarthestCm = MovedCm;
+				FarthestBone = BoneName;
+			}
+		}
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Npc bind farthest bone: %s moved %.1f cm from its reference pose"),
+			*FarthestBone.ToString(),
+			FarthestCm);
+
+		auto RotationFromReference = [&ReferenceSkeleton, &ReferencePose, BodyMesh](const TCHAR* Bone)
+		{
+			const int32 ReferenceIndex = ReferenceSkeleton.FindBoneIndex(Bone);
+			if (!ReferencePose.IsValidIndex(ReferenceIndex))
+			{
+				return -1.f;
+			}
+			const FTransform Posed = BodyMesh->GetBoneTransform(Bone, RTS_Component);
+			return RotationDegrees(ReferencePose[ReferenceIndex], Posed);
+		};
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Npc bind left leg rotation deg: thigh %.1f, foot %.1f"),
+			RotationFromReference(TEXT("thigh_l")),
+			RotationFromReference(TEXT("foot_l")));
+
+		BodyMesh->UpdateBounds();
+		UE_LOG(
+			LogSolid,
+			Warning,
+			TEXT("Npc bind bounds extent cm: %s"),
+			*BodyMesh->Bounds.GetBox().GetExtent().ToString());
 	}
 }
 

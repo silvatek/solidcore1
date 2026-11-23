@@ -148,6 +148,9 @@ bool FSolidNpcIdleRetargetTest::RunTest(const FString& Parameters)
 				: nullptr;
 			UTEST_NOT_NULL(TEXT("pelvis settings"), Settings);
 			TestTrue(
+				TEXT("pelvis rotation stays at the reference pose"),
+				FMath::IsNearlyZero(Settings->RotationAlpha));
+			TestTrue(
 				TEXT("pelvis translation stays at the standing pose"),
 				FMath::IsNearlyZero(Settings->TranslationAlpha));
 			TestEqual(TEXT("source pelvis"), Settings->SourcePelvisBone.BoneName, FName(TEXT("pelvis")));
@@ -159,17 +162,25 @@ bool FSolidNpcIdleRetargetTest::RunTest(const FString& Parameters)
 		{
 			const FIKRetargetFKChainsOpSettings Settings = Chains->GetSettings();
 			TestEqual(TEXT("six chains"), Settings.ChainsToRetarget.Num(), ASolidNpc::RetargetChainCount);
+			int32 Driven = 0;
 			for (const FRetargetFKChainSettings& Chain : Settings.ChainsToRetarget)
 			{
+				const bool bLeftLeg = Chain.TargetChainName == TEXT("LeftLeg");
 				TestEqual(
-					*FString::Printf(TEXT("%s one to one"), *Chain.TargetChainName.ToString()),
+					*FString::Printf(TEXT("%s driven"), *Chain.TargetChainName.ToString()),
+					Chain.EnableFK,
+					bLeftLeg);
+				TestEqual(
+					*FString::Printf(TEXT("%s match scaled chain"), *Chain.TargetChainName.ToString()),
 					static_cast<uint8>(Chain.RotationMode),
-					static_cast<uint8>(EFKChainRotationMode::OneToOne));
+					static_cast<uint8>(EFKChainRotationMode::MatchScaledChain));
 				TestEqual(
 					*FString::Printf(TEXT("%s translation off"), *Chain.TargetChainName.ToString()),
 					static_cast<uint8>(Chain.TranslationMode),
 					static_cast<uint8>(EFKChainTranslationMode::None));
+				Driven += bLeftLeg ? 1 : 0;
 			}
+			TestEqual(TEXT("one driven chain"), Driven, 1);
 			bFoundChains = true;
 		}
 	}

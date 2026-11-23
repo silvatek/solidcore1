@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-1017")
+#define SOLID_BUILD_ID TEXT("SC1-1018")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The idle aligns both stands, then copies one to one.")
+#define SOLID_BUILD_NOTE TEXT("Only the left leg takes the Viking idle.")
 #endif

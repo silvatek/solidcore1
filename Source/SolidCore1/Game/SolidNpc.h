@@ -61,8 +61,8 @@ public:
 #if WITH_EDITOR
 	/**
 	 * Retarget the Viking idle onto the figure.
-	 * The target stand is aligned to the Viking chains, then each bone copies one to one.
-	 * Chain translation stays off. The pelvis keeps the figure's standing translation.
+	 * Only the left leg is copied, with match scaled chain.
+	 * Every other bone stays on the MakeHuman reference pose.
 	 */
 	static UIKRetargeter* MakeIdleRetargeter(USkeletalMesh* Viking, USkeletalMesh* Figure);
 #endif

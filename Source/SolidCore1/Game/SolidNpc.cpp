@@ -84,7 +84,9 @@ const FSolidNpcRetargetChain& ASolidNpc::RetargetChain(const int32 Index)
 
 namespace
 {
-	void UseOneToOneChains(UIKRetargeterController& Controller, const int32 ChainOp)
+	const TCHAR* DrivenChainName = TEXT("LeftLeg");
+
+	void UseLeftLegOnly(UIKRetargeterController& Controller, const int32 ChainOp)
 	{
 		UIKRetargetFKChainsController* Chains =
 			Cast<UIKRetargetFKChainsController>(Controller.GetOpController(ChainOp));
@@ -96,7 +98,8 @@ namespace
 		FIKRetargetFKChainsOpSettings Settings = Chains->GetSettings();
 		for (FRetargetFKChainSettings& Chain : Settings.ChainsToRetarget)
 		{
-			Chain.RotationMode = EFKChainRotationMode::OneToOne;
+			Chain.EnableFK = Chain.TargetChainName == DrivenChainName;
+			Chain.RotationMode = EFKChainRotationMode::MatchScaledChain;
 			Chain.TranslationMode = EFKChainTranslationMode::None;
 		}
 		Chains->SetSettings(Settings);
@@ -119,6 +122,7 @@ namespace
 			: nullptr;
 		if (Settings)
 		{
+			Settings->RotationAlpha = 0.0;
 			Settings->TranslationAlpha = 0.0;
 		}
 	}
@@ -184,18 +188,7 @@ UIKRetargeter* ASolidNpc::MakeIdleRetargeter(USkeletalMesh* Viking, USkeletalMes
 
 	Controller->AutoMapChains(EAutoMapChainType::Exact, true);
 	HoldPelvisTranslation(*Controller, PelvisOp);
-	UseOneToOneChains(*Controller, ChainOp);
-	Controller->AutoAlignAllBones(ERetargetSourceOrTarget::Target, ERetargetAutoAlignMethod::ChainToChain);
-	const FIKRetargetPose& Aligned = Controller->GetCurrentRetargetPose(ERetargetSourceOrTarget::Target);
-	int32 AlignedBones = 0;
-	for (const TPair<FName, FQuat>& Delta : Aligned.GetAllDeltaRotations())
-	{
-		if (!Delta.Value.Equals(FQuat::Identity, 0.01f))
-		{
-			++AlignedBones;
-		}
-	}
-	UE_LOG(LogSolid, Warning, TEXT("Npc idle align: %d target bones rotated off the reference pose."), AlignedBones);
+	UseLeftLegOnly(*Controller, ChainOp);
 
 	UIKRetargetFKChainsController* Chains =
 		Cast<UIKRetargetFKChainsController>(Controller->GetOpController(ChainOp));
@@ -268,7 +261,7 @@ bool ASolidNpc::ApplyRetargetedIdle(UPoseableMeshComponent* BodyMesh, USkeletalM
 	UE_LOG(
 		LogSolid,
 		Warning,
-		TEXT("Npc idle retarget: aligned stand, one to one, pelvis translation 0, bones %d"),
+		TEXT("Npc idle retarget: left leg only, match scaled chain, bones %d"),
 		BoneCount);
 	return BoneCount > 0;
 }

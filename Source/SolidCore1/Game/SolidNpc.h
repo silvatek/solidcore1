@@ -9,7 +9,6 @@ class UIKRetargeter;
 class UIKRigDefinition;
 class UPoseableMeshComponent;
 class USkeletalMesh;
-class USkeletalMeshComponent;
 
 /** One chain the Viking idle retargets onto the figure. */
 struct FSolidNpcRetargetChain
@@ -70,7 +69,7 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Npc")
-	TObjectPtr<USkeletalMeshComponent> Body;
+	TObjectPtr<UPoseableMeshComponent> Body;
 
 #if WITH_EDITOR
 	bool ApplyRetargetedIdle(UPoseableMeshComponent* BodyMesh, USkeletalMesh* Figure, UAnimSequence* Idle);

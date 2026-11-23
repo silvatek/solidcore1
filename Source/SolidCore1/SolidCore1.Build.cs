@@ -57,6 +57,7 @@ public class SolidCore1 : ModuleRules
 			PrivateDependencyModuleNames.Add("UnrealEd");
 			PrivateDependencyModuleNames.Add("IKRig");
 			PrivateDependencyModuleNames.Add("IKRigEditor");
+			PrivateDependencyModuleNames.Add("AnimationBlueprintLibrary");
 		}
 	}
 }

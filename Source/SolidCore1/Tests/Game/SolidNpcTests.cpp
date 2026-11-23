@@ -4,6 +4,10 @@
 #include "Engine/SkeletalMesh.h"
 #include "Game/SolidNpc.h"
 #if WITH_EDITOR
+#include "RetargetEditor/IKRetargeterController.h"
+#include "Retargeter/IKRetargeter.h"
+#include "Retargeter/RetargetOps/FKChainsOp.h"
+#include "Retargeter/RetargetOps/PelvisMotionOp.h"
 #include "Rig/IKRigDefinition.h"
 #include "RigEditor/IKRigController.h"
 #endif
@@ -44,8 +48,8 @@ bool FSolidNpcRetargetChainsTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("six chains"), ASolidNpc::RetargetChainCount, 6);
 	TestTrue(
-		TEXT("the spine starts at the pelvis"),
-		FCString::Strcmp(ASolidNpc::RetargetChain(0).StartBone, TEXT("pelvis")) == 0);
+		TEXT("the spine starts at spine_01"),
+		FCString::Strcmp(ASolidNpc::RetargetChain(0).StartBone, TEXT("spine_01")) == 0);
 	TestTrue(
 		TEXT("the head ends at the head"),
 		FCString::Strcmp(ASolidNpc::RetargetChain(5).EndBone, TEXT("head")) == 0);
@@ -112,6 +116,62 @@ bool FSolidNpcRetargetRigTest::RunTest(const FString& Parameters)
 				FName(Chain.EndBone));
 		}
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidNpcIdleRetargetTest,
+	"SolidCore1.Game.NpcIdleRetarget",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidNpcIdleRetargetTest::RunTest(const FString& Parameters)
+{
+	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH1/exports1.exports1"));
+	USkeletalMesh* Viking = SolidContentLookup::FindVikingMesh();
+	UTEST_NOT_NULL(TEXT("exports1"), Figure);
+	UTEST_NOT_NULL(TEXT("the viking mesh"), Viking);
+
+	UIKRetargeter* Retargeter = ASolidNpc::MakeIdleRetargeter(Viking, Figure);
+	UTEST_NOT_NULL(TEXT("idle retargeter"), Retargeter);
+	UIKRetargeterController* Controller = UIKRetargeterController::GetController(Retargeter);
+	UTEST_NOT_NULL(TEXT("retarget controller"), Controller);
+
+	bool bFoundPelvis = false;
+	bool bFoundChains = false;
+	for (int32 Index = 0; Index < 8; ++Index)
+	{
+		if (UIKRetargetPelvisMotionController* Pelvis =
+			Cast<UIKRetargetPelvisMotionController>(Controller->GetOpController(Index)))
+		{
+			const FIKRetargetPelvisMotionOpSettings Settings = Pelvis->GetSettings();
+			TestTrue(
+				TEXT("pelvis translation stays at the standing pose"),
+				FMath::IsNearlyZero(Settings.TranslationAlpha));
+			TestEqual(TEXT("source pelvis"), Settings.SourcePelvisBone.BoneName, FName(TEXT("pelvis")));
+			TestEqual(TEXT("target pelvis"), Settings.TargetPelvisBone.BoneName, FName(TEXT("pelvis")));
+			bFoundPelvis = true;
+		}
+		if (UIKRetargetFKChainsController* Chains =
+			Cast<UIKRetargetFKChainsController>(Controller->GetOpController(Index)))
+		{
+			const FIKRetargetFKChainsOpSettings Settings = Chains->GetSettings();
+			TestEqual(TEXT("six chains"), Settings.ChainsToRetarget.Num(), ASolidNpc::RetargetChainCount);
+			for (const FRetargetFKChainSettings& Chain : Settings.ChainsToRetarget)
+			{
+				TestEqual(
+					*FString::Printf(TEXT("%s match scaled chain"), *Chain.TargetChainName.ToString()),
+					static_cast<uint8>(Chain.RotationMode),
+					static_cast<uint8>(EFKChainRotationMode::MatchScaledChain));
+				TestEqual(
+					*FString::Printf(TEXT("%s translation off"), *Chain.TargetChainName.ToString()),
+					static_cast<uint8>(Chain.TranslationMode),
+					static_cast<uint8>(EFKChainTranslationMode::None));
+			}
+			bFoundChains = true;
+		}
+	}
+	TestTrue(TEXT("pelvis op"), bFoundPelvis);
+	TestTrue(TEXT("chain op"), bFoundChains);
 	return true;
 }
 #endif

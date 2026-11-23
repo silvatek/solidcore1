@@ -4,9 +4,11 @@
 #include "GameFramework/Actor.h"
 #include "SolidNpc.generated.h"
 
+class UAnimSequence;
+class UIKRetargeter;
 class UIKRigDefinition;
+class UPoseableMeshComponent;
 class USkeletalMesh;
-class USkeletalMeshComponent;
 
 /** One chain the Viking idle retargets onto the figure. */
 struct FSolidNpcRetargetChain
@@ -56,7 +58,20 @@ public:
 	/** An IK rig whose chains are the six retarget chains, rooted at the pelvis. */
 	static UIKRigDefinition* MakeRetargetRig(USkeletalMesh* Mesh);
 
+#if WITH_EDITOR
+	/**
+	 * Retarget the Viking idle onto the figure.
+	 * Chains use match scaled chain. Chain translation stays off.
+	 * The pelvis keeps the figure's standing translation.
+	 */
+	static UIKRetargeter* MakeIdleRetargeter(USkeletalMesh* Viking, USkeletalMesh* Figure);
+#endif
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Npc")
-	TObjectPtr<USkeletalMeshComponent> Body;
+	TObjectPtr<UPoseableMeshComponent> Body;
+
+#if WITH_EDITOR
+	bool ApplyRetargetedIdle(UPoseableMeshComponent* BodyMesh, USkeletalMesh* Figure, UAnimSequence* Idle);
+#endif
 };

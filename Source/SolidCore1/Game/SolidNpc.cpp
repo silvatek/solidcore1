@@ -1,8 +1,11 @@
 #include "SolidNpc.h"
 
+#include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
+#include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
@@ -40,4 +43,15 @@ void ASolidNpc::BuildVisuals()
 	}
 
 	Body->SetSkeletalMeshAsset(Mesh);
+
+	TSoftObjectPtr<USkeletalMesh> UnusedMesh;
+	if (!SolidClipLocomotion::ApplyMeshAndSingleNodeMode(Body, UnusedMesh, nullptr, TEXT("Npc"), true))
+	{
+		return;
+	}
+
+	TSoftObjectPtr<UAnimSequence> IdleSoft(FSoftObjectPath(SolidClipLocomotion::DefaultIdlePath));
+	UAnimSequence* Idle = SolidClipLocomotion::LoadClip(IdleSoft, SolidClipLocomotion::DefaultIdlePath);
+	TObjectPtr<UAnimSequence> ActiveIdle;
+	SolidClipLocomotion::PlayLoopingClip(Body, Idle, ActiveIdle, TEXT("Npc"));
 }

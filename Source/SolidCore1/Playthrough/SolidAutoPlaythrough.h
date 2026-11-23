@@ -390,7 +390,7 @@ public:
 
 	/** Named scripts. The runner still walks Script, which is Full-playthrough. */
 	static const FScript Scripts[];
-	static constexpr int32 ScriptsCount = 2;
+	static constexpr int32 ScriptsCount = 3;
 
 	/** Full-playthrough's steps, in order. */
 	static const FStep Script[];
@@ -399,6 +399,13 @@ public:
 	/** Companion parade's steps, in order. */
 	static const FStep Parade[];
 	static constexpr int32 ParadeCount = 7;
+
+	/**
+	 * Dragongate look's steps, in order.
+	 * The captain stands on the Dragongate mark and looks south, at the place 10 m south.
+	 */
+	static const FStep DragongateLook[];
+	static constexpr int32 DragongateLookCount = 5;
 
 	/** High behind the squad. AimRaven at Kanfold uses these. */
 	static constexpr float HighTrailPitchDeg = -48.f;

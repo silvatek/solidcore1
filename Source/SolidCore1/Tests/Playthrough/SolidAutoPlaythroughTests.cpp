@@ -979,7 +979,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidAutoPlaythroughScriptsTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("two scripts"), FSolidAutoPlaythrough::ScriptsCount, 2);
+	TestEqual(TEXT("three scripts"), FSolidAutoPlaythrough::ScriptsCount, 3);
 
 	const FSolidAutoPlaythrough::FScript& Full = FSolidAutoPlaythrough::Scripts[0];
 	TestEqual(TEXT("the first script is Full-playthrough"), FString(Full.Name), FString(TEXT("Full-playthrough")));
@@ -994,6 +994,13 @@ bool FSolidAutoPlaythroughScriptsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Companion parade has its steps"), Parade.StepCount, FSolidAutoPlaythrough::ParadeCount);
 	TestFalse(TEXT("Companion parade stays off the menu"), Parade.bOnMenu);
 	TestFalse(TEXT("Companion parade stays available after a move"), Parade.bDisableAfterMove);
+
+	const FSolidAutoPlaythrough::FScript& Look = FSolidAutoPlaythrough::Scripts[2];
+	TestEqual(TEXT("the third script is Dragongate look"), FString(Look.Name), FString(TEXT("Dragongate look")));
+	TestTrue(TEXT("Dragongate look uses its own list"), Look.Steps == FSolidAutoPlaythrough::DragongateLook);
+	TestEqual(TEXT("Dragongate look has its steps"), Look.StepCount, FSolidAutoPlaythrough::DragongateLookCount);
+	TestFalse(TEXT("Dragongate look stays off the menu"), Look.bOnMenu);
+	TestFalse(TEXT("Dragongate look stays available after a move"), Look.bDisableAfterMove);
 	return true;
 }
 
@@ -1058,6 +1065,58 @@ bool FSolidAutoPlaythroughParadeTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("the playshot is last"),
 		static_cast<uint8>(Steps[6].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughDragongateLookTest,
+	"SolidCore1.AutoPlaythrough.DragongateLook",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughDragongateLookTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("five look steps"), FSolidAutoPlaythrough::DragongateLookCount, 5);
+	const FSolidAutoPlaythrough::FStep* Steps = FSolidAutoPlaythrough::DragongateLook;
+
+	TestEqual(
+		TEXT("portal comes first"),
+		static_cast<uint8>(Steps[0].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::PortalToMarker));
+	TestEqual(
+		TEXT("the mark is a town"),
+		static_cast<uint8>(Steps[0].MarkKind),
+		static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(TEXT("the mark is Dragongate"), FString(Steps[0].MarkName), FString(TEXT("Dragongate")));
+	TestTrue(TEXT("no east or west offset"), FMath::IsNearlyEqual(Steps[0].OffsetXCm, 0.f));
+	TestTrue(TEXT("no north or south offset"), FMath::IsNearlyEqual(Steps[0].OffsetYCm, 0.f));
+
+	TestEqual(
+		TEXT("the facing is set"),
+		static_cast<uint8>(Steps[1].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::FaceDirection));
+	TestTrue(
+		TEXT("facing south"),
+		FMath::IsNearlyEqual(Steps[1].FacingYawDeg, SolidTowns::SignFacesSouthYawDeg));
+
+	TestEqual(
+		TEXT("sight is enabled"),
+		static_cast<uint8>(Steps[2].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::EnableSight));
+	TestEqual(
+		TEXT("the sight is True"),
+		static_cast<uint8>(Steps[2].Sight),
+		static_cast<uint8>(ESolidSight::True));
+
+	TestEqual(
+		TEXT("the wait is its own step"),
+		static_cast<uint8>(Steps[3].Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::Pause));
+	TestTrue(TEXT("the wait is three seconds"), FMath::IsNearlyEqual(Steps[3].PauseSeconds, 3.f));
+
+	TestEqual(
+		TEXT("the playshot is last"),
+		static_cast<uint8>(Steps[4].Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::TakePlayshot));
 	return true;
 }

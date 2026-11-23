@@ -99,9 +99,23 @@ const FStep FSolidAutoPlaythrough::Parade[FSolidAutoPlaythrough::ParadeCount] = 
 	FStep::TakePlayshot(TEXT("Take playshot")),
 };
 
+const FStep FSolidAutoPlaythrough::DragongateLook[FSolidAutoPlaythrough::DragongateLookCount] = {
+	FStep::PortalToMarker(
+		TEXT("Portal to Dragongate"),
+		ESolidWorldChartMarkKind::Town,
+		TEXT("Dragongate"),
+		0.f,
+		0.f),
+	FStep::FaceDirection(TEXT("Face south"), SolidTowns::SignFacesSouthYawDeg),
+	FStep::EnableSight(TEXT("Enable true sight"), ESolidSight::True),
+	FStep::Pause(3.f, TEXT("Pause")),
+	FStep::TakePlayshot(TEXT("Take playshot")),
+};
+
 const FSolidAutoPlaythrough::FScript FSolidAutoPlaythrough::Scripts[FSolidAutoPlaythrough::ScriptsCount] = {
 	{ TEXT("Full-playthrough"), Script, ScriptCount, true, true },
 	{ TEXT("Companion parade"), Parade, ParadeCount, false, false },
+	{ TEXT("Dragongate look"), DragongateLook, DragongateLookCount, false, false },
 };
 
 namespace

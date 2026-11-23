@@ -50,7 +50,8 @@ void ASolidNpc::BuildVisuals()
 		return;
 	}
 
-	TSoftObjectPtr<UAnimSequence> IdleSoft(FSoftObjectPath(SolidClipLocomotion::DefaultIdlePath));
+	const FSoftObjectPath IdlePath(SolidClipLocomotion::DefaultIdlePath);
+	TSoftObjectPtr<UAnimSequence> IdleSoft(IdlePath);
 	UAnimSequence* Idle = SolidClipLocomotion::LoadClip(IdleSoft, SolidClipLocomotion::DefaultIdlePath);
 	TObjectPtr<UAnimSequence> ActiveIdle;
 	SolidClipLocomotion::PlayLoopingClip(Body, Idle, ActiveIdle, TEXT("Npc"));

@@ -2,6 +2,7 @@
 
 #include "SolidCore1.h"
 #include "Components/PoseableMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Content/SolidContentLookup.h"
 #include "Engine/SkeletalMesh.h"
 
@@ -18,7 +19,7 @@ ASolidNpc::ASolidNpc()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	Body = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("Body"));
+	Body = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Body"));
 	SetRootComponent(Body);
 	Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Body->SetCastShadow(true);
@@ -44,18 +45,9 @@ void ASolidNpc::BuildVisuals()
 		return;
 	}
 
-	Body->SetSkinnedAssetAndUpdate(Mesh, true);
+	Body->SetSkeletalMeshAsset(Mesh);
 #if WITH_EDITOR
 	LogBindPose(Body, Mesh, TEXT("Npc bind"));
-	UAnimSequence* Idle = SolidContentLookup::FindVikingIdle();
-	if (!ApplyRetargetedIdle(Body, Mesh, Idle))
-	{
-		UE_LOG(LogSolid, Warning, TEXT("Npc idle was not retargeted."));
-	}
-	else
-	{
-		LogBindPose(Body, Mesh, TEXT("Npc idle"));
-	}
 #endif
 }
 

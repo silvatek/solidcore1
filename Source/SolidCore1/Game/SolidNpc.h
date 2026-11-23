@@ -27,10 +27,10 @@ public:
 	static constexpr float SouthOfDragongateCm = 1000.f;
 
 	/**
-	 * Actor yaw. The MakeHuman mesh looks along -Y, so 180 turns that face north,
+	 * Actor yaw. The MakeHuman mesh looks along +Y, so 0 turns that face north,
 	 * toward a captain standing on the north side of this spot.
 	 */
-	static constexpr float FacesCaptainYawDeg = 180.f;
+	static constexpr float FacesCaptainYawDeg = 0.f;
 
 	/** The stand, ten metres south of the mark. */
 	static FVector2D Place(const FVector2D& MarkXY)

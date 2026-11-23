@@ -2727,7 +2727,7 @@ void ASolidGameMode::EnsureVegetation()
 			ASolidNpc* Person = World->SpawnActor<ASolidNpc>(
 				ASolidNpc::StaticClass(),
 				SpawnLoc,
-				FRotator(0.f, SolidTowns::SignFacesNorthYawDeg, 0.f),
+				FRotator(0.f, ASolidNpc::FacesCaptainYawDeg, 0.f),
 				SpawnParams);
 			if (Person)
 			{

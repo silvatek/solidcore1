@@ -18,6 +18,9 @@ bool FSolidNpcPlaceTest::RunTest(const FString& Parameters)
 		TEXT("ten metres south"),
 		FMath::IsNearlyEqual(Place.Y, Mark.Y - ASolidNpc::SouthOfDragongateCm));
 	TestTrue(TEXT("south is one thousand centimetres"), FMath::IsNearlyEqual(ASolidNpc::SouthOfDragongateCm, 1000.f));
+	TestTrue(
+		TEXT("the face turns north"),
+		FMath::IsNearlyEqual(ASolidNpc::FacesCaptainYawDeg, 180.f));
 	return true;
 }
 

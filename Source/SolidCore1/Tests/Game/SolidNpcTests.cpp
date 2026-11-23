@@ -142,7 +142,7 @@ bool FSolidNpcIdleRetargetTest::RunTest(const FString& Parameters)
 	{
 		if (Cast<UIKRetargetPelvisMotionController>(Controller->GetOpController(Index)))
 		{
-			const FIKRetargetOpBase* Op = Controller->GetRetargetOpByIndex(Index);
+			FIKRetargetOpBase* Op = Controller->GetRetargetOpByIndex(Index);
 			const FIKRetargetPelvisMotionOpSettings* Settings = Op
 				? static_cast<const FIKRetargetPelvisMotionOpSettings*>(Op->GetSettings())
 				: nullptr;

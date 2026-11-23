@@ -8,7 +8,7 @@
 
 namespace
 {
-	const TCHAR* MeshPath = TEXT("/Game/Characters/MH1/exports1.exports1");
+	const TCHAR* MeshPath = TEXT("/Game/Characters/MH2/mh21.mh21");
 
 #if WITH_EDITOR
 	void LogBindPose(USkinnedMeshComponent* BodyMesh, const USkeletalMesh* Figure, const TCHAR* Label);

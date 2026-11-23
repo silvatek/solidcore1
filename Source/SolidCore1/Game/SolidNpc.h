@@ -21,7 +21,7 @@ struct FSolidNpcRetargetChain
 
 /**
  * The MakeHuman person.
- * The mesh is the import at exports1, at the scale that import wrote.
+ * The mesh is the import at mh21, at the scale that import wrote.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidNpc : public AActor
@@ -33,7 +33,7 @@ public:
 
 	virtual void BeginPlay() override;
 
-	/** Load exports1 onto the body. */
+	/** Load mh21 onto the body. */
 	void BuildVisuals();
 
 	/** Ten metres. South of the Dragongate mark is negative Y. */

@@ -41,9 +41,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidNpcRetargetChainsTest::RunTest(const FString& Parameters)
 {
-	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH1/exports1.exports1"));
+	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH2/mh21.mh21"));
 	USkeletalMesh* Viking = SolidContentLookup::FindVikingMesh();
-	UTEST_NOT_NULL(TEXT("exports1"), Figure);
+	UTEST_NOT_NULL(TEXT("mh21"), Figure);
 	UTEST_NOT_NULL(TEXT("the viking mesh"), Viking);
 
 	TestEqual(TEXT("six chains"), ASolidNpc::RetargetChainCount, 6);
@@ -81,9 +81,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidNpcRetargetRigTest::RunTest(const FString& Parameters)
 {
-	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH1/exports1.exports1"));
+	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH2/mh21.mh21"));
 	USkeletalMesh* Viking = SolidContentLookup::FindVikingMesh();
-	UTEST_NOT_NULL(TEXT("exports1"), Figure);
+	UTEST_NOT_NULL(TEXT("mh21"), Figure);
 	UTEST_NOT_NULL(TEXT("the viking mesh"), Viking);
 
 	const USkeletalMesh* Meshes[] = { Figure, Viking };
@@ -126,9 +126,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidNpcIdleRetargetTest::RunTest(const FString& Parameters)
 {
-	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH1/exports1.exports1"));
+	USkeletalMesh* Figure = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/MH2/mh21.mh21"));
 	USkeletalMesh* Viking = SolidContentLookup::FindVikingMesh();
-	UTEST_NOT_NULL(TEXT("exports1"), Figure);
+	UTEST_NOT_NULL(TEXT("mh21"), Figure);
 	UTEST_NOT_NULL(TEXT("the viking mesh"), Viking);
 
 	UIKRetargeter* Retargeter = ASolidNpc::MakeIdleRetargeter(Viking, Figure);

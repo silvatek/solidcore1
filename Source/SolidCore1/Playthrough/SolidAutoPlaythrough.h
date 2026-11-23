@@ -402,7 +402,7 @@ public:
 
 	/**
 	 * Dragongate look's steps, in order.
-	 * The captain stands on the Dragongate mark and looks south, at the place 10 m south.
+	 * The captain stands 7 m south of the Dragongate mark and looks south, at the place 10 m south.
 	 */
 	static const FStep DragongateLook[];
 	static constexpr int32 DragongateLookCount = 5;

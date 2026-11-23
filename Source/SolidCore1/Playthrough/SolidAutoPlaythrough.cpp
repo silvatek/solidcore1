@@ -105,7 +105,7 @@ const FStep FSolidAutoPlaythrough::DragongateLook[FSolidAutoPlaythrough::Dragong
 		ESolidWorldChartMarkKind::Town,
 		TEXT("Dragongate"),
 		0.f,
-		0.f),
+		-700.f),
 	FStep::FaceDirection(TEXT("Face south"), SolidTowns::SignFacesSouthYawDeg),
 	FStep::EnableSight(TEXT("Enable true sight"), ESolidSight::True),
 	FStep::Pause(3.f, TEXT("Pause")),

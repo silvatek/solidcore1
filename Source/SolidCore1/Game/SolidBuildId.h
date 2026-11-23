@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-1003")
+#define SOLID_BUILD_ID TEXT("SC1-1004")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Dragongate look portals to the mark and takes a playshot.")
+#define SOLID_BUILD_NOTE TEXT("Dragongate look stands seven metres south of the mark.")
 #endif

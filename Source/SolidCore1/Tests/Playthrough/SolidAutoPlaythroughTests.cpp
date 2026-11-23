@@ -1089,7 +1089,7 @@ bool FSolidAutoPlaythroughDragongateLookTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidWorldChartMarkKind::Town));
 	TestEqual(TEXT("the mark is Dragongate"), FString(Steps[0].MarkName), FString(TEXT("Dragongate")));
 	TestTrue(TEXT("no east or west offset"), FMath::IsNearlyEqual(Steps[0].OffsetXCm, 0.f));
-	TestTrue(TEXT("no north or south offset"), FMath::IsNearlyEqual(Steps[0].OffsetYCm, 0.f));
+	TestTrue(TEXT("seven metres south"), FMath::IsNearlyEqual(Steps[0].OffsetYCm, -700.f));
 
 	TestEqual(
 		TEXT("the facing is set"),

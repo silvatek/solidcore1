@@ -26,8 +26,8 @@ public:
 	void BuildVisuals();
 
 	/**
-	 * The idle was authored on Source. Target keeps its own proportions.
-	 * Bone 0 stays on the target pose so the figure does not walk off with the clip.
+	 * The idle was authored on Source. Every bone keeps the figure's own length.
+	 * The idle supplies the rotation.
 	 */
 	static void RetargetFrom(USkeleton* Target, const USkeleton* Source);
 

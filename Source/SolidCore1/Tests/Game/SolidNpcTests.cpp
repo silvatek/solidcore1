@@ -49,15 +49,15 @@ bool FSolidNpcRetargetTest::RunTest(const FString& Parameters)
 	ASolidNpc::RetargetFrom(Target, Source);
 
 	TestEqual(
-		TEXT("the root stays on the figure"),
+		TEXT("the root keeps the figure's length"),
 		Target->GetBoneTranslationRetargetingMode(0, false),
 		EBoneTranslationRetargetingMode::Skeleton);
 	if (Target->GetReferenceSkeleton().GetRawBoneNum() > 1)
 	{
 		TestEqual(
-			TEXT("a later bone takes the idle relative to the figure"),
+			TEXT("a later bone keeps the figure's length"),
 			Target->GetBoneTranslationRetargetingMode(1, false),
-			EBoneTranslationRetargetingMode::AnimationRelative);
+			EBoneTranslationRetargetingMode::Skeleton);
 	}
 
 	bool bListed = false;

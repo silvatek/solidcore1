@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-1010")
+#define SOLID_BUILD_ID TEXT("SC1-1011")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The Dragongate figure retargets the Viking idle.")
+#define SOLID_BUILD_NOTE TEXT("The idle keeps the figure's bone lengths.")
 #endif

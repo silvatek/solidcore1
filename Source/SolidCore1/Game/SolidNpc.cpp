@@ -74,9 +74,9 @@ void ASolidNpc::RetargetFrom(USkeleton* Target, const USkeleton* Source)
 	const int32 BoneCount = Target->GetReferenceSkeleton().GetRawBoneNum();
 	for (int32 Index = 0; Index < BoneCount; ++Index)
 	{
-		const EBoneTranslationRetargetingMode::Type Mode = Index == 0
-			? EBoneTranslationRetargetingMode::Skeleton
-			: EBoneTranslationRetargetingMode::AnimationRelative;
-		Target->SetBoneTranslationRetargetingMode(Index, Mode, false);
+		Target->SetBoneTranslationRetargetingMode(
+			Index,
+			EBoneTranslationRetargetingMode::Skeleton,
+			false);
 	}
 }
